@@ -1,0 +1,11 @@
+{
+  "title": "NPI",
+  "description": "Navigate your university campus effortlessly with GPS-guided routes to classrooms, faculty, and services, tailored for students' schedules and accessibility needs.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
