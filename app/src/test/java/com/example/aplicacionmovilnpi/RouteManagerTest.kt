@@ -38,14 +38,14 @@ class RouteManagerTest {
 
     @Test
     fun imprimirRutaManual() {
-        val origen = "poi_patio"
-        val destino = "poi_cafeteria"
+        val origen = "poi_delegacion_estudiantes"
+        val destino = "poi_despachos_p3"
 
         println("\n==============================================")
         println("CALCULANDO RUTA DESDE $origen HASTA $destino")
         println("==============================================")
 
-        val ruta = routeManager.calculateRoute(origen, destino, onlyAccessible = false)
+        val ruta = routeManager.calculateRoute(origen, destino, onlyAccessible = true)
 
         if (ruta.isEmpty()) {
             println("❌ No se encontró ruta.")
