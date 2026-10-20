@@ -10,129 +10,129 @@ object EtsiitData {
     // 1. Nodos físicos sobre el plano
     val nodes: Map<String, Node> = listOf(
         // --- PLANTA -1 (SÓTANO Y PATIO INFERIOR EXTERIOR) ---
-        Node("n_escaleras_entrada_p-1", x = 130f, y = 710f, floor = 0),
-        Node("n_pasillo_abierto_p-1", x = 140f, y = 700f, floor = -1),
-        Node("n_entrada_edificio_principal_p-1", x = 200f, y = 680f, floor = -1),
-        Node("n_escaleras_internas_p-1_a_p0", x = 220f, y = 660f, floor = -1),
-        Node("n_ascensor_principal_p-1", x = 230f, y = 660f, floor = -1),
+        Node("n_escaleras_entrada_p-1", x = 257f, y = 701f, floor = 0),
+        Node("n_pasillo_abierto_p-1", x = 240f, y = 650f, floor = -1),
+        Node("n_entrada_edificio_principal_p-1", x = 275f, y = 605f, floor = -1),
+        Node("n_escaleras_internas_p-1_a_p0", x = 320f, y = 635f, floor = -1),
+        Node("n_ascensor_principal_p-1", x = 330f, y = 610f, floor = -1),
 
         // Distribuidor interno P-1
-        Node("n_distribuidor_p-1", x = 250f, y = 650f, floor = -1),
-        Node("n_cafeteria", x = 220f, y = 620f, floor = -1),
-        Node("n_salon_actos", x = 250f, y = 580f, floor = -1),
-        Node("n_comedor", x = 290f, y = 620f, floor = -1),
+        Node("n_distribuidor_p-1", x = 300f, y = 575f, floor = -1),
+        Node("n_cafeteria", x = 295f, y = 495f, floor = -1),
+        Node("n_salon_actos", x = 400f, y = 530f, floor = -1),
+        Node("n_comedor", x = 415f, y = 620f, floor = -1),
 
         // Patio abierto inferior
-        Node("n_patio_inferior_p-1", x = 360f, y = 600f, floor = -1),
+        Node("n_patio_inferior_p-1", x = 535f, y = 425f, floor = -1),
 
         // --- PLANTA 0 ---
-        Node("n_entrada", x = 120f, y = 720f, floor = 0), // Recinto exterior abierto
-        Node("n_patio", x = 320f, y = 620f, floor = 0),
+        Node("n_entrada", x = 145f, y = 775f, floor = 0),
+        Node("n_patio", x = 495f, y = 745f, floor = 0),
         Node("n_hall", x = 380f, y = 470f, floor = 0),
 
         // Edificio Principal P0
-        Node("n_distribuidor_entrada_principal_p0", x = 200f, y = 680f, floor = 0), // Entrada General
-        Node("n_entrada_edificio_principal_p0", x = 280f, y = 650f, floor = 0), // Entrada desde el Patio
-        Node("n_ascensor_principal_p0", x = 230f, y = 660f, floor = 0),
-        Node("n_escaleras_principal_p0", x = 240f, y = 660f, floor = 0),
-        Node("n_banos_edificio_principal_p0", x = 210f, y = 660f, floor = 0),
+        Node("n_distribuidor_entrada_principal_p0", x = 283f, y = 565f, floor = 0),
+        Node("n_entrada_edificio_principal_p0", x = 405f, y = 615f, floor = 0),
+        Node("n_ascensor_principal_p0", x = 335f, y = 580f, floor = 0),
+        Node("n_escaleras_principal_p0", x = 315f, y = 595f, floor = 0),
+        Node("n_banos_edificio_principal_p0", x = 282f, y = 635f, floor = 0),
 
-        Node("n_corredor_central", x = 520f, y = 490f, floor = 0),
+        Node("n_corredor_central", x = 610f, y = 530f, floor = 0),
         Node("n_corredor_lateral", x = 500f, y = 330f, floor = 0),
 
-        Node("n_escaleras_lateral_p0", x = 480f, y = 310f, floor = 0),
-        Node("n_escaleras_patio_central_p0", x = 540f, y = 470f, floor = 0),
+        Node("n_escaleras_lateral_p0", x = 510f, y = 300f, floor = 0),
+        Node("n_escaleras_patio_central_p0", x = 630f, y = 590f, floor = 0),
 
-        Node("n_entrada_lateral_aulas", x = 560f, y = 280f, floor = 0),
-        Node("n_entrada_central_aulas", x = 600f, y = 450f, floor = 0),
+        Node("n_entrada_lateral_aulas", x = 550f, y = 309f, floor = 0),
+        Node("n_entrada_central_aulas", x = 650f, y = 510f, floor = 0),
 
         // Pasillo de aulas P0
-        Node("n_aula01", x = 540f, y = 220f, floor = 0),
-        Node("n_aula02", x = 580f, y = 250f, floor = 0),
-        Node("n_aula03", x = 620f, y = 290f, floor = 0),
-        Node("n_aula04", x = 660f, y = 330f, floor = 0),
-        Node("n_aula05", x = 700f, y = 370f, floor = 0),
-        Node("n_aula06", x = 740f, y = 420f, floor = 0),
-        Node("n_aula07", x = 780f, y = 460f, floor = 0),
-        Node("n_aula08", x = 840f, y = 520f, floor = 0),
+        Node("n_aula01", x = 560f, y = 210f, floor = 0),
+        Node("n_aula02", x = 605f, y = 260f, floor = 0),
+        Node("n_aula03", x = 640f, y = 310f, floor = 0),
+        Node("n_aula04", x = 685f, y = 380f, floor = 0),
+        Node("n_aula05", x = 740f, y = 460f, floor = 0),
+        Node("n_aula06", x = 785f, y = 530f, floor = 0),
+        Node("n_aula07", x = 835f, y = 615f, floor = 0),
+        Node("n_aula08", x = 890f, y = 710f, floor = 0),
 
         // Cilindro P0
-        Node("n_escaleras_p0", x = 680f, y = 490f, floor = 0),
+        Node("n_escaleras_p0", x = 760f, y = 580f, floor = 0),
         Node("n_ascensor_p0", x = 700f, y = 530f, floor = 0),
-        Node("n_banos_p0", x = 680f, y = 550f, floor = 0),
+        Node("n_banos_p0", x = 720f, y = 590f, floor = 0),
 
         // --- PLANTA 1 ---
-        Node("n_ascensor_principal_p1", x = 230f, y = 660f, floor = 1),
-        Node("n_escaleras_principal_p1", x = 240f, y = 660f, floor = 1),
-        Node("n_biblioteca", x = 260f, y = 660f, floor = 1),
+        Node("n_ascensor_principal_p1", x = 320f, y = 550f, floor = 1),
+        Node("n_escaleras_principal_p1", x = 310f, y = 570f, floor = 1),
+        Node("n_biblioteca", x = 350f, y = 500f, floor = 1),
 
         Node("n_entrada_lateral_aulas_p1", x = 560f, y = 280f, floor = 1),
         Node("n_escaleras_lateral_p1", x = 480f, y = 310f, floor = 1),
-        Node("n_aula11", x = 580f, y = 250f, floor = 1),
-        Node("n_aula12", x = 620f, y = 290f, floor = 1),
-        Node("n_aula13", x = 660f, y = 330f, floor = 1),
-        Node("n_aula14", x = 700f, y = 370f, floor = 1),
-        Node("n_aula15", x = 740f, y = 420f, floor = 1),
-        Node("n_aula16", x = 780f, y = 460f, floor = 1),
+        Node("n_aula11", x = 600f, y = 250f, floor = 1),
+        Node("n_aula12", x = 635f, y = 290f, floor = 1),
+        Node("n_aula13", x = 683f, y = 362f, floor = 1),
+        Node("n_aula14", x = 730f, y = 430f, floor = 1),
+        Node("n_aula15", x = 770f, y = 500f, floor = 1),
+        Node("n_aula16", x = 830f, y = 600f, floor = 1),
 
-        Node("n_escaleras_p1", x = 680f, y = 490f, floor = 1),
+        Node("n_escaleras_p1", x = 745f, y = 580f, floor = 1),
         Node("n_ascensor_p1", x = 700f, y = 530f, floor = 1),
-        Node("n_banos_p1", x = 680f, y = 550f, floor = 1),
+        Node("n_banos_p1", x = 710f, y = 600f, floor = 1),
 
         // --- PLANTA 2 ---
-        Node("n_ascensor_principal_p2", x = 230f, y = 660f, floor = 2),
-        Node("n_escaleras_principal_p2", x = 240f, y = 660f, floor = 2),
-        Node("n_despachos_p2", x = 260f, y = 660f, floor = 2),
+        Node("n_ascensor_principal_p2", x = 305f, y = 535f, floor = 2),
+        Node("n_escaleras_principal_p2", x = 325f, y = 555f, floor = 2),
+        Node("n_despachos_p2", x = 285f, y = 505f, floor = 2),
 
-        Node("n_entrada_lateral_aulas_p2", x = 560f, y = 280f, floor = 2),
-        Node("n_escaleras_lateral_p2", x = 480f, y = 310f, floor = 2),
-        Node("n_aula21", x = 560f, y = 230f, floor = 2),
-        Node("n_aula22", x = 590f, y = 260f, floor = 2),
-        Node("n_aula23", x = 620f, y = 290f, floor = 2),
-        Node("n_aula24", x = 650f, y = 320f, floor = 2),
+        Node("n_entrada_lateral_aulas_p2", x = 560f, y = 250f, floor = 2),
+        Node("n_escaleras_lateral_p2", x = 530f, y = 270f, floor = 2),
+        Node("n_aula21", x = 570f, y = 190f, floor = 2),
+        Node("n_aula22", x = 595f, y = 225f, floor = 2),
+        Node("n_aula23", x = 620f, y = 270f, floor = 2),
+        Node("n_aula24", x = 640f, y = 310f, floor = 2),
         Node("n_aula25", x = 680f, y = 350f, floor = 2),
-        Node("n_aula26", x = 710f, y = 380f, floor = 2),
-        Node("n_aula27", x = 740f, y = 410f, floor = 2),
-        Node("n_aula28", x = 770f, y = 440f, floor = 2),
-        Node("n_aula29", x = 800f, y = 470f, floor = 2),
-        Node("n_aula210", x = 830f, y = 500f, floor = 2),
+        Node("n_aula26", x = 710f, y = 390f, floor = 2),
+        Node("n_aula27", x = 750f, y = 440f, floor = 2),
+        Node("n_aula28", x = 780f, y = 505f, floor = 2),
+        Node("n_aula29", x = 815f, y = 550f, floor = 2),
+        Node("n_aula210", x = 855f, y = 625f, floor = 2),
 
-        Node("n_escaleras_p2", x = 680f, y = 490f, floor = 2),
-        Node("n_ascensor_p2", x = 700f, y = 530f, floor = 2),
-        Node("n_banos_p2", x = 680f, y = 550f, floor = 2),
+        Node("n_escaleras_p2", x = 760f, y = 545f, floor = 2),
+        Node("n_ascensor_p2", x = 710f, y = 525f, floor = 2),
+        Node("n_banos_p2", x = 730f, y = 575f, floor = 2),
 
         // --- PLANTA 3 ---
-        Node("n_ascensor_principal_p3", x = 230f, y = 660f, floor = 3),
-        Node("n_escaleras_principal_p3", x = 240f, y = 660f, floor = 3),
-        Node("n_despachos_p3", x = 260f, y = 660f, floor = 3),
+        Node("n_ascensor_principal_p3", x = 290f, y = 510f, floor = 3),
+        Node("n_escaleras_principal_p3", x = 310f, y = 530f, floor = 3),
+        Node("n_despachos_p3", x = 275f, y = 485f, floor = 3),
 
-        Node("n_entrada_lateral_aulas_p3", x = 560f, y = 280f, floor = 3),
-        Node("n_escaleras_lateral_p3", x = 480f, y = 310f, floor = 3),
-        Node("n_aula31", x = 550f, y = 220f, floor = 3),
-        Node("n_aula32", x = 580f, y = 250f, floor = 3),
-        Node("n_aula33", x = 610f, y = 280f, floor = 3),
-        Node("n_aula34", x = 640f, y = 310f, floor = 3),
-        Node("n_aula35", x = 670f, y = 340f, floor = 3),
-        Node("n_aula36", x = 700f, y = 370f, floor = 3),
-        Node("n_aula37", x = 730f, y = 400f, floor = 3),
-        Node("n_aula38", x = 760f, y = 430f, floor = 3),
-        Node("n_aula39", x = 790f, y = 460f, floor = 3),
-        Node("n_aula310", x = 820f, y = 490f, floor = 3),
-        Node("n_aula311", x = 850f, y = 520f, floor = 3),
+        Node("n_entrada_lateral_aulas_p3", x = 545f, y = 225f, floor = 3),
+        Node("n_escaleras_lateral_p3", x = 525f, y = 245f, floor = 3),
+        Node("n_aula31", x = 565f, y = 150f, floor = 3),
+        Node("n_aula32", x = 590f, y = 190f, floor = 3),
+        Node("n_aula33", x = 615f, y = 225f, floor = 3),
+        Node("n_aula34", x = 650f, y = 275f, floor = 3),
+        Node("n_aula35", x = 680f, y = 325f, floor = 3),
+        Node("n_aula36", x = 710f, y = 370f, floor = 3),
+        Node("n_aula37", x = 745f, y = 420f, floor = 3),
+        Node("n_aula38", x = 780f, y = 480f, floor = 3),
+        Node("n_aula39", x = 815f, y = 550f, floor = 3),
+        Node("n_aula310", x = 865f, y = 605f, floor = 3),
 
-        Node("n_escaleras_p3", x = 680f, y = 490f, floor = 3),
-        Node("n_ascensor_p3", x = 700f, y = 530f, floor = 3),
-        Node("n_banos_p3", x = 680f, y = 550f, floor = 3),
+        Node("n_escaleras_p3", x = 755f, y = 520f, floor = 3),
+        Node("n_ascensor_p3", x = 710f, y = 500f, floor = 3),
+        Node("n_banos_p3", x = 715f, y = 565f, floor = 3),
 
         // --- PLANTA 4 ---
-        Node("n_ascensor_principal_p4", x = 230f, y = 660f, floor = 4),
-        Node("n_escaleras_principal_p4", x = 240f, y = 660f, floor = 4),
-        Node("n_despachos_p4", x = 260f, y = 660f, floor = 4),
+        Node("n_ascensor_principal_p4", x = 305f, y = 450f, floor = 4),
+        Node("n_escaleras_principal_p4", x = 315f, y = 485f, floor = 4),
+        Node("n_despachos_p4", x = 260f, y = 435f, floor = 4),
 
-        Node("n_delegacion_estudiantes", x = 700f, y = 510f, floor = 4),
-        Node("n_escaleras_p4", x = 680f, y = 490f, floor = 4),
-        Node("n_ascensor_p4", x = 700f, y = 530f, floor = 4)
-    ).associateBy { it.id }
+        Node("n_delegacion_estudiantes", x = 725f, y = 510f, floor = 4),
+        Node("n_escaleras_p4", x = 780f, y = 490f, floor = 4),
+        Node("n_ascensor_p4", x = 700f, y = 470f, floor = 4),
+
+        ).associateBy { it.id }
 
     // 2. Conexiones transitables entre nodos
     val edges: List<Edge> = listOf(

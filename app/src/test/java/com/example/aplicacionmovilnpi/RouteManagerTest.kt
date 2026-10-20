@@ -38,8 +38,8 @@ class RouteManagerTest {
 
     @Test
     fun imprimirRutaManual() {
-        val origen = "poi_delegacion_estudiantes"
-        val destino = "poi_despachos_p3"
+        val origen = "poi_entrada"
+        val destino = "poi_aula12"
 
         println("\n==============================================")
         println("CALCULANDO RUTA DESDE $origen HASTA $destino")
