@@ -1,5 +1,7 @@
 package com.example.aplicacionmovilnpi.data
 
+import java.util.Calendar
+
 object SampleData {
 
     val places = listOf(
@@ -9,116 +11,69 @@ object SampleData {
         PlaceCategory("Cafetería", "Planta baja", "coffee", "orange")
     )
 
-    val weekSchedule = listOf(
-        DaySchedule(
-            short = "L",
-            day = "Lunes",
-            date = "14",
-            classes = listOf(
-                ClassLesson("08:30", "10:30", "Programación Web", "Aula A-03", "red"),
-                ClassLesson("10:30", "12:30", "Diseño de Interfaces", "Aula B-12", "purple"),
-                ClassLesson("15:30", "17:30", "Sistemas Multimedia", "Lab. 2", "blue")
-            )
-        ),
-        DaySchedule(
-            short = "M",
-            day = "Martes",
-            date = "15",
-            classes = listOf(
-                ClassLesson("08:30", "10:30", "Bases de Datos", "Aula C-05", "orange"),
-                ClassLesson("12:30", "14:30", "Ingeniería del Software", "Aula B-08", "blue"),
-                ClassLesson("17:30", "19:30", "Prácticas de Interfaces", "Lab. 4", "purple")
-            )
-        ),
-        DaySchedule(
-            short = "X",
-            day = "Miércoles",
-            date = "16",
-            classes = listOf(
-                ClassLesson("10:30", "12:30", "Diseño de Interfaces", "Aula B-12", "purple"),
-                ClassLesson("15:30", "17:30", "Programación Web", "Lab. 1", "red"),
-                ClassLesson("19:30", "21:30", "Sistemas Multimedia", "Aula A-10", "blue")
-            )
-        ),
-        DaySchedule(
-            short = "J",
-            day = "Jueves",
-            date = "17",
-            classes = listOf(
-                ClassLesson("08:30", "10:30", "Ingeniería del Software", "Aula B-08", "blue"),
-                ClassLesson("12:30", "14:30", "Bases de Datos", "Lab. 3", "orange"),
-                ClassLesson("17:30", "19:30", "Seminario de Diseño", "Aula C-02", "green")
-            )
-        ),
-        DaySchedule(
-            short = "V",
-            day = "Viernes",
-            date = "18",
-            classes = listOf(
-                ClassLesson("10:30", "12:30", "Prácticas de Interfaces", "Lab. 4", "purple"),
-                ClassLesson("12:30", "14:30", "Programación Web", "Aula A-03", "red")
-            )
-        )
+    private val subjectNames = mapOf(
+        "NPI" to "Nuevos Paradigmas de Interacción",
+        "PL" to "Procesadores de Lenguajes",
+        "VC" to "Visión por Computador",
+        "TIC" to "Teoría de la Información y la Codificación",
+        "SS" to "Simulación de Sistemas"
     )
 
-    val professors = listOf(
-        Professor(
-            id = 1,
-            initials = "AM",
-            name = "Ana Martínez López",
-            role = "Profesora Titular",
-            email = "anamartinez@ugr.es",
-            faculty = "E.T.S. de Ingenierías Informática y de Telecomunicación",
-            subjects = listOf("Diseño de Interfaces", "Sistemas Multimedia"),
-            officeHours = "Martes y jueves · 12:30–14:30",
-            status = "Impartiendo clase",
-            location = "Aula B-12",
-            floor = "Planta 1",
-            tone = "red"
-        ),
-        Professor(
-            id = 2,
-            initials = "JR",
-            name = "Javier Ruiz Ortega",
-            role = "Profesor Contratado Doctor",
-            email = "jruiz@ugr.es",
-            faculty = "Facultad de Ciencias",
-            subjects = listOf("Programación Web"),
-            officeHours = "Lunes y miércoles · 17:30–19:30",
-            status = "Horario de tutorías",
-            location = "Despacho 2.14",
-            floor = "Planta 2",
-            tone = "blue"
-        ),
-        Professor(
-            id = 3,
-            initials = "EC",
-            name = "Elena Castillo Pérez",
-            role = "Catedrática de Universidad",
-            email = "ecastillo@ugr.es",
-            faculty = "E.T.S. de Ingenierías Informática y de Telecomunicación",
-            subjects = listOf("Bases de Datos"),
-            officeHours = "Miércoles · 10:30–13:30",
-            status = "Sin actividad programada",
-            location = "Despacho 3.08",
-            floor = "Planta 3",
-            tone = "purple"
-        ),
-        Professor(
-            id = 4,
-            initials = "DL",
-            name = "David López Sánchez",
-            role = "Profesor Ayudante Doctor",
-            email = "dlopez@ugr.es",
-            faculty = "E.T.S. de Ingenierías Informática y de Telecomunicación",
-            subjects = listOf("Ingeniería del Software"),
-            officeHours = "Viernes · 08:30–11:30",
-            status = "Impartiendo clase",
-            location = "Aula B-08",
-            floor = "Planta 1",
-            tone = "orange"
-        )
+    private val monthNames = listOf(
+        "enero", "febrero", "marzo", "abril", "mayo", "junio",
+        "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
     )
+
+    /** "NPI · Teoría" -> "Nuevos Paradigmas de Interacción · Teoría". */
+    fun lessonName(slot: WeeklySlot): String {
+        val code = slot.title.substringBefore(" · ")
+        val full = subjectNames[code] ?: return slot.title
+        return slot.title.replaceFirst(code, full)
+    }
+
+    fun toLesson(slot: WeeklySlot) = ClassLesson(
+        time = slot.start.padStart(5, '0'),
+        end = slot.end.padStart(5, '0'),
+        name = lessonName(slot),
+        room = slot.place,
+        tone = FacultyData.toneFor(slot),
+        poiId = slot.poiId
+    )
+
+    /** Horario de la alumna (lunes a viernes) con las fechas de la semana de [today]. */
+    fun weekSchedule(today: Calendar = Calendar.getInstance()): List<DaySchedule> {
+        val semester = Moment.now(today).semester
+        val monday = (today.clone() as Calendar).apply {
+            // Sábado y domingo muestran ya la semana siguiente.
+            val dayIndex = (get(Calendar.DAY_OF_WEEK) + 5) % 7 // lunes = 0 … domingo = 6
+            add(Calendar.DAY_OF_MONTH, if (dayIndex >= 5) 7 - dayIndex else -dayIndex)
+        }
+        return (1..5).map { day ->
+            val date = (monday.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, day - 1) }
+            val dayName = ProfessorLocator.dayName(day)
+            DaySchedule(
+                short = if (day == 3) "X" else dayName.take(1),
+                day = dayName,
+                date = date.get(Calendar.DAY_OF_MONTH).toString(),
+                month = monthNames[date.get(Calendar.MONTH)],
+                classes = FacultyData.studentSchedule
+                    .filter { it.semester == semester && it.day == day }
+                    .sortedBy { it.startMinutes }
+                    .map(::toLesson)
+            )
+        }
+    }
+
+    /** Próxima clase de la alumna (o la que está en curso), buscando hacia delante en la semana. */
+    fun nextLesson(moment: Moment = Moment.now()): WeeklySlot? {
+        val ongoing = FacultyData.studentSchedule.firstOrNull {
+            it.semester == moment.semester && it.day == moment.day &&
+                moment.minutes >= it.startMinutes && moment.minutes < it.endMinutes
+        }
+        return ongoing ?: ProfessorLocator.nextSlot(FacultyData.studentSchedule, moment)
+    }
+
+    val professors: List<Professor> get() = FacultyData.professors
 
     val campuses = listOf(
         CampusItem(
@@ -173,33 +128,43 @@ object SampleData {
         RouteStep("✓", "Has llegado: $destination", "")
     )
 
+    // Fechas de ejemplo: no son las fechas oficiales de entregas ni de exámenes.
     val initialEvents = listOf(
         CalendarEventItem(
             id = 1L,
-            title = "Prototipo de Interfaces",
-            subject = "Diseño de Interfaces",
-            date = "2024-10-18",
+            title = "Entrega práctica 1 de NPI",
+            subject = "Nuevos Paradigmas de Interacción",
+            date = "2026-10-30",
             time = "23:59",
             type = "Entrega",
-            description = "Prototipo navegable en Figma y memoria de diseño."
+            description = "Prototipo de la aplicación móvil y memoria en PRADO."
         ),
         CalendarEventItem(
             id = 2L,
-            title = "Examen de Bases de Datos",
-            subject = "Bases de Datos",
-            date = "2024-10-24",
-            time = "10:30",
-            type = "Examen",
-            description = "Temas 1 a 4. Aula C-05."
+            title = "Práctica 1 de Visión por Computador",
+            subject = "Visión por Computador",
+            date = "2026-11-06",
+            time = "23:59",
+            type = "Entrega",
+            description = "Filtrado y detección de bordes. Entrega en PRADO."
         ),
         CalendarEventItem(
             id = 3L,
-            title = "Práctica de Programación Web",
-            subject = "Programación Web",
-            date = "2024-10-29",
+            title = "Analizador léxico de PL",
+            subject = "Procesadores de Lenguajes",
+            date = "2026-11-13",
             time = "23:59",
             type = "Entrega",
-            description = "Práctica 3 en la plataforma."
+            description = "Especificación del lenguaje y analizador léxico."
+        ),
+        CalendarEventItem(
+            id = 4L,
+            title = "Examen de Teoría de la Información",
+            subject = "Teoría de la Información y la Codificación",
+            date = "2027-01-18",
+            time = "09:30",
+            type = "Examen",
+            description = "Convocatoria ordinaria. Consulta el aula en la web de la ETSIIT."
         )
     )
 
@@ -208,10 +173,10 @@ object SampleData {
             id = 1L,
             folder = MailFolder.INBOX,
             outgoing = false,
-            name = "Ana Martínez",
-            email = "anamartinez@ugr.es",
-            subject = "Cambio de aula — Diseño de Interfaces",
-            body = "Hola a todos:\n\nLa clase del miércoles se impartirá finalmente en el aula B-12, en la planta 1, en lugar del aula habitual.\n\nRecordad traer el prototipo avanzado para la revisión en grupo.\n\nUn saludo,\nAna",
+            name = "PRADO · Nuevos Paradigmas de Interacción",
+            email = "prado@ugr.es",
+            subject = "Nuevo material disponible",
+            body = "Se ha publicado nuevo material en la asignatura Nuevos Paradigmas de Interacción.\n\nAccede a PRADO para consultarlo.",
             time = "10:24",
             unread = true
         ),
@@ -221,7 +186,7 @@ object SampleData {
             outgoing = false,
             name = "Secretaría ETSIIT",
             email = "secretariaetsiit@ugr.es",
-            subject = "Matrícula del curso 2024/2025",
+            subject = "Matrícula del curso 2026/2027",
             body = "Estimada estudiante:\n\nTu solicitud de modificación de matrícula ha sido procesada correctamente. Puedes consultar el resguardo actualizado en la sede electrónica.\n\nAtentamente,\nSecretaría ETSIIT",
             time = "Ayer",
             unread = true
@@ -233,7 +198,7 @@ object SampleData {
             name = "Biblioteca UGR",
             email = "biblioteca@ugr.es",
             subject = "Reserva disponible",
-            body = "El ejemplar que reservaste, «Diseño de interfaces de usuario», ya está disponible para su recogida en el mostrador de préstamo de la Biblioteca de la ETSIIT.\n\nTienes 3 días para recogerlo.",
+            body = "El ejemplar que reservaste, «Computer Vision: Algorithms and Applications», ya está disponible para su recogida en el mostrador de préstamo de la Biblioteca de la ETSIIT.\n\nTienes 3 días para recogerlo.",
             time = "Ayer",
             unread = true
         ),
@@ -241,10 +206,10 @@ object SampleData {
             id = 4L,
             folder = MailFolder.INBOX,
             outgoing = false,
-            name = "Javier Ruiz",
-            email = "jruiz@ugr.es",
-            subject = "Material de Programación Web",
-            body = "Buenas tardes:\n\nYa tenéis publicados los ejemplos de la práctica 3 en la plataforma. Revisadlos antes de la próxima sesión de laboratorio.\n\nJavier",
+            name = "PRADO · Visión por Computador",
+            email = "prado@ugr.es",
+            subject = "Publicado el guion de la práctica 1",
+            body = "Ya está disponible el guion de la práctica 1 en la plataforma. Revisadlo antes de la próxima sesión de prácticas.",
             time = "14 oct.",
             unread = false
         ),
@@ -252,10 +217,10 @@ object SampleData {
             id = 5L,
             folder = MailFolder.SENT,
             outgoing = true,
-            name = "Elena Castillo Pérez",
-            email = "ecastillo@ugr.es",
-            subject = "Consulta sobre la práctica 2",
-            body = "Hola, Elena:\n\n¿Podría pasar el miércoles por tutoría para resolver unas dudas sobre la normalización de la práctica 2?\n\nMuchas gracias,\nLucía",
+            name = "Delegación de Estudiantes ETSIIT",
+            email = "delegacion.etsiit@ugr.es",
+            subject = "Consulta sobre las optativas de 2º semestre",
+            body = "Hola:\n\n¿Sabéis si este año se oferta Programación Lúdica en el segundo semestre?\n\nMuchas gracias,\nLucía",
             time = "13 oct.",
             unread = false
         ),
@@ -265,7 +230,7 @@ object SampleData {
             outgoing = false,
             name = "Secretaría ETSIIT",
             email = "secretariaetsiit@ugr.es",
-            subject = "Bienvenida al curso 2024/2025",
+            subject = "Bienvenida al curso 2026/2027",
             body = "Te damos la bienvenida al nuevo curso académico. Consulta el calendario académico y los horarios en la web del centro.",
             time = "9 sept.",
             unread = false
@@ -283,25 +248,34 @@ object SampleData {
         FaqItem("account", "¿Cómo cierro sesión?", "Pulsa tu avatar en la esquina superior derecha y elige «Cerrar sesión», o hazlo desde Mi perfil.")
     )
 
+    // Notas de ejemplo de la alumna; las asignaturas son las del plan de estudios del GII (mención CSI).
     val gradesMap = mapOf(
         "1º" to listOf(
             GradeItem("1º", "Fundamentos de Programación", "8,4"),
             GradeItem("1º", "Cálculo", "7,1"),
-            GradeItem("1º", "Álgebra Lineal", "6,8"),
-            GradeItem("1º", "Tecnología de Computadores", "8,9"),
-            GradeItem("1º", "Fundamentos Físicos", "7,6")
+            GradeItem("1º", "Álgebra Lineal y Estructuras Matemáticas", "6,8"),
+            GradeItem("1º", "Fundamentos del Software", "8,0"),
+            GradeItem("1º", "Fundamentos Físicos y Tecnológicos", "7,6"),
+            GradeItem("1º", "Metodología de la Programación", "8,9"),
+            GradeItem("1º", "Estadística", "7,3"),
+            GradeItem("1º", "Lógica y Métodos Discretos", "6,9")
         ),
         "2º" to listOf(
             GradeItem("2º", "Estructuras de Datos", "8,7"),
             GradeItem("2º", "Sistemas Operativos", "7,9"),
-            GradeItem("2º", "Bases de Datos", "9,1"),
-            GradeItem("2º", "Redes de Computadores", "7,4"),
-            GradeItem("2º", "Ingeniería del Software", "8,2")
+            GradeItem("2º", "Programación y Diseño Orientado a Objetos", "8,5"),
+            GradeItem("2º", "Algorítmica", "7,8"),
+            GradeItem("2º", "Fundamentos de Bases de Datos", "9,1"),
+            GradeItem("2º", "Fundamentos de Ingeniería del Software", "8,2"),
+            GradeItem("2º", "Inteligencia Artificial", "9,0")
         ),
         "3º" to listOf(
-            GradeItem("3º", "Programación Web", "8,8"),
-            GradeItem("3º", "Diseño de Interfaces", "9,3"),
-            GradeItem("3º", "Sistemas Multimedia", "7,7")
-        )
+            GradeItem("3º", "Aprendizaje Automático", "8,8"),
+            GradeItem("3º", "Metaheurísticas", "9,3"),
+            GradeItem("3º", "Ingeniería del Conocimiento", "8,1"),
+            GradeItem("3º", "Modelos de Computación", "7,7"),
+            GradeItem("3º", "Técnicas de los Sistemas Inteligentes", "8,6")
+        ),
+        "4º" to FacultyData.studentSubjects.map { GradeItem("4º", it, "En curso") }
     )
 }

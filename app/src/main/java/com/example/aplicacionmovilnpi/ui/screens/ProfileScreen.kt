@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.aplicacionmovilnpi.data.FacultyData
 import com.example.aplicacionmovilnpi.ui.theme.CardBorder
 import com.example.aplicacionmovilnpi.ui.theme.Ink
 import com.example.aplicacionmovilnpi.ui.theme.MutedText
@@ -88,7 +89,7 @@ fun ProfileScreen(onBack: () -> Unit) {
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(
-                            text = "LM",
+                            text = FacultyData.Student.initials,
                             color = ToneRoseText,
                             fontWeight = FontWeight.Black,
                             fontSize = 22.sp
@@ -99,14 +100,14 @@ fun ProfileScreen(onBack: () -> Unit) {
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "Lucía Martín García",
+                    text = FacultyData.Student.name,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Ink
                 )
 
                 Text(
-                    text = "Grado en Ingeniería Informática",
+                    text = FacultyData.Student.degree,
                     fontSize = 12.sp,
                     color = MutedText,
                     modifier = Modifier.padding(top = 2.dp)
@@ -120,7 +121,13 @@ fun ProfileScreen(onBack: () -> Unit) {
 
                 ProfileDetailRow(label = "Centro", value = "E.T.S. de Ingenierías Informática y de Telecomunicación")
                 Spacer(modifier = Modifier.height(10.dp))
-                ProfileDetailRow(label = "Correo UGR", value = "lucia@correo.ugr.es")
+                ProfileDetailRow(label = "Curso", value = "${FacultyData.Student.course} (${FacultyData.Student.academicYear})")
+                Spacer(modifier = Modifier.height(10.dp))
+                ProfileDetailRow(label = "Grupo", value = FacultyData.Student.group)
+                Spacer(modifier = Modifier.height(10.dp))
+                ProfileDetailRow(label = "Asignaturas", value = FacultyData.studentSubjects.joinToString(", "))
+                Spacer(modifier = Modifier.height(10.dp))
+                ProfileDetailRow(label = "Correo UGR", value = FacultyData.Student.email)
                 Spacer(modifier = Modifier.height(10.dp))
                 ProfileDetailRow(label = "Teléfono", value = "+34 600 000 000")
             }

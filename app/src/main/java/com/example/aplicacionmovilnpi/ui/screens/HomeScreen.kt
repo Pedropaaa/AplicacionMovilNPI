@@ -36,7 +36,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.aplicacionmovilnpi.data.FacultyData
+import com.example.aplicacionmovilnpi.data.Moment
 import com.example.aplicacionmovilnpi.data.PlaceCategory
+import com.example.aplicacionmovilnpi.data.ProfessorLocator
 import com.example.aplicacionmovilnpi.data.SampleData
 import com.example.aplicacionmovilnpi.ui.theme.CardBorder
 import com.example.aplicacionmovilnpi.ui.theme.Ink
@@ -56,10 +59,37 @@ import com.example.aplicacionmovilnpi.ui.theme.UgrRedDark
 fun HomeScreen(
     onNavigateToSchedule: () -> Unit,
     onNavigateToProfessors: () -> Unit,
-    onNavigateToMap: () -> Unit,
+    onNavigateToMap: (String?) -> Unit,
     onNavigateToCalendar: () -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
+
+    // Próxima clase (o la que está en curso) según el horario real de la alumna
+    val moment = remember { Moment.now() }
+    val nextSlot = remember(moment) { SampleData.nextLesson(moment) }
+    val nextLesson = nextSlot?.let(SampleData::toLesson)
+    val nextLabel = when {
+        nextSlot == null -> "SIN CLASES PROGRAMADAS"
+        nextSlot.day == moment.day && moment.minutes >= nextSlot.startMinutes -> "EN CURSO · HASTA LAS ${nextSlot.end}"
+        nextSlot.day == moment.day -> {
+            val minutes = nextSlot.startMinutes - moment.minutes
+            "PRÓXIMA CLASE · EN " + if (minutes < 60) "$minutes MIN" else "${minutes / 60} H ${minutes % 60} MIN"
+        }
+        else -> "PRÓXIMA CLASE · ${ProfessorLocator.dayName(nextSlot.day).uppercase()}"
+    }
+    // Primera entrega (o examen) a partir de hoy
+    val nextEvent = remember {
+        val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.ROOT).format(java.util.Date())
+        SampleData.initialEvents.sortedBy { it.date }.firstOrNull { it.date >= today }
+    }
+    val nextEventDate = nextEvent?.let { event ->
+        val (_, month, day) = event.date.split("-").map { it.toInt() }
+        val months = listOf("ene.", "feb.", "mar.", "abr.", "may.", "jun.", "jul.", "ago.", "sept.", "oct.", "nov.", "dic.")
+        "$day ${months[month - 1]} · ${if (event.type == "Examen") "A las" else "Hasta las"} ${event.time}"
+    }
+    val nextFloor = nextLesson?.room?.removePrefix("Aula ")?.substringBefore(".")?.let {
+        if (it == "0") "Planta baja" else "Planta $it"
+    }
 
     val nextClassGradient = remember {
         Brush.linearGradient(
@@ -80,13 +110,13 @@ fun HomeScreen(
 
         // Intro Greeting
         Text(
-            text = "¡Hola, Lucía! 👋",
+            text = "¡Hola, ${FacultyData.Student.firstName}! 👋",
             fontSize = 28.sp,
             fontWeight = FontWeight.Black,
             color = Ink
         )
         Text(
-            text = "Grado en Ingeniería Informática · ETSIIT",
+            text = "${FacultyData.Student.course} · ETSIIT",
             fontSize = 12.sp,
             color = MutedText,
             modifier = Modifier.padding(top = 4.dp)
@@ -131,13 +161,15 @@ fun HomeScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "PRÓXIMA CLASE · EN 15 MIN",
+                            text = nextLabel,
                             color = Color(0xFFF7C9D3),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.sp
                         )
-                        Text(text = "🟢 Live", fontSize = 10.sp, color = Color.White)
+                        if (nextLabel.startsWith("EN CURSO")) {
+                            Text(text = "🟢 Live", fontSize = 10.sp, color = Color.White)
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
@@ -152,7 +184,7 @@ fun HomeScreen(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
                             ) {
-                                Text(text = "10:30", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Text(text = nextLesson?.time ?: "--:--", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                 Text(text = "AULA", color = Color(0xFFF5C6D0), fontSize = 8.sp, fontWeight = FontWeight.Bold)
                             }
                         }
@@ -161,13 +193,13 @@ fun HomeScreen(
 
                         Column {
                             Text(
-                                text = "Diseño de Interfaces",
+                                text = nextLesson?.name ?: "No tienes clases este semestre",
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 16.sp
                             )
                             Text(
-                                text = "📍 Aula B-12 · Planta 1 · 10:30 - 12:30",
+                                text = nextLesson?.let { "📍 ${it.room} · $nextFloor · ${it.time} - ${it.end}" } ?: "Consulta tu horario",
                                 color = Color(0xFFF4C9D2),
                                 fontSize = 11.sp,
                                 modifier = Modifier.padding(top = 4.dp)
@@ -178,7 +210,8 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Button(
-                        onClick = onNavigateToMap,
+                        onClick = { onNavigateToMap(nextLesson?.poiId) },
+                        enabled = nextLesson?.poiId != null,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(44.dp),
@@ -189,7 +222,7 @@ fun HomeScreen(
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
-                            text = "Guiarme al aula B-12  ➔",
+                            text = nextLesson?.let { "Guiarme al ${it.room.lowercase()}  ➔" } ?: "Sin clase a la que guiarte",
                             fontWeight = FontWeight.Black,
                             fontSize = 13.sp
                         )
@@ -214,7 +247,7 @@ fun HomeScreen(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             items(SampleData.places) { place ->
-                PlaceCategoryCard(place = place, onClick = onNavigateToMap)
+                PlaceCategoryCard(place = place, onClick = { onNavigateToMap(null) })
             }
         }
 
@@ -284,19 +317,19 @@ fun HomeScreen(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "PRÓXIMA ENTREGA",
+                        text = if (nextEvent?.type == "Examen") "PRÓXIMO EXAMEN" else "PRÓXIMA ENTREGA",
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
                         color = UgrRed
                     )
                     Text(
-                        text = "Prototipo de Interfaces",
+                        text = nextEvent?.title ?: "Nada pendiente",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = Ink
                     )
                     Text(
-                        text = "Viernes 18 oct. · Hasta las 23:59",
+                        text = nextEventDate ?: "No tienes entregas próximas",
                         fontSize = 10.sp,
                         color = MutedText
                     )

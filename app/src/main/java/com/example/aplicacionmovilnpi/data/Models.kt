@@ -5,28 +5,61 @@ data class ClassLesson(
     val end: String,
     val name: String,
     val room: String,
-    val tone: String
+    val tone: String,
+    val poiId: String? = null // POI del plano para "Cómo llegar"; null si el aula no está en el plano
 )
 
 data class DaySchedule(
     val short: String,
     val day: String,
     val date: String,
+    val month: String,
     val classes: List<ClassLesson>
 )
+
+enum class ActivityKind { CLASE, TUTORIA }
+
+/**
+ * Franja semanal fija de un profesor o de la alumna (una clase o una tutoría).
+ *
+ * @property semester 1 o 2.
+ * @property day Día de la semana: 1 = lunes … 5 = viernes.
+ * @property start Hora de inicio en formato "H:mm" (ej: "8:30").
+ * @property place Texto visible del lugar (ej: "Aula 0.5", "Despacho 25 · planta 3").
+ * @property poiId POI del plano al que guiar, o null si el lugar no está digitalizado.
+ */
+data class WeeklySlot(
+    val semester: Int,
+    val day: Int,
+    val start: String,
+    val end: String,
+    val kind: ActivityKind,
+    val title: String,
+    val place: String,
+    val poiId: String? = null
+) {
+    val startMinutes: Int get() = toMinutes(start)
+    val endMinutes: Int get() = toMinutes(end)
+
+    private fun toMinutes(time: String): Int {
+        val (h, m) = time.split(":").map { it.toInt() }
+        return h * 60 + m
+    }
+}
 
 data class Professor(
     val id: Int,
     val initials: String,
     val name: String,
     val role: String,
+    val department: String,
     val email: String,
-    val faculty: String,
+    val phone: String,
+    val office: String,
+    val officePoiId: String?,
     val subjects: List<String>,
-    val officeHours: String,
-    val status: String,
-    val location: String,
-    val floor: String,
+    val schedule: List<WeeklySlot>,
+    val note: String? = null,
     val tone: String
 )
 

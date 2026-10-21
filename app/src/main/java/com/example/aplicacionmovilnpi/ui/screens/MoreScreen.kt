@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.aplicacionmovilnpi.data.FacultyData
 import com.example.aplicacionmovilnpi.ui.theme.CardBorder
 import com.example.aplicacionmovilnpi.ui.theme.Ink
 import com.example.aplicacionmovilnpi.ui.theme.MutedText
@@ -112,7 +113,7 @@ fun MoreScreen(
 
         MoreOptionCard(
             title = "Mi Perfil",
-            subtitle = "Lucía Martín García · Grado en Informática",
+            subtitle = "${FacultyData.Student.name} · ${FacultyData.Student.course}",
             icon = "👤",
             bgTone = SoftBg,
             onClick = { onNavigateToSubScreen("profile") }
