@@ -27,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,11 +64,11 @@ enum class NavTab(val id: String, val label: String, val icon: String) {
 fun MainScreen(
     onLogout: () -> Unit
 ) {
-    var activeTab by remember { mutableStateOf(NavTab.HOME) }
-    var currentSubScreen by remember { mutableStateOf<String?>(null) }
+    var activeTab by rememberSaveable { mutableStateOf(NavTab.HOME) }
+    var currentSubScreen by rememberSaveable { mutableStateOf<String?>(null) }
     var showMenu by remember { mutableStateOf(false) }
     // POI al que debe guiar el mapa al abrirlo desde otra pantalla (null = mapa sin ruta)
-    var mapDestination by remember { mutableStateOf<String?>(null) }
+    var mapDestination by rememberSaveable { mutableStateOf<String?>(null) }
     val openMap: (String?) -> Unit = { poiId ->
         mapDestination = poiId
         activeTab = NavTab.MAP
@@ -254,6 +255,8 @@ fun UgrBottomBar(
                     Text(
                         text = tab.label,
                         fontSize = 10.sp,
+                        maxLines = 1,
+                        softWrap = false,
                         fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
                     )
                 },
