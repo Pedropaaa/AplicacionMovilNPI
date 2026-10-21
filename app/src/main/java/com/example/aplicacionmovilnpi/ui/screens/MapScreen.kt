@@ -1,6 +1,9 @@
 package com.example.aplicacionmovilnpi.ui.screens
 
 import android.graphics.BitmapFactory
+import android.hardware.Sensor
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -62,6 +65,16 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.aplicacionmovilnpi.data.CampusItem
 import com.example.aplicacionmovilnpi.data.SampleData
+import com.example.aplicacionmovilnpi.location.IndoorTracker
+import com.example.aplicacionmovilnpi.location.LocationPermissions
+import com.example.aplicacionmovilnpi.location.LocationPrefs
+import com.example.aplicacionmovilnpi.location.MapPoint
+import com.example.aplicacionmovilnpi.location.PressureEffect
+import com.example.aplicacionmovilnpi.location.StepEffect
+import com.example.aplicacionmovilnpi.location.hasSensor
+import com.example.aplicacionmovilnpi.location.rememberAppInForeground
+import com.example.aplicacionmovilnpi.location.rememberCompassAzimuth
+import com.example.aplicacionmovilnpi.location.rememberGpsLocation
 import com.example.aplicacionmovilnpi.model.EdgeType
 import com.example.aplicacionmovilnpi.model.Node
 import com.example.aplicacionmovilnpi.model.PointOfInterest
@@ -185,6 +198,21 @@ fun MapScreen(initialDestPoiId: String? = null) {
     var isRouteOpen by rememberSaveable(initialDestPoiId) { mutableStateOf(initialDestPoiId != null) }
     var isAccessibleRoute by rememberSaveable { mutableStateOf(false) }
 
+    // Sensores de localización: GPS fuera del edificio; barómetro, brújula y pasos dentro
+    val context = LocalContext.current
+    val inForeground = rememberAppInForeground()
+    var hasLocationPermission by remember { mutableStateOf(LocationPermissions.hasLocation(context)) }
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        hasLocationPermission = LocationPermissions.hasLocation(context)
+    }
+    val gpsLocation = rememberGpsLocation(active = inForeground && hasLocationPermission)
+    val hasBarometer = remember { hasSensor(context, Sensor.TYPE_PRESSURE) }
+    val tracker = remember { IndoorTracker(LocationPrefs.mapNorth(context)) }
+    var isTracking by rememberSaveable { mutableStateOf(false) }
+    val indoorSensorsActive = inForeground && mapMode == "indoor"
+    PressureEffect(active = indoorSensorsActive) { hPa, timestampMs -> tracker.onPressure(hPa, timestampMs) }
+    val azimuth = rememberCompassAzimuth(active = indoorSensorsActive)
+
     // 1. Obtener la ruta calculada por Dijkstra en RouteManager.calculateRoute
     val calculatedRoute = remember(startPoiId, destPoiId, isAccessibleRoute, isRouteOpen) {
         if (isRouteOpen && startPoiId.isNotEmpty() && destPoiId.isNotEmpty()) {
@@ -198,16 +226,40 @@ fun MapScreen(initialDestPoiId: String? = null) {
     val routeSegments = remember(calculatedRoute) { parseRouteSegments(calculatedRoute) }
     var activeSegmentIndex by rememberSaveable(routeSegments) { mutableIntStateOf(0) }
 
-    // 3. Sincronizar selectedFloor con la planta del tramo activo
+    // 3. Sincronizar selectedFloor con la planta del tramo activo.
+    // Al empezar cada tramo suponemos que la persona está en su primer nodo: ahí se calibran
+    // el barómetro (planta conocida) y la posición de partida de los pasos.
     LaunchedEffect(activeSegmentIndex, routeSegments) {
         if (routeSegments.isNotEmpty() && activeSegmentIndex in routeSegments.indices) {
-            selectedFloor = routeSegments[activeSegmentIndex].floorName
+            val segment = routeSegments[activeSegmentIndex]
+            selectedFloor = segment.floorName
+            tracker.calibrateFloor(segment.floorNumber)
+            tracker.followPath(segment.segmentNodes)
+        } else {
+            tracker.stopFollowing()
+        }
+    }
+    LaunchedEffect(routeSegments) { tracker.resetSteps() }
+
+    // 4. Si el barómetro detecta que ya estamos en la planta siguiente, pasamos solos al siguiente tramo
+    LaunchedEffect(tracker.estimatedFloor) {
+        val floor = tracker.estimatedFloor ?: return@LaunchedEffect
+        val segment = routeSegments.getOrNull(activeSegmentIndex)
+        if (isRouteOpen && segment?.nextFloorNumber == floor) {
+            activeSegmentIndex += 1
+        } else if (!isRouteOpen) {
+            selectedFloor = getFloorName(floor)
         }
     }
 
     val startPoi = remember(startPoiId) { allPois.find { it.id == startPoiId } }
     val destPoi = remember(destPoiId) { allPois.find { it.id == destPoiId } }
     val activeSegment = routeSegments.getOrNull(activeSegmentIndex)
+
+    StepEffect(active = indoorSensorsActive && isTracking && isRouteOpen) { tracker.onStep(azimuth) }
+    // El punto azul solo tiene sentido en la planta del tramo que se está siguiendo
+    val userPosition = tracker.position.takeIf { isTracking && isRouteOpen && activeSegment?.floorName == selectedFloor }
+    val userHeadingMapDeg = azimuth?.let { it - tracker.mapNorthDeg }
 
     // Al abrir una ruta, bajamos hasta el selector de plantas para ver a la vez el plano y los pasos
     val scrollState = rememberScrollState()
@@ -306,7 +358,6 @@ fun MapScreen(initialDestPoiId: String? = null) {
             }
         } else {
             // Indoor Building Plan View
-            val context = LocalContext.current
             val floorNumber = when (selectedFloor) {
                 "P4" -> 4
                 "P3" -> 3
@@ -413,8 +464,19 @@ fun MapScreen(initialDestPoiId: String? = null) {
                         activeSegment = activeSegment,
                         fullRoute = calculatedRoute,
                         isFirstSegment = activeSegmentIndex == 0,
-                        isLastSegment = activeSegmentIndex == routeSegments.size - 1
+                        isLastSegment = activeSegmentIndex == routeSegments.size - 1,
+                        userPosition = userPosition,
+                        userHeadingMapDeg = userHeadingMapDeg
                     )
+
+                    if (userPosition != null && activeSegment != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        NavigationHintStrip(
+                            tracker = tracker,
+                            azimuthDeg = azimuth,
+                            arrivalText = arrivalText(activeSegment, destPoi?.nameEs ?: "tu destino")
+                        )
+                    }
                 }
             }
 
@@ -430,6 +492,30 @@ fun MapScreen(initialDestPoiId: String? = null) {
                     onClose = { isRouteOpen = false }
                 )
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            LocationStatusCard(
+                hasLocationPermission = hasLocationPermission,
+                onRequestPermission = { permissionLauncher.launch(LocationPermissions.all) },
+                gpsLocation = gpsLocation,
+                hasBarometer = hasBarometer,
+                tracker = tracker,
+                azimuthDeg = azimuth,
+                selectedFloorName = selectedFloor,
+                onCalibrateFloor = { tracker.calibrateFloor(floorNumber) },
+                isRouteOpen = isRouteOpen && routeSegments.isNotEmpty(),
+                isTracking = isTracking,
+                onTrackingChange = { isTracking = it },
+                onAlignCompass = {
+                    azimuth?.let { az ->
+                        tracker.alignCompass(az)?.let { LocationPrefs.setMapNorth(context, it) }
+                    }
+                },
+                onUseEntranceAsStart = if (startPoiId != "poi_entrada") {
+                    { startPoiId = "poi_entrada" }
+                } else null
+            )
 
             Spacer(modifier = Modifier.height(20.dp))
 
@@ -494,7 +580,9 @@ fun FloorPlanCanvasOverlay(
     activeSegment: RouteFloorSegment?,
     fullRoute: List<Node>,
     isFirstSegment: Boolean,
-    isLastSegment: Boolean
+    isLastSegment: Boolean,
+    userPosition: MapPoint? = null,
+    userHeadingMapDeg: Float? = null
 ) {
     var scale by remember { mutableStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
@@ -613,6 +701,8 @@ fun FloorPlanCanvasOverlay(
                             }
                         }
                     }
+
+                    userPosition?.let { drawUserMarker(it, userHeadingMapDeg, scaleX, scaleY) }
                 }
             }
 
@@ -645,6 +735,8 @@ fun FloorPlanCanvasOverlay(
             fullRoute = fullRoute,
             isFirstSegment = isFirstSegment,
             isLastSegment = isLastSegment,
+            userPosition = userPosition,
+            userHeadingMapDeg = userHeadingMapDeg,
             onDismiss = { isFullScreenOpen = false }
         )
     }
@@ -658,6 +750,8 @@ fun ZoomableMapDialog(
     fullRoute: List<Node>,
     isFirstSegment: Boolean,
     isLastSegment: Boolean,
+    userPosition: MapPoint? = null,
+    userHeadingMapDeg: Float? = null,
     onDismiss: () -> Unit
 ) {
     var scale by remember { mutableStateOf(1.8f) }
@@ -815,6 +909,8 @@ fun ZoomableMapDialog(
                                 }
                             }
                         }
+
+                        userPosition?.let { drawUserMarker(it, userHeadingMapDeg, scaleX, scaleY) }
                     }
                 }
 
@@ -1190,6 +1286,7 @@ fun PoiRouteSelectorCard(
 
 @Composable
 fun CampusCard(campus: CampusItem) {
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = Color.White,
