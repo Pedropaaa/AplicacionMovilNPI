@@ -2,7 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- GPS: distancia a la ETSIIT -->
+    <!-- Mapa de OpenStreetMap (teselas) y cálculo de rutas a pie -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- GPS: tu posición en el mapa y distancia a la ETSIIT -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <!-- Sensor de pasos del sistema (Android 10+); sin él se usa el acelerómetro -->
