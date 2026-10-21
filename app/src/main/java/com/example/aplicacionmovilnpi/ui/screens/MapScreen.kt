@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
@@ -37,6 +38,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,8 +51,11 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -171,14 +176,14 @@ fun MapScreen(initialDestPoiId: String? = null) {
     val routeManager = remember { RouteManager() }
     val allPois = remember { EtsiitData.pois }
 
-    var mapMode by remember { mutableStateOf("indoor") } // "city" or "indoor"
-    var selectedFloor by remember { mutableStateOf("P1") }
+    var mapMode by rememberSaveable { mutableStateOf("indoor") } // "city" or "indoor"
+    var selectedFloor by rememberSaveable { mutableStateOf("P1") }
 
     // Routing State
-    var startPoiId by remember { mutableStateOf("poi_entrada") }
-    var destPoiId by remember(initialDestPoiId) { mutableStateOf(initialDestPoiId ?: "poi_aula12") }
-    var isRouteOpen by remember(initialDestPoiId) { mutableStateOf(initialDestPoiId != null) }
-    var isAccessibleRoute by remember { mutableStateOf(false) }
+    var startPoiId by rememberSaveable { mutableStateOf("poi_entrada") }
+    var destPoiId by rememberSaveable(initialDestPoiId) { mutableStateOf(initialDestPoiId ?: "poi_aula12") }
+    var isRouteOpen by rememberSaveable(initialDestPoiId) { mutableStateOf(initialDestPoiId != null) }
+    var isAccessibleRoute by rememberSaveable { mutableStateOf(false) }
 
     // 1. Obtener la ruta calculada por Dijkstra en RouteManager.calculateRoute
     val calculatedRoute = remember(startPoiId, destPoiId, isAccessibleRoute, isRouteOpen) {
@@ -191,7 +196,7 @@ fun MapScreen(initialDestPoiId: String? = null) {
 
     // 2. Parsear estrictamente la ruta calculada en tramos por planta según los nodos intermedios de EtsiitData
     val routeSegments = remember(calculatedRoute) { parseRouteSegments(calculatedRoute) }
-    var activeSegmentIndex by remember(routeSegments) { mutableIntStateOf(0) }
+    var activeSegmentIndex by rememberSaveable(routeSegments) { mutableIntStateOf(0) }
 
     // 3. Sincronizar selectedFloor con la planta del tramo activo
     LaunchedEffect(activeSegmentIndex, routeSegments) {
@@ -204,11 +209,20 @@ fun MapScreen(initialDestPoiId: String? = null) {
     val destPoi = remember(destPoiId) { allPois.find { it.id == destPoiId } }
     val activeSegment = routeSegments.getOrNull(activeSegmentIndex)
 
+    // Al abrir una ruta, bajamos hasta el selector de plantas para ver a la vez el plano y los pasos
+    val scrollState = rememberScrollState()
+    var floorSectionTop by remember { mutableIntStateOf(0) }
+    LaunchedEffect(isRouteOpen, routeSegments, floorSectionTop) {
+        if (isRouteOpen && routeSegments.isNotEmpty() && floorSectionTop > 0) {
+            scrollState.animateScrollTo(floorSectionTop)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 20.dp)
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
     ) {
         Spacer(modifier = Modifier.height(20.dp))
 
@@ -315,7 +329,8 @@ fun MapScreen(initialDestPoiId: String? = null) {
                 text = "Seleccionar Planta",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
-                color = Ink
+                color = Ink,
+                modifier = Modifier.onGloballyPositioned { floorSectionTop = it.positionInParent().y.toInt() }
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -403,6 +418,19 @@ fun MapScreen(initialDestPoiId: String? = null) {
                 }
             }
 
+            // Pasos de la ruta justo debajo del plano, para seguirlos sin perder el mapa de vista
+            if (isRouteOpen && routeSegments.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                RouteStepNavigationCard(
+                    segments = routeSegments,
+                    currentIndex = activeSegmentIndex,
+                    startPoiName = startPoi?.nameEs ?: "Origen",
+                    destPoiName = destPoi?.nameEs ?: "Destino",
+                    onSegmentChange = { activeSegmentIndex = it },
+                    onClose = { isRouteOpen = false }
+                )
+            }
+
             Spacer(modifier = Modifier.height(20.dp))
 
             // Selector de Origen y Destino para la Ruta
@@ -452,19 +480,7 @@ fun MapScreen(initialDestPoiId: String? = null) {
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
 
-            // Step-by-Step Multi-Floor Guidance strictly following RouteManager calculation
-            if (isRouteOpen && routeSegments.isNotEmpty()) {
-                RouteStepNavigationCard(
-                    segments = routeSegments,
-                    currentIndex = activeSegmentIndex,
-                    startPoiName = startPoi?.nameEs ?: "Origen",
-                    destPoiName = destPoi?.nameEs ?: "Destino",
-                    onSegmentChange = { activeSegmentIndex = it },
-                    onClose = { isRouteOpen = false }
-                )
-            }
         }
 
         Spacer(modifier = Modifier.height(30.dp))
@@ -842,14 +858,14 @@ fun RouteStepNavigationCard(
         shadowElevation = 8.dp,
         border = androidx.compose.foundation.BorderStroke(1.5.dp, UgrRed)
     ) {
-        Column(modifier = Modifier.padding(18.dp)) {
+        Column(modifier = Modifier.padding(14.dp)) {
             // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "PASO ${currentIndex + 1} DE ${segments.size} · PLANTA ${currentSegment.floorName}",
                         fontSize = 10.sp,
@@ -858,7 +874,7 @@ fun RouteStepNavigationCard(
                     )
                     Text(
                         text = "$startPoiName ➔ $destPoiName",
-                        fontSize = 15.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = Ink
                     )
@@ -868,11 +884,13 @@ fun RouteStepNavigationCard(
                     text = "✖",
                     fontSize = 16.sp,
                     color = MutedText,
-                    modifier = Modifier.clickable { onClose() }
+                    modifier = Modifier
+                        .clickable { onClose() }
+                        .padding(start = 8.dp)
                 )
             }
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
 
             // Instructions for transition node or destination node
             if (currentSegment.transitionNode != null) {
@@ -900,14 +918,14 @@ fun RouteStepNavigationCard(
                             color = Ink
                         )
                         Text(
-                            text = "Nodo intermedio marcado en naranja 🟠 (${currentSegment.transitionNode.id})",
+                            text = "Marcado en naranja 🟠 en el plano",
                             fontSize = 11.sp,
                             color = MutedText
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 // Action button when arrived at stairs/elevator
                 Button(
@@ -916,16 +934,18 @@ fun RouteStepNavigationCard(
                             onSegmentChange(currentIndex + 1)
                         }
                     },
+                    // Altura mínima, no fija: si el texto ocupa dos líneas el botón crece
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(44.dp),
+                        .heightIn(min = 44.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = UgrRed),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = "He llegado a $actionName ➔ Dibujar en Planta $nextFloorName",
+                        text = "He llegado a $actionName ➔ Ir a Planta $nextFloorName",
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
                     )
                 }
             } else {
@@ -958,27 +978,28 @@ fun RouteStepNavigationCard(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Button(
                     onClick = onClose,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(44.dp),
+                        .heightIn(min = 44.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = GreenStatus),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
                         text = "🏁 ¡Llegada al Destino! Finalizar guía",
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
                     )
                 }
             }
 
             // Manual segment switcher controls
             if (segments.size > 1) {
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
