@@ -163,8 +163,11 @@ fun parseRouteSegments(route: List<Node>): List<RouteFloorSegment> {
     return segments
 }
 
+/**
+ * @param initialDestPoiId Si llega un POI (desde Horario, Profesorado o Inicio), se abre directamente la ruta hasta él.
+ */
 @Composable
-fun MapScreen() {
+fun MapScreen(initialDestPoiId: String? = null) {
     val routeManager = remember { RouteManager() }
     val allPois = remember { EtsiitData.pois }
 
@@ -173,8 +176,8 @@ fun MapScreen() {
 
     // Routing State
     var startPoiId by remember { mutableStateOf("poi_entrada") }
-    var destPoiId by remember { mutableStateOf("poi_aula12") }
-    var isRouteOpen by remember { mutableStateOf(false) }
+    var destPoiId by remember(initialDestPoiId) { mutableStateOf(initialDestPoiId ?: "poi_aula12") }
+    var isRouteOpen by remember(initialDestPoiId) { mutableStateOf(initialDestPoiId != null) }
     var isAccessibleRoute by remember { mutableStateOf(false) }
 
     // 1. Obtener la ruta calculada por Dijkstra en RouteManager.calculateRoute

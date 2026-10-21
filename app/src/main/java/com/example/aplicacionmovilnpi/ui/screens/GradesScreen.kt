@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.aplicacionmovilnpi.data.FacultyData
 import com.example.aplicacionmovilnpi.data.SampleData
 import com.example.aplicacionmovilnpi.ui.theme.CardBorder
 import com.example.aplicacionmovilnpi.ui.theme.Ink
@@ -40,8 +41,12 @@ import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 
 @Composable
 fun GradesScreen(onBack: () -> Unit) {
-    var selectedCourse by remember { mutableStateOf("1º") }
+    var selectedCourse by remember { mutableStateOf("4º") }
     val gradesList = SampleData.gradesMap[selectedCourse] ?: emptyList()
+    val average = remember {
+        val passed = SampleData.gradesMap.values.flatten().mapNotNull { it.grade.replace(",", ".").toDoubleOrNull() }
+        "%.1f".format(passed.average()).replace(".", ",")
+    }
 
     Column(
         modifier = Modifier
@@ -71,7 +76,7 @@ fun GradesScreen(onBack: () -> Unit) {
             color = Ink
         )
         Text(
-            text = "Grado en Ingeniería Informática",
+            text = "${FacultyData.Student.degree} · ${FacultyData.Student.course}",
             fontSize = 12.sp,
             color = MutedText
         )
@@ -91,7 +96,7 @@ fun GradesScreen(onBack: () -> Unit) {
             ) {
                 Column {
                     Text(text = "NOTA MEDIA ACUMULADA", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = ToneRoseText)
-                    Text(text = "7,8 / 10", fontSize = 24.sp, fontWeight = FontWeight.Black, color = UgrRed)
+                    Text(text = "$average / 10", fontSize = 24.sp, fontWeight = FontWeight.Black, color = UgrRed)
                 }
 
                 Surface(
@@ -116,7 +121,7 @@ fun GradesScreen(onBack: () -> Unit) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            listOf("1º", "2º", "3º").forEach { course ->
+            listOf("1º", "2º", "3º", "4º").forEach { course ->
                 val selected = course == selectedCourse
                 Surface(
                     modifier = Modifier
