@@ -41,6 +41,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -87,6 +88,7 @@ import com.example.aplicacionmovilnpi.ui.theme.MutedText
 import com.example.aplicacionmovilnpi.ui.theme.SoftBg
 import com.example.aplicacionmovilnpi.ui.theme.ToneBlueBg
 import com.example.aplicacionmovilnpi.ui.theme.UgrRed
+import kotlinx.coroutines.launch
 
 fun getFloorName(floor: Int): String = when (floor) {
     4 -> "P4"
@@ -263,6 +265,7 @@ fun MapScreen(initialDestPoiId: String? = null) {
 
     // Al abrir una ruta, bajamos hasta el selector de plantas para ver a la vez el plano y los pasos
     val scrollState = rememberScrollState()
+    val scope = rememberCoroutineScope()
     var floorSectionTop by remember { mutableIntStateOf(0) }
     LaunchedEffect(isRouteOpen, routeSegments, floorSectionTop) {
         if (isRouteOpen && routeSegments.isNotEmpty() && floorSectionTop > 0) {
@@ -342,6 +345,32 @@ fun MapScreen(initialDestPoiId: String? = null) {
         Spacer(modifier = Modifier.height(20.dp))
 
         if (mapMode == "city") {
+            // Mapa de Granada (OpenStreetMap) con ruta a pie
+            Text(
+                text = "Cómo llegar a pie",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Ink
+            )
+            Text(
+                text = "Toca el mapa o elige un origen, y el destino",
+                fontSize = 11.sp,
+                color = MutedText,
+                modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)
+            )
+
+            CityRouteSection(
+                gpsLocation = gpsLocation,
+                hasLocationPermission = hasLocationPermission,
+                onRequestPermission = { permissionLauncher.launch(LocationPermissions.all) },
+                onContinueIndoors = {
+                    mapMode = "indoor"
+                    scope.launch { scrollState.scrollTo(0) }
+                }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
             // City Map View
             Text(
                 text = "Campus Universitarios UGR",
