@@ -7,7 +7,7 @@ import com.example.aplicacionmovilnpi.model.PointOfInterest
 
 object EtsiitData {
 
-    // 1. Nodos físicos sobre el plano
+    // 1. Nodos físicos sobre el plano con coordenadas calibradas (0..1000f)
     val nodes: Map<String, Node> = listOf(
         // --- PLANTA -1 (SÓTANO Y PATIO INFERIOR EXTERIOR) ---
         Node("n_escaleras_entrada_p-1", x = 257f, y = 701f, floor = 0),
@@ -27,7 +27,7 @@ object EtsiitData {
 
         // --- PLANTA 0 ---
         Node("n_entrada", x = 145f, y = 775f, floor = 0),
-        Node("n_patio", x = 495f, y = 745f, floor = 0),
+        Node("n_patio", x = 520f, y = 650f, floor = 0),
         Node("n_hall", x = 380f, y = 470f, floor = 0),
 
         // Edificio Principal P0
@@ -130,70 +130,70 @@ object EtsiitData {
 
         Node("n_delegacion_estudiantes", x = 725f, y = 510f, floor = 4),
         Node("n_escaleras_p4", x = 780f, y = 490f, floor = 4),
-        Node("n_ascensor_p4", x = 700f, y = 470f, floor = 4),
+        Node("n_ascensor_p4", x = 700f, y = 470f, floor = 4)
+    ).associateBy { it.id }
 
-        ).associateBy { it.id }
-
-    // 2. Conexiones transitables entre nodos
+    // 2. Conexiones transitables entre nodos con pesos calibrados por distancia euclídea
     val edges: List<Edge> = listOf(
-        // --- CONEXIONES PLANTA -1 ---
-        Edge(from = "n_entrada", to = "n_escaleras_entrada_p-1", weight = 2f),
-        Edge(from = "n_escaleras_entrada_p-1", to = "n_pasillo_abierto_p-1", weight = 3f, type = EdgeType.STAIRS),
-        Edge(from = "n_pasillo_abierto_p-1", to = "n_entrada_edificio_principal_p-1", weight = 5f),
+        // --- CONEXIONES PLANTA -1 (SÓTANO) ---
+        Edge(from = "n_entrada", to = "n_escaleras_entrada_p-1", weight = 13f),
+        Edge(from = "n_escaleras_entrada_p-1", to = "n_pasillo_abierto_p-1", weight = 15f, type = EdgeType.STAIRS),
+        Edge(from = "n_pasillo_abierto_p-1", to = "n_entrada_edificio_principal_p-1", weight = 6f),
 
         // Escaleras internas conectadas exclusivamente a la entrada desde el patio en P0
-        Edge(from = "n_entrada_edificio_principal_p0", to = "n_escaleras_internas_p-1_a_p0", weight = 4f, type = EdgeType.STAIRS),
-        Edge(from = "n_escaleras_internas_p-1_a_p0", to = "n_distribuidor_p-1", weight = 3f, type = EdgeType.STAIRS),
-        Edge(from = "n_escaleras_internas_p-1_a_p0", to = "n_entrada_edificio_principal_p-1", weight = 3f, type = EdgeType.STAIRS),
+        Edge(from = "n_entrada_edificio_principal_p0", to = "n_escaleras_internas_p-1_a_p0", weight = 15f, type = EdgeType.STAIRS),
+        Edge(from = "n_escaleras_internas_p-1_a_p0", to = "n_distribuidor_p-1", weight = 10f, type = EdgeType.STAIRS),
+        Edge(from = "n_escaleras_internas_p-1_a_p0", to = "n_entrada_edificio_principal_p-1", weight = 8f, type = EdgeType.STAIRS),
 
-        Edge(from = "n_distribuidor_p-1", to = "n_ascensor_principal_p-1", weight = 2f, type = EdgeType.WALKWAY),
+        Edge(from = "n_distribuidor_p-1", to = "n_ascensor_principal_p-1", weight = 5f, type = EdgeType.WALKWAY),
 
         Edge(from = "n_entrada_edificio_principal_p-1", to = "n_distribuidor_p-1", weight = 4f),
-        Edge(from = "n_distribuidor_p-1", to = "n_cafeteria", weight = 4f),
-        Edge(from = "n_distribuidor_p-1", to = "n_salon_actos", weight = 5f),
-        Edge(from = "n_distribuidor_p-1", to = "n_comedor", weight = 4f),
+        Edge(from = "n_distribuidor_p-1", to = "n_cafeteria", weight = 8f),
+        Edge(from = "n_distribuidor_p-1", to = "n_salon_actos", weight = 11f),
+        Edge(from = "n_distribuidor_p-1", to = "n_comedor", weight = 12f),
 
-        Edge(from = "n_cafeteria", to = "n_patio_inferior_p-1", weight = 5f),
+        Edge(from = "n_cafeteria", to = "n_patio_inferior_p-1", weight = 25f),
 
-        Edge(from = "n_corredor_central", to = "n_escaleras_patio_central_p0", weight = 4f),
-        Edge(from = "n_escaleras_patio_central_p0", to = "n_patio_inferior_p-1", weight = 8f, type = EdgeType.STAIRS),
+        Edge(from = "n_corredor_central", to = "n_escaleras_patio_central_p0", weight = 6f),
+        Edge(from = "n_escaleras_patio_central_p0", to = "n_patio_inferior_p-1", weight = 25f, type = EdgeType.STAIRS),
 
-        // --- CONEXIONES PLANTA 0 ---
-        Edge(from = "n_entrada", to = "n_patio", weight = 8f),
-        Edge(from = "n_entrada", to = "n_distribuidor_entrada_principal_p0", weight = 4f),
+        // --- CONEXIONES PLANTA 0 (PLANTA BAJA) ---
+        Edge(from = "n_entrada", to = "n_patio", weight = 38f),
+        Edge(from = "n_entrada", to = "n_distribuidor_entrada_principal_p0", weight = 25f),
 
         // Patio conecta con la entrada lateral del Edificio Principal
-        Edge(from = "n_patio", to = "n_entrada_edificio_principal_p0", weight = 4f),
-        Edge(from = "n_entrada_edificio_principal_p0", to = "n_hall", weight = 5f),
+        Edge(from = "n_patio", to = "n_entrada_edificio_principal_p0", weight = 12f),
+        Edge(from = "n_entrada_edificio_principal_p0", to = "n_hall", weight = 14f),
 
         // Hall comunica la zona central con la entrada general
-        Edge(from = "n_hall", to = "n_distribuidor_entrada_principal_p0", weight = 5f),
+        Edge(from = "n_hall", to = "n_distribuidor_entrada_principal_p0", weight = 13f),
 
         // Distribuidor de la Entrada General conecta con el núcleo de ascensores/escaleras principales y baños
-        Edge(from = "n_distribuidor_entrada_principal_p0", to = "n_ascensor_principal_p0", weight = 2f, type = EdgeType.WALKWAY),
-        Edge(from = "n_distribuidor_entrada_principal_p0", to = "n_escaleras_principal_p0", weight = 2f, type = EdgeType.STAIRS),
-        Edge(from = "n_distribuidor_entrada_principal_p0", to = "n_banos_edificio_principal_p0", weight = 2f, type = EdgeType.WALKWAY),
+        Edge(from = "n_distribuidor_entrada_principal_p0", to = "n_ascensor_principal_p0", weight = 5f, type = EdgeType.WALKWAY),
+        Edge(from = "n_distribuidor_entrada_principal_p0", to = "n_escaleras_principal_p0", weight = 6f, type = EdgeType.STAIRS),
+        Edge(from = "n_distribuidor_entrada_principal_p0", to = "n_banos_edificio_principal_p0", weight = 7f, type = EdgeType.WALKWAY),
 
-        Edge(from = "n_patio", to = "n_corredor_central", weight = 10f),
-        Edge(from = "n_corredor_central", to = "n_corredor_lateral", weight = 12f),
-        Edge(from = "n_corredor_lateral", to = "n_escaleras_lateral_p0", weight = 4f),
-        Edge(from = "n_corredor_central", to = "n_entrada_central_aulas", weight = 8f),
-        Edge(from = "n_corredor_lateral", to = "n_entrada_lateral_aulas", weight = 8f),
-        Edge(from = "n_entrada_lateral_aulas", to = "n_aula02", weight = 4f),
-        Edge(from = "n_entrada_central_aulas", to = "n_aula06", weight = 4f),
+        Edge(from = "n_patio", to = "n_corredor_central", weight = 15f),
+        Edge(from = "n_corredor_central", to = "n_corredor_lateral", weight = 23f),
+        Edge(from = "n_corredor_lateral", to = "n_escaleras_lateral_p0", weight = 3f),
+        Edge(from = "n_corredor_central", to = "n_entrada_central_aulas", weight = 4f),
+        Edge(from = "n_corredor_lateral", to = "n_entrada_lateral_aulas", weight = 5f),
+        Edge(from = "n_entrada_lateral_aulas", to = "n_aula02", weight = 7f),
+        Edge(from = "n_entrada_central_aulas", to = "n_aula06", weight = 13f),
 
-        Edge(from = "n_entrada_central_aulas", to = "n_escaleras_p0", weight = 6f, type = EdgeType.STAIRS),
-        Edge(from = "n_entrada_central_aulas", to = "n_ascensor_p0", weight = 7f, type = EdgeType.WALKWAY),
-        Edge(from = "n_entrada_central_aulas", to = "n_banos_p0", weight = 7f, type = EdgeType.WALKWAY),
-        Edge(from = "n_ascensor_p0", to = "n_banos_p0", weight = 2f, type = EdgeType.WALKWAY),
+        Edge(from = "n_entrada_central_aulas", to = "n_escaleras_p0", weight = 15f, type = EdgeType.STAIRS),
+        Edge(from = "n_entrada_central_aulas", to = "n_ascensor_p0", weight = 5f, type = EdgeType.WALKWAY),
+        Edge(from = "n_entrada_central_aulas", to = "n_banos_p0", weight = 10f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_p0", to = "n_banos_p0", weight = 6f, type = EdgeType.WALKWAY),
 
-        Edge(from = "n_aula01", to = "n_aula02", weight = 6f),
+        // Pasillo Aulario P0
+        Edge(from = "n_aula01", to = "n_aula02", weight = 7f),
         Edge(from = "n_aula02", to = "n_aula03", weight = 6f),
-        Edge(from = "n_aula03", to = "n_aula04", weight = 6f),
-        Edge(from = "n_aula04", to = "n_aula05", weight = 6f),
-        Edge(from = "n_aula05", to = "n_aula06", weight = 6f),
-        Edge(from = "n_aula06", to = "n_aula07", weight = 6f),
-        Edge(from = "n_aula07", to = "n_aula08", weight = 6f),
+        Edge(from = "n_aula03", to = "n_aula04", weight = 8f),
+        Edge(from = "n_aula04", to = "n_aula05", weight = 10f),
+        Edge(from = "n_aula05", to = "n_aula06", weight = 8f),
+        Edge(from = "n_aula06", to = "n_aula07", weight = 10f),
+        Edge(from = "n_aula07", to = "n_aula08", weight = 11f),
 
         // --- CONEXIONES VERTICALES (ESCALERAS PRINCIPALES P0 a P4) ---
         Edge(from = "n_escaleras_principal_p0", to = "n_escaleras_principal_p1", weight = 15f, type = EdgeType.STAIRS),
@@ -202,82 +202,84 @@ object EtsiitData {
         Edge(from = "n_escaleras_principal_p3", to = "n_escaleras_principal_p4", weight = 15f, type = EdgeType.STAIRS),
 
         // --- CONEXIONES VERTICALES (ASCENSOR PRINCIPAL P-1 a P4) ---
-        Edge(from = "n_ascensor_principal_p-1", to = "n_ascensor_principal_p0", weight = 15f, type = EdgeType.WALKWAY),
-        Edge(from = "n_ascensor_principal_p0", to = "n_ascensor_principal_p1", weight = 15f, type = EdgeType.WALKWAY),
-        Edge(from = "n_ascensor_principal_p1", to = "n_ascensor_principal_p2", weight = 15f, type = EdgeType.WALKWAY),
-        Edge(from = "n_ascensor_principal_p2", to = "n_ascensor_principal_p3", weight = 15f, type = EdgeType.WALKWAY),
-        Edge(from = "n_ascensor_principal_p3", to = "n_ascensor_principal_p4", weight = 15f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_principal_p-1", to = "n_ascensor_principal_p0", weight = 50f, type = EdgeType.ELEVATOR),
+        Edge(from = "n_ascensor_principal_p0", to = "n_ascensor_principal_p1", weight = 50f, type = EdgeType.ELEVATOR),
+        Edge(from = "n_ascensor_principal_p1", to = "n_ascensor_principal_p2", weight = 50f, type = EdgeType.ELEVATOR),
+        Edge(from = "n_ascensor_principal_p2", to = "n_ascensor_principal_p3", weight = 50f, type = EdgeType.ELEVATOR),
+        Edge(from = "n_ascensor_principal_p3", to = "n_ascensor_principal_p4", weight = 50f, type = EdgeType.ELEVATOR),
 
         // --- CONEXIONES PLANTA 1 ---
-        Edge(from = "n_escaleras_principal_p1", to = "n_biblioteca", weight = 3f, type = EdgeType.WALKWAY),
-        Edge(from = "n_ascensor_principal_p1", to = "n_biblioteca", weight = 3f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_principal_p1", to = "n_biblioteca", weight = 8f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_principal_p1", to = "n_biblioteca", weight = 6f, type = EdgeType.WALKWAY),
 
-        Edge(from = "n_entrada_lateral_aulas_p1", to = "n_aula11", weight = 4f),
-        Edge(from = "n_ascensor_p1", to = "n_aula15", weight = 5f, type = EdgeType.WALKWAY),
-        Edge(from = "n_escaleras_p1", to = "n_aula15", weight = 5f, type = EdgeType.STAIRS),
-        Edge(from = "n_banos_p1", to = "n_aula15", weight = 5f, type = EdgeType.WALKWAY),
-        Edge(from = "n_ascensor_p1", to = "n_banos_p1", weight = 2f, type = EdgeType.WALKWAY),
+        Edge(from = "n_entrada_lateral_aulas_p1", to = "n_aula11", weight = 5f),
+        Edge(from = "n_ascensor_p1", to = "n_aula15", weight = 8f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_p1", to = "n_aula15", weight = 12f, type = EdgeType.STAIRS),
+        Edge(from = "n_banos_p1", to = "n_aula15", weight = 12f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_p1", to = "n_banos_p1", weight = 7f, type = EdgeType.WALKWAY),
 
-        Edge(from = "n_aula11", to = "n_aula12", weight = 6f),
-        Edge(from = "n_aula12", to = "n_aula13", weight = 6f),
-        Edge(from = "n_aula13", to = "n_aula14", weight = 6f),
-        Edge(from = "n_aula14", to = "n_aula15", weight = 6f),
-        Edge(from = "n_aula15", to = "n_aula16", weight = 6f),
+        // Pasillo Aulario P1
+        Edge(from = "n_aula11", to = "n_aula12", weight = 5f),
+        Edge(from = "n_aula12", to = "n_aula13", weight = 9f),
+        Edge(from = "n_aula13", to = "n_aula14", weight = 8f),
+        Edge(from = "n_aula14", to = "n_aula15", weight = 8f),
+        Edge(from = "n_aula15", to = "n_aula16", weight = 12f),
 
         // --- CONEXIONES PLANTA 2 ---
-        Edge(from = "n_escaleras_principal_p2", to = "n_despachos_p2", weight = 3f, type = EdgeType.WALKWAY),
-        Edge(from = "n_ascensor_principal_p2", to = "n_despachos_p2", weight = 3f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_principal_p2", to = "n_despachos_p2", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_principal_p2", to = "n_despachos_p2", weight = 4f, type = EdgeType.WALKWAY),
 
-        Edge(from = "n_entrada_lateral_aulas_p2", to = "n_aula21", weight = 4f),
-        Edge(from = "n_ascensor_p2", to = "n_aula27", weight = 5f, type = EdgeType.WALKWAY),
-        Edge(from = "n_escaleras_p2", to = "n_aula27", weight = 5f, type = EdgeType.STAIRS),
-        Edge(from = "n_banos_p2", to = "n_aula27", weight = 5f, type = EdgeType.WALKWAY),
-        Edge(from = "n_ascensor_p2", to = "n_banos_p2", weight = 2f, type = EdgeType.WALKWAY),
+        Edge(from = "n_entrada_lateral_aulas_p2", to = "n_aula21", weight = 6f),
+        Edge(from = "n_ascensor_p2", to = "n_aula27", weight = 9f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_p2", to = "n_aula27", weight = 14f, type = EdgeType.STAIRS),
+        Edge(from = "n_banos_p2", to = "n_aula27", weight = 14f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_p2", to = "n_banos_p2", weight = 5f, type = EdgeType.WALKWAY),
 
-        Edge(from = "n_aula21", to = "n_aula22", weight = 5f),
+        // Pasillo Aulario P2
+        Edge(from = "n_aula21", to = "n_aula22", weight = 4f),
         Edge(from = "n_aula22", to = "n_aula23", weight = 5f),
-        Edge(from = "n_aula23", to = "n_aula24", weight = 5f),
-        Edge(from = "n_aula24", to = "n_aula25", weight = 5f),
+        Edge(from = "n_aula23", to = "n_aula24", weight = 4f),
+        Edge(from = "n_aula24", to = "n_aula25", weight = 6f),
         Edge(from = "n_aula25", to = "n_aula26", weight = 5f),
-        Edge(from = "n_aula26", to = "n_aula27", weight = 5f),
-        Edge(from = "n_aula27", to = "n_aula28", weight = 5f),
-        Edge(from = "n_aula28", to = "n_aula29", weight = 5f),
-        Edge(from = "n_aula29", to = "n_aula210", weight = 5f),
+        Edge(from = "n_aula26", to = "n_aula27", weight = 6f),
+        Edge(from = "n_aula27", to = "n_aula28", weight = 7f),
+        Edge(from = "n_aula28", to = "n_aula29", weight = 6f),
+        Edge(from = "n_aula29", to = "n_aula210", weight = 8f),
 
         // --- CONEXIONES PLANTA 3 ---
-        Edge(from = "n_escaleras_principal_p3", to = "n_despachos_p3", weight = 3f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_principal_p3", to = "n_despachos_p3", weight = 6f, type = EdgeType.WALKWAY),
         Edge(from = "n_ascensor_principal_p3", to = "n_despachos_p3", weight = 3f, type = EdgeType.WALKWAY),
 
-        Edge(from = "n_entrada_lateral_aulas_p3", to = "n_aula31", weight = 4f),
-        Edge(from = "n_ascensor_p3", to = "n_aula38", weight = 5f, type = EdgeType.WALKWAY),
-        Edge(from = "n_escaleras_p3", to = "n_aula38", weight = 5f, type = EdgeType.STAIRS),
-        Edge(from = "n_banos_p3", to = "n_aula38", weight = 5f, type = EdgeType.WALKWAY),
-        Edge(from = "n_ascensor_p3", to = "n_banos_p3", weight = 2f, type = EdgeType.WALKWAY),
+        Edge(from = "n_entrada_lateral_aulas_p3", to = "n_aula31", weight = 8f),
+        Edge(from = "n_ascensor_p3", to = "n_aula38", weight = 7f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_p3", to = "n_aula38", weight = 10f, type = EdgeType.STAIRS),
+        Edge(from = "n_banos_p3", to = "n_aula38", weight = 11f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_p3", to = "n_banos_p3", weight = 6f, type = EdgeType.WALKWAY),
 
+        // Pasillo Aulario P3
         Edge(from = "n_aula31", to = "n_aula32", weight = 5f),
-        Edge(from = "n_aula32", to = "n_aula33", weight = 5f),
-        Edge(from = "n_aula33", to = "n_aula34", weight = 5f),
-        Edge(from = "n_aula34", to = "n_aula35", weight = 5f),
+        Edge(from = "n_aula32", to = "n_aula33", weight = 4f),
+        Edge(from = "n_aula33", to = "n_aula34", weight = 6f),
+        Edge(from = "n_aula34", to = "n_aula35", weight = 6f),
         Edge(from = "n_aula35", to = "n_aula36", weight = 5f),
-        Edge(from = "n_aula36", to = "n_aula37", weight = 5f),
-        Edge(from = "n_aula37", to = "n_aula38", weight = 5f),
-        Edge(from = "n_aula38", to = "n_aula39", weight = 5f),
-        Edge(from = "n_aula39", to = "n_aula310", weight = 5f),
-        Edge(from = "n_aula310", to = "n_aula311", weight = 5f),
+        Edge(from = "n_aula36", to = "n_aula37", weight = 6f),
+        Edge(from = "n_aula37", to = "n_aula38", weight = 7f),
+        Edge(from = "n_aula38", to = "n_aula39", weight = 8f),
+        Edge(from = "n_aula39", to = "n_aula310", weight = 7f),
 
         // --- CONEXIONES PLANTA 4 ---
-        Edge(from = "n_escaleras_principal_p4", to = "n_despachos_p4", weight = 3f, type = EdgeType.WALKWAY),
-        Edge(from = "n_ascensor_principal_p4", to = "n_despachos_p4", weight = 3f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_principal_p4", to = "n_despachos_p4", weight = 7f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_principal_p4", to = "n_despachos_p4", weight = 5f, type = EdgeType.WALKWAY),
 
         // Aulario P4
-        Edge(from = "n_ascensor_p4", to = "n_delegacion_estudiantes", weight = 3f, type = EdgeType.WALKWAY),
-        Edge(from = "n_escaleras_p4", to = "n_delegacion_estudiantes", weight = 3f, type = EdgeType.STAIRS),
+        Edge(from = "n_ascensor_p4", to = "n_delegacion_estudiantes", weight = 5f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_p4", to = "n_delegacion_estudiantes", weight = 8f, type = EdgeType.STAIRS),
 
         // --- CONEXIONES VERTICALES (ASCENSOR AULARIO P0 a P4) ---
-        Edge(from = "n_ascensor_p0", to = "n_ascensor_p1", weight = 15f, type = EdgeType.WALKWAY),
-        Edge(from = "n_ascensor_p1", to = "n_ascensor_p2", weight = 15f, type = EdgeType.WALKWAY),
-        Edge(from = "n_ascensor_p2", to = "n_ascensor_p3", weight = 15f, type = EdgeType.WALKWAY),
-        Edge(from = "n_ascensor_p3", to = "n_ascensor_p4", weight = 15f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_p0", to = "n_ascensor_p1", weight = 50f, type = EdgeType.ELEVATOR),
+        Edge(from = "n_ascensor_p1", to = "n_ascensor_p2", weight = 50f, type = EdgeType.ELEVATOR),
+        Edge(from = "n_ascensor_p2", to = "n_ascensor_p3", weight = 50f, type = EdgeType.ELEVATOR),
+        Edge(from = "n_ascensor_p3", to = "n_ascensor_p4", weight = 50f, type = EdgeType.ELEVATOR),
 
         // --- CONEXIONES VERTICALES (ESCALERAS CENTRALES AULARIO P0 a P4) ---
         Edge(from = "n_escaleras_p0", to = "n_escaleras_p1", weight = 15f, type = EdgeType.STAIRS),
@@ -286,15 +288,15 @@ object EtsiitData {
         Edge(from = "n_escaleras_p3", to = "n_escaleras_p4", weight = 15f, type = EdgeType.STAIRS),
 
         // --- CONEXIONES VERTICALES (ESCALERAS LATERALES AULARIO P3 -> P2 -> P1 -> P0 -> P-1) ---
-        Edge(from = "n_escaleras_lateral_p3", to = "n_escaleras_lateral_p2", weight = 10f, type = EdgeType.STAIRS),
-        Edge(from = "n_escaleras_lateral_p2", to = "n_escaleras_lateral_p1", weight = 10f, type = EdgeType.STAIRS),
-        Edge(from = "n_escaleras_lateral_p1", to = "n_escaleras_lateral_p0", weight = 10f, type = EdgeType.STAIRS),
-        Edge(from = "n_escaleras_lateral_p0", to = "n_patio_inferior_p-1", weight = 10f, type = EdgeType.STAIRS),
+        Edge(from = "n_escaleras_lateral_p3", to = "n_escaleras_lateral_p2", weight = 15f, type = EdgeType.STAIRS),
+        Edge(from = "n_escaleras_lateral_p2", to = "n_escaleras_lateral_p1", weight = 15f, type = EdgeType.STAIRS),
+        Edge(from = "n_escaleras_lateral_p1", to = "n_escaleras_lateral_p0", weight = 15f, type = EdgeType.STAIRS),
+        Edge(from = "n_escaleras_lateral_p0", to = "n_patio_inferior_p-1", weight = 15f, type = EdgeType.STAIRS),
 
-        Edge(from = "n_entrada_lateral_aulas_p3", to = "n_escaleras_lateral_p3", weight = 2f),
-        Edge(from = "n_entrada_lateral_aulas_p2", to = "n_escaleras_lateral_p2", weight = 2f),
-        Edge(from = "n_entrada_lateral_aulas_p1", to = "n_escaleras_lateral_p1", weight = 2f),
-        Edge(from = "n_entrada_lateral_aulas", to = "n_escaleras_lateral_p0", weight = 2f)
+        Edge(from = "n_entrada_lateral_aulas_p3", to = "n_escaleras_lateral_p3", weight = 3f),
+        Edge(from = "n_entrada_lateral_aulas_p2", to = "n_escaleras_lateral_p2", weight = 4f),
+        Edge(from = "n_entrada_lateral_aulas_p1", to = "n_escaleras_lateral_p1", weight = 8f),
+        Edge(from = "n_entrada_lateral_aulas", to = "n_escaleras_lateral_p0", weight = 4f)
     )
 
     // 3. Puntos de Interés seleccionables

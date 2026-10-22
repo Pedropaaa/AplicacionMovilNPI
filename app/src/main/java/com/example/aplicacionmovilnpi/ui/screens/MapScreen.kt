@@ -136,6 +136,22 @@ fun getFloorName(floor: Int): String = when (floor) {
     else -> "P$floor"
 }
 
+fun getNodeDisplayName(nodeId: String?, pois: List<PointOfInterest>): String {
+    if (nodeId == null) return ""
+    val poi = pois.find { it.nodeId == nodeId }
+    if (poi != null) return poi.nameEs
+
+    return nodeId.removePrefix("n_")
+        .replace("_p0", " (PB)")
+        .replace("_p1", " (P1)")
+        .replace("_p2", " (P2)")
+        .replace("_p3", " (P3)")
+        .replace("_p4", " (P4)")
+        .replace("_p-1", " (S1)")
+        .replace("_", " ")
+        .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+}
+
 /**
  * Representa el tramo de ruta correspondiente a una sola planta.
  */
@@ -150,8 +166,7 @@ data class RouteFloorSegment(
 )
 
 /**
- * Parsea estrictamente la ruta devuelta por RouteManager.calculateRoute,
- * identificando los nodos intermedios (escaleras/ascensores) y agrupando los nodos por planta.
+ * Parsea la ruta devuelta por RouteManager.calculateRoute agrupando por plantas.
  */
 fun parseRouteSegments(route: List<Node>): List<RouteFloorSegment> {
     if (route.isEmpty()) return emptyList()
@@ -244,15 +259,21 @@ fun MapScreen() {
         }
     }
 
-    // 2. Parsear la ruta calculada en tramos por planta
-    val routeSegments = remember(calculatedRoute) { parseRouteSegments(calculatedRoute) }
-    var activeSegmentIndex by remember(routeSegments) { mutableIntStateOf(0) }
+    // 2. Estado de guiado PASO A PASO (nodo por nodo)
+    var currentStepIndex by remember(calculatedRoute) { mutableIntStateOf(0) }
 
-    // 3. Sincronizar selectedFloor con la planta del tramo activo
-    LaunchedEffect(activeSegmentIndex, routeSegments) {
-        if (routeSegments.isNotEmpty() && activeSegmentIndex in routeSegments.indices) {
-            selectedFloor = routeSegments[activeSegmentIndex].floorName
+    // 3. Sincronización automática de planta cuando avanza el nodo actual
+    val currentRouteNode = calculatedRoute.getOrNull(currentStepIndex)
+    LaunchedEffect(currentStepIndex, calculatedRoute) {
+        if (calculatedRoute.isNotEmpty() && currentRouteNode != null) {
+            selectedFloor = getFloorName(currentRouteNode.floor)
         }
+    }
+
+    val routeSegments = remember(calculatedRoute) { parseRouteSegments(calculatedRoute) }
+    val activeSegmentIndex = remember(selectedFloor, routeSegments) {
+        val idx = routeSegments.indexOfFirst { it.floorName == selectedFloor }
+        if (idx != -1) idx else 0
     }
 
     val startPoi = remember(startPoiId) { allPois.find { it.id == startPoiId } }
@@ -369,9 +390,27 @@ fun MapScreen() {
             }
         } else {
             // Indoor Building Plan View
-            val floorImageBitmap = remember(floorNumber) {
+            var useCompletaImageManual by remember { mutableStateOf(false) }
+            val outdoorCompletaNodes = remember {
+                setOf(
+                    "n_entrada",
+                    "n_patio"
+                )
+            }
+
+            val isCompletaImage = useCompletaImageManual ||
+                    (currentRouteNode?.id in outdoorCompletaNodes) ||
+                    (selectedNodeId in outdoorCompletaNodes)
+
+            val imagePath = if (isCompletaImage) {
+                "Modelo 3D ETSIIT/ConSuelo/completa.jpg"
+            } else {
+                "Modelo 3D ETSIIT/ConSuelo/$floorNumber.jpg"
+            }
+
+            val floorImageBitmap = remember(floorNumber, isCompletaImage) {
                 runCatching {
-                    val inputStream = context.assets.open("Modelo 3D ETSIIT/ConSuelo/$floorNumber.jpg")
+                    val inputStream = context.assets.open(imagePath)
                     BitmapFactory.decodeStream(inputStream)?.asImageBitmap()
                 }.getOrNull()
             }
@@ -448,12 +487,6 @@ fun MapScreen() {
                             .clickable {
                                 selectedFloor = floor
                                 selectedNodeId = null
-                                if (routeSegments.isNotEmpty()) {
-                                    val matchIdx = routeSegments.indexOfFirst { it.floorName == floor }
-                                    if (matchIdx != -1) {
-                                        activeSegmentIndex = matchIdx
-                                    }
-                                }
                             },
                         color = if (selected) UgrRed else Color.White,
                         shape = RoundedCornerShape(12.dp),
@@ -551,30 +584,44 @@ fun MapScreen() {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Plano de la Planta $selectedFloor",
-                                fontSize = 14.sp,
+                                text = if (isCompletaImage) "Plano Completo (Entrada / Patio / Exterior)" else "Plano de la Planta $selectedFloor",
+                                fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Ink
                             )
                             if (isCalibrationMode) {
                                 Text(
-                                    text = "🛠️ MODO CALIBRADOR (Selecciona un nodo y muévelo con la cruceta de flechas)",
+                                    text = "🛠️ MODO CALIBRADOR",
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFFE65100)
                                 )
-                            } else if (isRouteOpen && activeSegment != null) {
+                            } else if (isRouteOpen && calculatedRoute.isNotEmpty()) {
                                 Text(
-                                    text = "🔴 Tramo en Planta ${activeSegment.floorName} (Paso ${activeSegmentIndex + 1}/${routeSegments.size})",
+                                    text = "🔴 Guiado Paso ${currentStepIndex + 1}/${calculatedRoute.size} en Planta $selectedFloor",
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = UgrRed
                                 )
                             }
                         }
-                        Text(text = "ETSIIT · Modelo 3D", fontSize = 10.sp, color = MutedText)
+
+                        Surface(
+                            modifier = Modifier.clickable { useCompletaImageManual = !useCompletaImageManual },
+                            color = if (isCompletaImage) Color(0xFFE8F5E9) else Color.White,
+                            shape = RoundedCornerShape(8.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+                        ) {
+                            Text(
+                                text = if (isCompletaImage) "🖼️ Ver PB" else "🖼️ Ver Completo",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Ink,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -584,6 +631,7 @@ fun MapScreen() {
                         selectedFloorName = selectedFloor,
                         activeSegment = activeSegment,
                         fullRoute = calculatedRoute,
+                        currentStepIndex = currentStepIndex,
                         isFirstSegment = activeSegmentIndex == 0,
                         isLastSegment = activeSegmentIndex == routeSegments.size - 1,
                         isCalibrationMode = isCalibrationMode,
@@ -632,9 +680,12 @@ fun MapScreen() {
                 onAccessibleToggle = { isAccessibleRoute = it },
                 onCalculateRoute = {
                     isRouteOpen = true
-                    activeSegmentIndex = 0
+                    currentStepIndex = 0
                 },
-                onClearRoute = { isRouteOpen = false }
+                onClearRoute = {
+                    isRouteOpen = false
+                    currentStepIndex = 0
+                }
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -654,22 +705,28 @@ fun MapScreen() {
                     PoiChip(poi = poi) {
                         destPoiId = poi.id
                         isRouteOpen = true
-                        activeSegmentIndex = 0
+                        currentStepIndex = 0
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Step-by-Step Multi-Floor Guidance strictly following RouteManager calculation
-            if (isRouteOpen && routeSegments.isNotEmpty()) {
+            // Step-by-Step Node-by-Node Navigation Guidance Card
+            if (isRouteOpen && calculatedRoute.isNotEmpty()) {
                 RouteStepNavigationCard(
-                    segments = routeSegments,
-                    currentIndex = activeSegmentIndex,
+                    calculatedRoute = calculatedRoute,
+                    currentStepIndex = currentStepIndex,
+                    allPois = allPois,
                     startPoiName = startPoi?.nameEs ?: "Origen",
                     destPoiName = destPoi?.nameEs ?: "Destino",
-                    onSegmentChange = { activeSegmentIndex = it },
-                    onClose = { isRouteOpen = false }
+                    onStepIndexChange = { newIdx ->
+                        currentStepIndex = newIdx.coerceIn(0, calculatedRoute.size - 1)
+                    },
+                    onClose = {
+                        isRouteOpen = false
+                        currentStepIndex = 0
+                    }
                 )
             }
         }
@@ -943,6 +1000,7 @@ fun FloorPlanCanvasOverlay(
     selectedFloorName: String,
     activeSegment: RouteFloorSegment?,
     fullRoute: List<Node>,
+    currentStepIndex: Int = 0,
     isFirstSegment: Boolean,
     isLastSegment: Boolean,
     isCalibrationMode: Boolean = false,
@@ -959,7 +1017,17 @@ fun FloorPlanCanvasOverlay(
     var offset by remember { mutableStateOf(Offset.Zero) }
     var isFullScreenOpen by remember { mutableStateOf(false) }
 
-    val nodesToDraw = activeSegment?.segmentNodes?.map { customNodesMap[it.id] ?: it } ?: emptyList()
+    val floorNumber = when (selectedFloorName) {
+        "P4" -> 4
+        "P3" -> 3
+        "P2" -> 2
+        "P1" -> 1
+        "PB" -> 0
+        "S1" -> -1
+        else -> 0
+    }
+
+    val nodesToDraw = fullRoute.filter { it.floor == floorNumber }
 
     Column {
         Box(
@@ -1057,7 +1125,6 @@ fun FloorPlanCanvasOverlay(
                             }
                         }
 
-                        // Text Paint setup for Canvas
                         val textPaint = android.graphics.Paint().apply {
                             color = android.graphics.Color.BLACK
                             textSize = 8.dp.toPx()
@@ -1144,8 +1211,10 @@ fun FloorPlanCanvasOverlay(
                             )
                         }
                     } else {
-                        // MODO RUTA NORMAL
+                        // MODO RUTA NORMAL - PASO A PASO
                         if (nodesToDraw.isEmpty()) return@Canvas
+
+                        val currentRouteNode = fullRoute.getOrNull(currentStepIndex)
 
                         // 1. Dibujar líneas conectando los nodos del tramo actual
                         for (i in 0 until (nodesToDraw.size - 1)) {
@@ -1154,27 +1223,56 @@ fun FloorPlanCanvasOverlay(
                             val p1 = placement.mapToScreen(n1.x, n1.y)
                             val p2 = placement.mapToScreen(n2.x, n2.y)
 
+                            val idx1 = fullRoute.indexOfFirst { it.id == n1.id }
+                            val isStepSegment = (idx1 == currentStepIndex)
+
                             drawLine(
-                                color = Color(0xFFD32F2F),
+                                color = if (isStepSegment) Color(0xFFD32F2F) else Color(0xAAEF5350),
                                 start = p1,
                                 end = p2,
-                                strokeWidth = 6.dp.toPx(),
+                                strokeWidth = if (isStepSegment) 8.dp.toPx() else 4.dp.toPx(),
                                 cap = StrokeCap.Round
                             )
                         }
 
-                        // 2. Dibujar nodos sobre el mapa
+                        // 2. Dibujar nodos sobre el mapa destacando el PASO ACTUAL
                         nodesToDraw.forEach { node ->
                             val p = placement.mapToScreen(node.x, node.y)
                             val px = p.x
                             val py = p.y
 
-                            val isStartNode = isFirstSegment && (node.id == fullRoute.firstOrNull()?.id)
-                            val isEndNode = isLastSegment && (node.id == fullRoute.lastOrNull()?.id)
-                            val isTransitionNode = (node == activeSegment?.transitionNode) ||
-                                    (!isFirstSegment && node == nodesToDraw.firstOrNull())
+                            val nodeIdxInFullRoute = fullRoute.indexOfFirst { it.id == node.id }
+                            val isCurrentStepNode = (node.id == currentRouteNode?.id)
+                            val isVisitedNode = (nodeIdxInFullRoute in 0 until currentStepIndex)
+                            val isStartNode = (node.id == fullRoute.firstOrNull()?.id)
+                            val isEndNode = (node.id == fullRoute.lastOrNull()?.id)
 
                             when {
+                                isCurrentStepNode -> {
+                                    // Target Node Resaltado en Verde/Amarillo Vibrante
+                                    drawCircle(
+                                        color = Color(0xFFFFD600),
+                                        radius = 15.dp.toPx(),
+                                        center = Offset(px, py)
+                                    )
+                                    drawCircle(
+                                        color = Color(0xFF2E7D32),
+                                        radius = 9.dp.toPx(),
+                                        center = Offset(px, py)
+                                    )
+                                    drawCircle(
+                                        color = Color.White,
+                                        radius = 4.dp.toPx(),
+                                        center = Offset(px, py)
+                                    )
+                                }
+                                isVisitedNode -> {
+                                    drawCircle(
+                                        color = Color(0xFF81C784),
+                                        radius = 5.dp.toPx(),
+                                        center = Offset(px, py)
+                                    )
+                                }
                                 isStartNode -> {
                                     drawCircle(
                                         color = Color(0xFF2E7D32),
@@ -1199,22 +1297,10 @@ fun FloorPlanCanvasOverlay(
                                         center = Offset(px, py)
                                     )
                                 }
-                                isTransitionNode -> {
-                                    drawCircle(
-                                        color = Color(0xFFE65100),
-                                        radius = 11.dp.toPx(),
-                                        center = Offset(px, py)
-                                    )
-                                    drawCircle(
-                                        color = Color.White,
-                                        radius = 6.dp.toPx(),
-                                        center = Offset(px, py)
-                                    )
-                                }
                                 else -> {
                                     drawCircle(
                                         color = Color(0xFFD32F2F),
-                                        radius = 4.dp.toPx(),
+                                        radius = 5.dp.toPx(),
                                         center = Offset(px, py)
                                     )
                                 }
@@ -1251,6 +1337,7 @@ fun FloorPlanCanvasOverlay(
             selectedFloorName = selectedFloorName,
             activeSegment = activeSegment,
             fullRoute = fullRoute,
+            currentStepIndex = currentStepIndex,
             isFirstSegment = isFirstSegment,
             isLastSegment = isLastSegment,
             isCalibrationMode = isCalibrationMode,
@@ -1288,7 +1375,6 @@ fun FloatingCalibrationOverlay(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             if (selectedNode != null) {
-                // Header line: Active Node & Deselect
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -1318,7 +1404,6 @@ fun FloatingCalibrationOverlay(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // Step size selector
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -1344,30 +1429,23 @@ fun FloatingCalibrationOverlay(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // Arrow D-Pad Buttons
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    // Up
                     FloatingPadButton("⬆️") { onNudgeNode(0f, -stepSize) }
 
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Left
                         FloatingPadButton("⬅️") { onNudgeNode(-stepSize, 0f) }
-
-                        // Right
                         FloatingPadButton("➡️") { onNudgeNode(stepSize, 0f) }
                     }
 
-                    // Down
                     FloatingPadButton("⬇️") { onNudgeNode(0f, stepSize) }
                 }
             } else {
-                // No node selected banner + Chip selector
                 Text(
                     text = "💡 Toca un nodo en el plano o elígelo para moverlo con flechas:",
                     fontSize = 10.sp,
@@ -1426,6 +1504,7 @@ fun ZoomableMapDialog(
     selectedFloorName: String,
     activeSegment: RouteFloorSegment?,
     fullRoute: List<Node>,
+    currentStepIndex: Int = 0,
     isFirstSegment: Boolean,
     isLastSegment: Boolean,
     isCalibrationMode: Boolean = false,
@@ -1442,7 +1521,17 @@ fun ZoomableMapDialog(
     var scale by remember { mutableStateOf(1.8f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
 
-    val nodesToDraw = activeSegment?.segmentNodes?.map { customNodesMap[it.id] ?: it } ?: emptyList()
+    val floorNumber = when (selectedFloorName) {
+        "P4" -> 4
+        "P3" -> 3
+        "P2" -> 2
+        "P1" -> 1
+        "PB" -> 0
+        "S1" -> -1
+        else -> 0
+    }
+
+    val nodesToDraw = fullRoute.filter { it.floor == floorNumber }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -1661,17 +1750,22 @@ fun ZoomableMapDialog(
                         } else {
                             if (nodesToDraw.isEmpty()) return@Canvas
 
+                            val currentRouteNode = fullRoute.getOrNull(currentStepIndex)
+
                             for (i in 0 until (nodesToDraw.size - 1)) {
                                 val n1 = nodesToDraw[i]
                                 val n2 = nodesToDraw[i + 1]
                                 val p1 = placement.mapToScreen(n1.x, n1.y)
                                 val p2 = placement.mapToScreen(n2.x, n2.y)
 
+                                val idx1 = fullRoute.indexOfFirst { it.id == n1.id }
+                                val isStepSegment = (idx1 == currentStepIndex)
+
                                 drawLine(
-                                    color = Color(0xFFD32F2F),
+                                    color = if (isStepSegment) Color(0xFFD32F2F) else Color(0xAAEF5350),
                                     start = p1,
                                     end = p2,
-                                    strokeWidth = 6.dp.toPx(),
+                                    strokeWidth = if (isStepSegment) 8.dp.toPx() else 4.dp.toPx(),
                                     cap = StrokeCap.Round
                                 )
                             }
@@ -1681,12 +1775,37 @@ fun ZoomableMapDialog(
                                 val px = p.x
                                 val py = p.y
 
-                                val isStartNode = isFirstSegment && (node.id == fullRoute.firstOrNull()?.id)
-                                val isEndNode = isLastSegment && (node.id == fullRoute.lastOrNull()?.id)
-                                val isTransitionNode = (node == activeSegment?.transitionNode) ||
-                                        (!isFirstSegment && node == nodesToDraw.firstOrNull())
+                                val nodeIdxInFullRoute = fullRoute.indexOfFirst { it.id == node.id }
+                                val isCurrentStepNode = (node.id == currentRouteNode?.id)
+                                val isVisitedNode = (nodeIdxInFullRoute in 0 until currentStepIndex)
+                                val isStartNode = (node.id == fullRoute.firstOrNull()?.id)
+                                val isEndNode = (node.id == fullRoute.lastOrNull()?.id)
 
                                 when {
+                                    isCurrentStepNode -> {
+                                        drawCircle(
+                                            color = Color(0xFFFFD600),
+                                            radius = 15.dp.toPx(),
+                                            center = Offset(px, py)
+                                        )
+                                        drawCircle(
+                                            color = Color(0xFF2E7D32),
+                                            radius = 9.dp.toPx(),
+                                            center = Offset(px, py)
+                                        )
+                                        drawCircle(
+                                            color = Color.White,
+                                            radius = 4.dp.toPx(),
+                                            center = Offset(px, py)
+                                        )
+                                    }
+                                    isVisitedNode -> {
+                                        drawCircle(
+                                            color = Color(0xFF81C784),
+                                            radius = 5.dp.toPx(),
+                                            center = Offset(px, py)
+                                        )
+                                    }
                                     isStartNode -> {
                                         drawCircle(
                                             color = Color(0xFF2E7D32),
@@ -1711,22 +1830,10 @@ fun ZoomableMapDialog(
                                             center = Offset(px, py)
                                         )
                                     }
-                                    isTransitionNode -> {
-                                        drawCircle(
-                                            color = Color(0xFFE65100),
-                                            radius = 11.dp.toPx(),
-                                            center = Offset(px, py)
-                                        )
-                                        drawCircle(
-                                            color = Color.White,
-                                            radius = 6.dp.toPx(),
-                                            center = Offset(px, py)
-                                        )
-                                    }
                                     else -> {
                                         drawCircle(
                                             color = Color(0xFFD32F2F),
-                                            radius = 4.dp.toPx(),
+                                            radius = 5.dp.toPx(),
                                             center = Offset(px, py)
                                         )
                                     }
@@ -1774,14 +1881,25 @@ fun ZoomableMapDialog(
 
 @Composable
 fun RouteStepNavigationCard(
-    segments: List<RouteFloorSegment>,
-    currentIndex: Int,
+    calculatedRoute: List<Node>,
+    currentStepIndex: Int,
+    allPois: List<PointOfInterest>,
     startPoiName: String,
     destPoiName: String,
-    onSegmentChange: (Int) -> Unit,
+    onStepIndexChange: (Int) -> Unit,
     onClose: () -> Unit
 ) {
-    val currentSegment = segments.getOrNull(currentIndex) ?: return
+    if (calculatedRoute.isEmpty()) return
+
+    val totalSteps = calculatedRoute.size
+    val currentNode = calculatedRoute.getOrNull(currentStepIndex) ?: return
+    val nextNode = calculatedRoute.getOrNull(currentStepIndex + 1)
+
+    val currentNodeName = getNodeDisplayName(currentNode.id, allPois)
+    val nextNodeName = getNodeDisplayName(nextNode?.id, allPois)
+
+    val isLastStep = (currentStepIndex == totalSteps - 1)
+    val isFloorTransition = (nextNode != null && nextNode.floor != currentNode.floor)
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -1799,22 +1917,23 @@ fun RouteStepNavigationCard(
             ) {
                 Column {
                     Text(
-                        text = "PASO ${currentIndex + 1} DE ${segments.size} · PLANTA ${currentSegment.floorName}",
+                        text = "PASO ${currentStepIndex + 1} DE $totalSteps · PLANTA ${getFloorName(currentNode.floor)}",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         color = UgrRed
                     )
                     Text(
                         text = "$startPoiName ➔ $destPoiName",
-                        fontSize = 15.sp,
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = Ink
                     )
                 }
 
                 Text(
-                    text = "✖",
-                    fontSize = 16.sp,
+                    text = "✖ Cerrar",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
                     color = MutedText,
                     modifier = Modifier.clickable { onClose() }
                 )
@@ -1822,131 +1941,185 @@ fun RouteStepNavigationCard(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
-            // Instructions for transition node or destination node
-            if (currentSegment.transitionNode != null) {
-                val actionName = if (currentSegment.isElevator) "el ascensor 🛗" else "las escaleras 🪜"
-                val nextFloorName = currentSegment.nextFloorName ?: ""
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        color = ToneBlueBg,
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.padding(end = 10.dp)
-                    ) {
-                        Text(
-                            text = if (currentSegment.isElevator) "🛗" else "🪜",
-                            fontSize = 20.sp,
-                            modifier = Modifier.padding(8.dp)
-                        )
-                    }
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Dirígete hacia $actionName en Planta ${currentSegment.floorName}",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Ink
-                        )
-                        Text(
-                            text = "Nodo intermedio marcado en naranja 🟠 (${currentSegment.transitionNode.id})",
-                            fontSize = 11.sp,
-                            color = MutedText
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                Button(
-                    onClick = {
-                        if (currentIndex < segments.size - 1) {
-                            onSegmentChange(currentIndex + 1)
+            // Step Instruction Body
+            when {
+                isLastStep -> {
+                    // Reached Destination!
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            color = Color(0xFFE8F5E9),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.padding(end = 12.dp)
+                        ) {
+                            Text(
+                                text = "🏁",
+                                fontSize = 24.sp,
+                                modifier = Modifier.padding(10.dp)
+                            )
                         }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(44.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = UgrRed),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = "He llegado a $actionName ➔ Dibujar en Planta $nextFloorName",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            } else {
-                // Final Segment
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        color = ToneBlueBg,
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.padding(end = 10.dp)
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "¡Has llegado a tu destino!",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = GreenStatus
+                            )
+                            Text(
+                                text = "Ubicación actual: $currentNodeName",
+                                fontSize = 12.sp,
+                                color = Ink
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Button(
+                        onClick = onClose,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = GreenStatus),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
-                            text = "🏁",
-                            fontSize = 20.sp,
-                            modifier = Modifier.padding(8.dp)
-                        )
-                    }
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Tramo final hacia $destPoiName",
+                            text = "🏁 Finalizar Navegación",
                             fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Ink
-                        )
-                        Text(
-                            text = "Ruta dibujada en Planta ${currentSegment.floorName} desde el nodo intermedio",
-                            fontSize = 11.sp,
-                            color = MutedText
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                isFloorTransition -> {
+                    // Change Floor!
+                    val isElevator = currentNode.id.contains("ascensor", ignoreCase = true) ||
+                            (nextNode?.id?.contains("ascensor", ignoreCase = true) == true)
+                    val icon = if (isElevator) "🛗" else "🪜"
+                    val actionName = if (isElevator) "el ascensor" else "las escaleras"
+                    val targetFloorName = getFloorName(nextNode?.floor ?: currentNode.floor)
 
-                Button(
-                    onClick = onClose,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(44.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = GreenStatus),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = "🏁 ¡Llegada al Destino! Finalizar guía",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            color = ToneBlueBg,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.padding(end = 12.dp)
+                        ) {
+                            Text(
+                                text = icon,
+                                fontSize = 24.sp,
+                                modifier = Modifier.padding(10.dp)
+                            )
+                        }
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Cambio de Planta: Dirígete a $actionName",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Ink
+                            )
+                            Text(
+                                text = "Estás en $currentNodeName. Usa $actionName para cambiar a Planta $targetFloorName ($nextNodeName).",
+                                fontSize = 11.sp,
+                                color = MutedText
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Button(
+                        onClick = { onStepIndexChange(currentStepIndex + 1) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = UgrRed),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = "$icon Cambiar a Planta $targetFloorName ➔",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                else -> {
+                    // Normal turn-by-turn node step
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            color = ToneBlueBg,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.padding(end = 12.dp)
+                        ) {
+                            Text(
+                                text = "📍",
+                                fontSize = 24.sp,
+                                modifier = Modifier.padding(10.dp)
+                            )
+                        }
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Paso actual: $currentNodeName",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MutedText
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "👉 Ahora ve hacia: $nextNodeName",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Ink
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Button(
+                        onClick = { onStepIndexChange(currentStepIndex + 1) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = UgrRed),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = "✅ He llegado a $nextNodeName ➔",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
 
-            // Manual segment switcher controls
-            if (segments.size > 1) {
+            // Prev / Next Step Switcher Bar
+            if (totalSteps > 1) {
                 Spacer(modifier = Modifier.height(10.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    if (currentIndex > 0) {
+                    if (currentStepIndex > 0) {
                         OutlinedButton(
-                            onClick = { onSegmentChange(currentIndex - 1) },
+                            onClick = { onStepIndexChange(currentStepIndex - 1) },
                             shape = RoundedCornerShape(8.dp)
                         ) {
-                            Text(text = "⬅ Planta ${segments[currentIndex - 1].floorName}", fontSize = 11.sp, color = Ink)
+                            Text(text = "⬅ Anterior", fontSize = 11.sp, color = Ink)
                         }
                     } else {
                         Spacer(modifier = Modifier.width(1.dp))
                     }
 
-                    if (currentIndex < segments.size - 1) {
+                    if (currentStepIndex < totalSteps - 1) {
                         OutlinedButton(
-                            onClick = { onSegmentChange(currentIndex + 1) },
+                            onClick = { onStepIndexChange(currentStepIndex + 1) },
                             shape = RoundedCornerShape(8.dp)
                         ) {
-                            Text(text = "Planta ${segments[currentIndex + 1].floorName} ➔", fontSize = 11.sp, color = Ink)
+                            Text(text = "Siguiente ➡️", fontSize = 11.sp, color = Ink)
                         }
                     }
                 }
