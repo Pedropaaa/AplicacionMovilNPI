@@ -22,28 +22,73 @@ object CityPlaces {
     const val GRANADA_SOUTH = 37.12
     const val GRANADA_WEST = -3.68
 
-    /** Coordenadas de cada campus de las tarjetas de SampleData.campuses (por su clave). */
-    private val coordinates = mapOf(
-        "etsiit" to GeoUtils.ETSIIT,
-        "sciences" to GeoPoint(37.18047, -3.60945),
-        "cartuja" to GeoPoint(37.19140, -3.59780)
+    /** Lista completa de ubicaciones universitarias de la UGR. */
+    val all: List<CityPlace> = listOf(
+        // ==========================================
+        // CAMPUS AYNADAMAR
+        // ==========================================
+        CityPlace("etsiit", "ETSIIT - Informática y Telecomunicación", "Aynadamar", GeoPoint(37.197076, -3.624243)),
+        CityPlace("bellas_artes", "Facultad de Bellas Artes", "Aynadamar", GeoPoint(37.193240, -3.626210)),
+
+        // ==========================================
+        // CAMPUS FUENTENUEVA
+        // ==========================================
+        CityPlace("ciencias", "Facultad de Ciencias", "Fuentenueva", GeoPoint(37.182470, -3.608300)),
+        CityPlace("caminos", "ETSI de Caminos, Canales y Puertos", "Fuentenueva", GeoPoint(37.183561, -3.608677)),
+        CityPlace("aparejadores", "ETSI de Edificación (Aparejadores)", "Fuentenueva", GeoPoint(37.181313, -3.609462)),
+        CityPlace("comedor_fuentenueva", "Comedor Universitario Fuentenueva", "Fuentenueva", GeoPoint(37.182054, -3.607062)),
+        CityPlace("paseillos", "Paseo Profesor Juan Ossorio", "Fuentenueva", GeoPoint(37.182496, -3.607212)),
+
+        // ==========================================
+        // CAMPUS CARTUJA
+        // ==========================================
+        CityPlace("farmacia", "Facultad de Farmacia", "Cartuja", GeoPoint(37.188612, -3.597920)),
+        CityPlace("economicas", "Facultad de Ciencias Económicas y Empresariales", "Cartuja", GeoPoint(37.188175, -3.599723)),
+        CityPlace("filosofia", "Facultad de Filosofía y Letras", "Cartuja", GeoPoint(37.190240, -3.598218)),
+        CityPlace("psicologia", "Facultad de Psicología", "Cartuja", GeoPoint(37.192534, -3.598285)),
+        CityPlace("educacion", "Facultad de Ciencias de la Educación", "Cartuja", GeoPoint(37.191763, -3.599298)),
+        CityPlace("odontologia", "Facultad de Odontología", "Cartuja", GeoPoint(37.187654, -3.596637)),
+        CityPlace("comunicacion", "Facultad de Comunicación y Documentación", "Cartuja", GeoPoint(37.189658, -3.598910)),
+        CityPlace("inef", "Facultad de Ciencias del Deporte (INEF)", "Cartuja", GeoPoint(37.198337, -3.595906)),
+        CityPlace("comedor_cartuja", "Comedor Universitario Cartuja", "Cartuja", GeoPoint(37.191297, -3.599427)),
+
+        // ==========================================
+        // CAMPUS CENTRO
+        // ==========================================
+        CityPlace("derecho", "Facultad de Derecho", "Centro", GeoPoint(37.178877, -3.601552)),
+        CityPlace("politicas", "Facultad de Ciencias Políticas y Sociología", "Centro", GeoPoint(37.178553, -3.601831)),
+        CityPlace("trabajo", "Facultad de Ciencias del Trabajo", "Centro", GeoPoint(37.178864, -3.600985)),
+        CityPlace("trabajo_social", "Facultad de Trabajo Social", "Centro", GeoPoint(37.177011, -3.605338)),
+        CityPlace("traduccion", "Facultad de Traducción e Interpretación", "Centro", GeoPoint(37.175116, -3.602283)),
+        CityPlace("arquitectura", "ETS de Arquitectura", "Centro", GeoPoint(37.172823, -3.593792)),
+
+        // ==========================================
+        // CAMPUS PTS
+        // ==========================================
+        CityPlace("medicina", "Facultad de Medicina", "PTS", GeoPoint(37.147775, -3.606778)),
+        CityPlace("ciencias_salud", "Facultad de Ciencias de la Salud", "PTS", GeoPoint(37.147137, -3.607212)),
+        CityPlace("comedor_pts", "Comedor Universitario PTS", "PTS", GeoPoint(37.147571, -3.607077)),
+
+        // ==========================================
+        // EDIFICIOS ESPECIALES Y RECTORADO
+        // ==========================================
+        CityPlace("v_centenario", "Espacio V Centenario", "Otros", GeoPoint(37.185366, -3.601676)),
+        CityPlace("hospital_real", "Hospital Real (Rectorado UGR)", "Otros", GeoPoint(37.184323, -3.599723)),
+        CityPlace("triunfo", "Complejo Administrativo Triunfo", "Otros", GeoPoint(37.184400, -3.601000)),
+        CityPlace("clm", "Centro de Lenguas Modernas (CLM)", "Otros", GeoPoint(37.173874, -3.592735)),
+        CityPlace("carmen_victoria", "Carmen de la Victoria", "Otros", GeoPoint(37.178848, -3.587932)),
+        CityPlace("corrala_santiago", "Corrala de Santiago", "Otros", GeoPoint(37.173434, -3.594793))
     )
 
-    /** Los mismos campus que las tarjetas de «Mapa Ciudad», con sus nombres. */
-    val all: List<CityPlace> = SampleData.campuses.mapNotNull { card ->
-        coordinates[card.key]?.let { point ->
-            CityPlace(
-                id = card.key,
-                name = card.name,
-                campus = card.campus.lowercase().split(" ").joinToString(" ") { w -> w.replaceFirstChar { it.uppercase() } },
-                point = point
-            )
-        }
-    }
-
+    /** Referencia directa al destino por defecto. */
     val etsiit: CityPlace = all.first { it.id == "etsiit" }
 
-    fun byId(id: String): CityPlace? = all.find { it.id == id }
+    /** Índice en memoria para consultas instantáneas O(1) por ID. */
+    private val mapById: Map<String, CityPlace> by lazy {
+        all.associateBy { it.id }
+    }
+
+    fun byId(id: String): CityPlace? = mapById[id]
 }
 
 /** Una indicación de la ruta a pie: "Gira a la izquierda por Calle Periodista…", con su distancia. */

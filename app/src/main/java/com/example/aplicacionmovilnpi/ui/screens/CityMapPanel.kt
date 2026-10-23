@@ -123,6 +123,48 @@ fun CityRouteSection(
     var error by remember { mutableStateOf<String?>(null) }
     var showAllSteps by remember { mutableStateOf(false) }
 
+    val destination = CityPlaces.byId(destId) ?: CityPlaces.etsiit
+
+    // --- ESTADOS Y FILTRADO DE BÚSQUEDA DEL ORIGEN ---
+    var originSearchQuery by rememberSaveable {
+        mutableStateOf(
+            when (originId) {
+                ORIGIN_GPS -> "📍 Mi ubicación"
+                ORIGIN_MAP -> "👆 Punto del mapa"
+                else -> CityPlaces.byId(originId)?.name ?: ""
+            }
+        )
+    }
+    var isOriginSearchExpanded by remember { mutableStateOf(false) }
+
+    val filteredOrigins = remember(originSearchQuery, destId) {
+        val available = CityPlaces.all.filter { it.id != destId }
+        if (originSearchQuery.isBlank() || originSearchQuery == "📍 Mi ubicación" || originSearchQuery == "👆 Punto del mapa") {
+            available
+        } else {
+            available.filter { place ->
+                place.name.contains(originSearchQuery, ignoreCase = true) ||
+                        place.campus.contains(originSearchQuery, ignoreCase = true)
+            }
+        }
+    }
+
+    // --- ESTADOS Y FILTRADO DE BÚSQUEDA DEL DESTINO ---
+    var destSearchQuery by rememberSaveable { mutableStateOf(destination.name) }
+    var isDestSearchExpanded by remember { mutableStateOf(false) }
+
+    val filteredDestinations = remember(destSearchQuery, originId) {
+        val available = CityPlaces.all.filter { it.id != originId }
+        if (destSearchQuery.isBlank()) {
+            available
+        } else {
+            available.filter { place ->
+                place.name.contains(destSearchQuery, ignoreCase = true) ||
+                        place.campus.contains(destSearchQuery, ignoreCase = true)
+            }
+        }
+    }
+
     val gpsPoint = gpsLocation?.toGeoPoint()
     val mapOrigin = if (mapOriginLat != null && mapOriginLon != null) GeoPoint(mapOriginLat!!, mapOriginLon!!) else null
     val origin: GeoPoint? = when (originId) {
@@ -130,7 +172,6 @@ fun CityRouteSection(
         ORIGIN_MAP -> mapOrigin
         else -> CityPlaces.byId(originId)?.point
     }
-    val destination = CityPlaces.byId(destId) ?: CityPlaces.etsiit
 
     // Si cambian origen o destino, la ruta anterior deja de valer
     LaunchedEffect(originId, destId, mapOriginLat, mapOriginLon) {
@@ -150,12 +191,18 @@ fun CityRouteSection(
             route = route,
             onPlaceTap = { id ->
                 destId = id
-                if (originId == id) originId = if (hasLocationPermission) ORIGIN_GPS else ORIGIN_MAP
+                CityPlaces.byId(id)?.let { destSearchQuery = it.name }
+                if (originId == id) {
+                    originId = if (hasLocationPermission) ORIGIN_GPS else ORIGIN_MAP
+                    originSearchQuery = if (hasLocationPermission) "📍 Mi ubicación" else "👆 Punto del mapa"
+                }
             },
             onMapTap = { point ->
                 mapOriginLat = point.lat
                 mapOriginLon = point.lon
                 originId = ORIGIN_MAP
+                originSearchQuery = "👆 Punto del mapa"
+                isOriginSearchExpanded = false
             },
             onLocateUnavailable = {
                 if (hasLocationPermission) error = "Todavía no hay señal GPS. Activa la ubicación del móvil."
@@ -170,30 +217,125 @@ fun CityRouteSection(
             border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
         ) {
             Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // ==================== SELECCIÓN DE ORIGEN ====================
                 Text(text = "🟢 Origen", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Ink)
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    item {
-                        PlaceChip("📍 Mi ubicación", selected = originId == ORIGIN_GPS) {
-                            if (hasLocationPermission) originId = ORIGIN_GPS else onRequestPermission()
-                        }
+
+                // Botones de acción rápida para GPS y Mapa
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PlaceChip("📍 Mi ubicación", selected = originId == ORIGIN_GPS) {
+                        if (hasLocationPermission) {
+                            originId = ORIGIN_GPS
+                            originSearchQuery = "📍 Mi ubicación"
+                            isOriginSearchExpanded = false
+                        } else onRequestPermission()
                     }
-                    item {
-                        PlaceChip("👆 Punto del mapa", selected = originId == ORIGIN_MAP) {
-                            if (mapOrigin != null) originId = ORIGIN_MAP
-                            else error = "Toca el mapa para elegir el punto de origen"
+                    PlaceChip("👆 Punto del mapa", selected = originId == ORIGIN_MAP) {
+                        if (mapOrigin != null) {
+                            originId = ORIGIN_MAP
+                            originSearchQuery = "👆 Punto del mapa"
+                            isOriginSearchExpanded = false
+                        } else {
+                            error = "Toca el mapa para elegir el punto de origen"
                         }
-                    }
-                    items(CityPlaces.all.filter { it.id != destId }) { place ->
-                        PlaceChip(place.label, selected = originId == place.id) { originId = place.id }
                     }
                 }
 
+                // Campo de búsqueda de origen
+                androidx.compose.material3.OutlinedTextField(
+                    value = originSearchQuery,
+                    onValueChange = {
+                        originSearchQuery = it
+                        isOriginSearchExpanded = true
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    placeholder = { Text("O busca un origen UGR…", fontSize = 13.sp) },
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                // Resultados del buscador de origen
+                if (isOriginSearchExpanded && filteredOrigins.isNotEmpty()) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 160.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
+                        color = Color(0xFFFAFAFA)
+                    ) {
+                        androidx.compose.foundation.lazy.LazyColumn {
+                            items(filteredOrigins) { place ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            originId = place.id
+                                            originSearchQuery = place.name
+                                            isOriginSearchExpanded = false
+                                        }
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(text = place.name, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Ink)
+                                        Text(text = "Campus ${place.campus}", fontSize = 10.sp, color = MutedText)
+                                    }
+                                }
+                                HorizontalDivider(color = CardBorder.copy(alpha = 0.5f))
+                            }
+                        }
+                    }
+                }
+
+                // ==================== SELECCIÓN DE DESTINO ====================
                 Text(text = "🔴 Destino", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Ink)
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(CityPlaces.all) { place ->
-                        PlaceChip(place.label, selected = destId == place.id) {
-                            destId = place.id
-                            if (originId == place.id) originId = if (hasLocationPermission) ORIGIN_GPS else ORIGIN_MAP
+
+                androidx.compose.material3.OutlinedTextField(
+                    value = destSearchQuery,
+                    onValueChange = {
+                        destSearchQuery = it
+                        isDestSearchExpanded = true
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    placeholder = { Text("Buscar facultad o centro UGR…", fontSize = 13.sp) },
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                // Resultados del buscador de destino
+                if (isDestSearchExpanded && filteredDestinations.isNotEmpty()) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 160.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
+                        color = Color(0xFFFAFAFA)
+                    ) {
+                        androidx.compose.foundation.lazy.LazyColumn {
+                            items(filteredDestinations) { place ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            destId = place.id
+                                            destSearchQuery = place.name
+                                            isDestSearchExpanded = false
+                                            if (originId == place.id) {
+                                                originId = if (hasLocationPermission) ORIGIN_GPS else ORIGIN_MAP
+                                                originSearchQuery = if (hasLocationPermission) "📍 Mi ubicación" else "👆 Punto del mapa"
+                                            }
+                                        }
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(text = place.name, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Ink)
+                                        Text(text = "Campus ${place.campus}", fontSize = 10.sp, color = MutedText)
+                                    }
+                                }
+                                HorizontalDivider(color = CardBorder.copy(alpha = 0.5f))
+                            }
                         }
                     }
                 }
@@ -211,6 +353,8 @@ fun CityRouteSection(
                         val from = origin ?: return@Button
                         isLoading = true
                         error = null
+                        isOriginSearchExpanded = false
+                        isDestSearchExpanded = false
                         scope.launch {
                             WalkingRouteService.fetch(from, destination.point)
                                 .onSuccess { route = it; showAllSteps = false }
@@ -237,7 +381,7 @@ fun CityRouteSection(
         route?.let { r ->
             RouteInstructionsCard(
                 route = r,
-                destinationName = destination.label,
+                destinationName = destination.name,
                 showAll = showAllSteps,
                 onToggleShowAll = { showAllSteps = !showAllSteps },
                 onContinueIndoors = onContinueIndoors.takeIf { destId == CityPlaces.etsiit.id }
