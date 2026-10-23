@@ -37,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -46,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -79,6 +81,7 @@ import org.osmdroid.views.overlay.CopyrightOverlay
 import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
+import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
 import java.io.File
 import org.osmdroid.util.GeoPoint as OsmPoint
 
@@ -344,6 +347,8 @@ private fun OsmMap(
 
     // Modo seguimiento: el mapa se mueve con tu posición hasta que lo arrastras con el dedo
     val following = remember { mutableStateOf(false) }
+    // Giro del mapa en grados (0 = norte arriba), para orientar el botón de la brújula
+    val orientation = remember { mutableFloatStateOf(0f) }
 
     val mapView = remember {
         Configuration.getInstance().apply {
@@ -389,12 +394,16 @@ private fun OsmMap(
                         following.value = false
                     }
                 }
+                // Se lee después de que el gesto de giro haya movido el mapa en el evento anterior
+                post { orientation.floatValue = mapOrientation }
                 false
             }
         }
     }
     val currentOnMapTap = rememberUpdatedState(onMapTap)
     val currentOnPlaceTap = rememberUpdatedState(onPlaceTap)
+    // Girar el mapa con dos dedos
+    val rotationOverlay = remember { RotationGestureOverlay(mapView).apply { isEnabled = true } }
     val tapOverlay = remember {
         MapEventsOverlay(object : MapEventsReceiver {
             override fun singleTapConfirmedHelper(p: OsmPoint): Boolean {
@@ -447,6 +456,7 @@ private fun OsmMap(
             modifier = Modifier.fillMaxSize(),
             update = { map ->
                 map.overlays.clear()
+                map.overlays.add(rotationOverlay)
                 map.overlays.add(tapOverlay)
 
                 route?.let { r ->
@@ -496,6 +506,28 @@ private fun OsmMap(
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Text(text = "📍", fontSize = 20.sp)
+            }
+        }
+
+        // Brújula: solo aparece con el mapa girado; la aguja apunta al norte y al tocarla lo endereza
+        if (orientation.floatValue % 360f != 0f) {
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 64.dp, end = 10.dp)
+                    .size(44.dp)
+                    .clickable {
+                        mapView.controller.animateTo(mapView.mapCenter, mapView.zoomLevelDouble, 400L, 0f)
+                        mapView.postDelayed({ orientation.floatValue = mapView.mapOrientation }, 450L)
+                    },
+                color = Color.White,
+                shape = CircleShape,
+                shadowElevation = 4.dp
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.rotate(orientation.floatValue)) {
+                    Text(text = "▲", fontSize = 14.sp, color = UgrRed, modifier = Modifier.padding(bottom = 14.dp))
+                    Text(text = "N", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Ink, modifier = Modifier.padding(top = 10.dp))
+                }
             }
         }
     }
