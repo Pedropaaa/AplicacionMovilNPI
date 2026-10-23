@@ -37,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -73,6 +74,8 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
+import org.osmdroid.events.ScrollEvent
+import org.osmdroid.events.ZoomEvent
 import org.osmdroid.tileprovider.tilesource.XYTileSource
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.views.CustomZoomButtonsController
@@ -84,6 +87,7 @@ import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
 import java.io.File
 import org.osmdroid.util.GeoPoint as OsmPoint
+import org.osmdroid.events.MapListener
 
 private const val ORIGIN_GPS = "gps"
 private const val ORIGIN_MAP = "map"
@@ -493,10 +497,11 @@ private fun OsmMap(
     val following = remember { mutableStateOf(false) }
     // Giro del mapa en grados (0 = norte arriba), para orientar el botón de la brújula
     val orientation = remember { mutableFloatStateOf(0f) }
+    // Estado de zoom reactivo para actualizar marcadores al hacer pinza
+    var currentZoom by remember { mutableDoubleStateOf(13.5) }
 
     val mapView = remember {
         Configuration.getInstance().apply {
-            // La política de uso de los servidores de OSM exige identificar la app
             userAgentValue = context.packageName
             osmdroidBasePath = File(context.cacheDir, "osmdroid")
             osmdroidTileCache = File(osmdroidBasePath, "tiles")
@@ -505,22 +510,28 @@ private fun OsmMap(
             setTileSource(OsmTiles)
             setMultiTouchControls(true)
             zoomController.setVisibility(CustomZoomButtonsController.Visibility.SHOW_AND_FADEOUT)
-            // Solo Granada: no se puede salir de la ciudad ni alejar más de lo que ocupa
             setScrollableAreaLimitDouble(
                 BoundingBox(CityPlaces.GRANADA_NORTH, CityPlaces.GRANADA_EAST, CityPlaces.GRANADA_SOUTH, CityPlaces.GRANADA_WEST)
             )
             minZoomLevel = 12.5
             maxZoomLevel = 19.0
             controller.setZoom(13.5)
-            // Centrado entre los campus, para que se vean todos al abrir el mapa
             controller.setCenter(
                 OsmPoint(
                     CityPlaces.all.map { it.point.lat }.average(),
                     CityPlaces.all.map { it.point.lon }.average()
                 )
             )
-            // Que arrastrar el mapa mueva el mapa y no el scroll de la pantalla.
-            // Arrastrar con un dedo desactiva el seguimiento; el zoom con dos dedos no.
+
+            // Escuchador de zoom para avisar a Compose al acercar/alejar la vista
+            addMapListener(object : MapListener {
+                override fun onScroll(event: ScrollEvent?): Boolean = false
+                override fun onZoom(event: ZoomEvent?): Boolean {
+                    currentZoom = event?.zoomLevel ?: zoomLevelDouble
+                    return true
+                }
+            })
+
             val touchSlop = android.view.ViewConfiguration.get(context).scaledTouchSlop
             var downX = 0f
             var downY = 0f
@@ -538,15 +549,17 @@ private fun OsmMap(
                         following.value = false
                     }
                 }
-                // Se lee después de que el gesto de giro haya movido el mapa en el evento anterior
-                post { orientation.floatValue = mapOrientation }
+                post {
+                    orientation.floatValue = mapOrientation
+                    currentZoom = zoomLevelDouble
+                }
                 false
             }
         }
     }
     val currentOnMapTap = rememberUpdatedState(onMapTap)
     val currentOnPlaceTap = rememberUpdatedState(onPlaceTap)
-    // Girar el mapa con dos dedos
+
     val rotationOverlay = remember { RotationGestureOverlay(mapView).apply { isEnabled = true } }
     val tapOverlay = remember {
         MapEventsOverlay(object : MapEventsReceiver {
@@ -574,13 +587,10 @@ private fun OsmMap(
         }
     }
 
-    // Mientras se sigue, cada nueva posición GPS recoloca el mapa (sin tocar el zoom).
-    // Solo depende de la posición: al pulsar el botón ya centra él mismo, con su zoom.
     LaunchedEffect(gpsPoint) {
         if (following.value && gpsPoint != null) mapView.controller.animateTo(gpsPoint.toOsm())
     }
 
-    // Al llegar una ruta nueva, encuadramos el mapa para que se vea entera
     LaunchedEffect(route) {
         val points = route?.points?.map { it.toOsm() } ?: return@LaunchedEffect
         following.value = false
@@ -603,6 +613,7 @@ private fun OsmMap(
                 map.overlays.add(rotationOverlay)
                 map.overlays.add(tapOverlay)
 
+                // 1. DIBUJAR RUTA PRIMERO (queda por debajo de los marcadores)
                 route?.let { r ->
                     map.overlays.add(Polyline(map).apply {
                         setPoints(r.points.map { it.toOsm() })
@@ -610,16 +621,39 @@ private fun OsmMap(
                         outlinePaint.strokeWidth = 12f
                     })
                 }
-                // Todos los campus, siempre visibles con su nombre; tocar uno lo elige como destino
+
+                // 2. DIBUJAR LUGARES SEGÚN ZOOM (Bucle único)
+                val showAllDetails = currentZoom >= 16.2 // Nombres completos solo al estar muy cerca
+                val showDots = currentZoom >= 14.0       // Puntos discretos a nivel medio
+
                 CityPlaces.all.forEach { place ->
-                    val color = when (place.id) {
-                        destinationId -> android.graphics.Color.rgb(0xD3, 0x2F, 0x2F)
-                        originPlaceId -> android.graphics.Color.rgb(0x2E, 0x7D, 0x32)
-                        else -> android.graphics.Color.rgb(0x5E, 0x38, 0x50)
+                    val isDestination = place.id == destinationId
+                    val isOrigin = place.id == originPlaceId
+
+                    val color = when {
+                        isDestination -> android.graphics.Color.rgb(0xD3, 0x2F, 0x2F)
+                        isOrigin -> android.graphics.Color.rgb(0x2E, 0x7D, 0x32)
+                        else -> android.graphics.Color.rgb(0x75, 0x75, 0x75)
                     }
-                    map.overlays.add(campusMarker(map, place, color) { currentOnPlaceTap.value(place.id) })
+
+                    when {
+                        // Origen y Destino SIEMPRE muestran etiqueta completa
+                        isDestination || isOrigin -> {
+                            map.overlays.add(campusMarker(map, place, color) { currentOnPlaceTap.value(place.id) })
+                        }
+                        // Zoom muy cercano (>= 16.2): Texto para el resto de facultades
+                        showAllDetails -> {
+                            map.overlays.add(campusMarker(map, place, color) { currentOnPlaceTap.value(place.id) })
+                        }
+                        // Zoom medio (14.0 a 16.1): Puntos sin texto
+                        showDots -> {
+                            map.overlays.add(simpleDotMarker(map, place, color) { currentOnPlaceTap.value(place.id) })
+                        }
+                        // Zoom alejado (< 14.0): No dibuja nada extra
+                    }
                 }
-                // Origen tocado en el mapa (los campus ya están marcados arriba)
+
+                // 3. MARCADORES ADICIONALES (Punto en mapa o GPS)
                 if (originPlaceId == ORIGIN_MAP) {
                     origin?.let { map.overlays.add(placeMarker(map, it, "Origen", android.graphics.Color.rgb(0x2E, 0x7D, 0x32))) }
                 }
@@ -630,7 +664,7 @@ private fun OsmMap(
             }
         )
 
-        // Botón para centrar el mapa en tu posición y seguirla (azul mientras sigue)
+        // Botón para centrar en GPS
         Surface(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -653,7 +687,7 @@ private fun OsmMap(
             }
         }
 
-        // Brújula: solo aparece con el mapa girado; la aguja apunta al norte y al tocarla lo endereza
+        // Brújula de orientación
         if (orientation.floatValue % 360f != 0f) {
             Surface(
                 modifier = Modifier
@@ -676,7 +710,6 @@ private fun OsmMap(
         }
     }
 }
-
 /** Marcador de campus: punto de color con el nombre escrito debajo, para leerlo sin tocarlo. */
 private fun campusMarker(map: MapView, place: CityPlace, color: Int, onClick: () -> Unit): Marker =
     Marker(map).apply {
@@ -686,6 +719,7 @@ private fun campusMarker(map: MapView, place: CityPlace, color: Int, onClick: ()
         val density = map.context.resources.displayMetrics.density
         icon = BitmapDrawable(map.context.resources, labeledDot(place.name, color, density))
         // El punto queda arriba del dibujo, con el texto debajo
+        infoWindow = null
         setAnchor(Marker.ANCHOR_CENTER, 12f * density / icon.intrinsicHeight)
         setOnMarkerClickListener { marker, _ ->
             onClick()
@@ -747,3 +781,22 @@ private fun CityLocationPermissionButton(onClick: () -> Unit) {
         Text(text = "📍 Permitir ubicación para ver dónde estás", fontSize = 12.sp, color = Ink)
     }
 }
+
+/** Marcador simplificado (solo un punto limpio) para cuando la vista está alejada */
+private fun simpleDotMarker(map: MapView, place: CityPlace, color: Int, onClick: () -> Unit): Marker =
+    Marker(map).apply {
+        position = place.point.toOsm()
+        title = place.name
+        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+        val density = map.context.resources.displayMetrics.density
+        icon = GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(color)
+            setStroke((2 * density).toInt(), android.graphics.Color.WHITE)
+            setSize((12 * density).toInt(), (12 * density).toInt())
+        }
+        setOnMarkerClickListener { _, _ ->
+            onClick()
+            true
+        }
+    }
