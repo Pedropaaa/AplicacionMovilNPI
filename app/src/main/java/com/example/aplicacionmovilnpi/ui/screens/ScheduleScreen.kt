@@ -31,6 +31,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aplicacionmovilnpi.data.ClassLesson
+import com.example.aplicacionmovilnpi.data.FacultyData
+import com.example.aplicacionmovilnpi.data.Moment
 import com.example.aplicacionmovilnpi.data.SampleData
 import com.example.aplicacionmovilnpi.ui.theme.CardBorder
 import com.example.aplicacionmovilnpi.ui.theme.Ink
@@ -40,10 +42,12 @@ import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 
 @Composable
 fun ScheduleScreen(
-    onNavigateToMap: () -> Unit
+    onNavigateToMap: (String?) -> Unit
 ) {
-    var selectedDayIndex by remember { mutableIntStateOf(2) } // Default Miércoles (X 16)
-    val daySchedule = SampleData.weekSchedule[selectedDayIndex]
+    val weekSchedule = remember { SampleData.weekSchedule() }
+    // Por defecto, el día de hoy (o el lunes si es fin de semana)
+    var selectedDayIndex by remember { mutableIntStateOf(Moment.now().day.let { if (it > 5) 0 else it - 1 }) }
+    val daySchedule = weekSchedule[selectedDayIndex]
 
     Column(
         modifier = Modifier
@@ -59,7 +63,7 @@ fun ScheduleScreen(
             color = Ink
         )
         Text(
-            text = "Grado en Ingeniería Informática · ETSIIT",
+            text = "${FacultyData.Student.course} · ${FacultyData.Student.group}",
             fontSize = 12.sp,
             color = MutedText,
             modifier = Modifier.padding(top = 2.dp)
@@ -72,7 +76,7 @@ fun ScheduleScreen(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            SampleData.weekSchedule.forEachIndexed { index, day ->
+            weekSchedule.forEachIndexed { index, day ->
                 val selected = index == selectedDayIndex
                 Surface(
                     modifier = Modifier
@@ -109,13 +113,21 @@ fun ScheduleScreen(
 
         // Selected Day Banner
         Text(
-            text = "${daySchedule.day}, ${daySchedule.date} de octubre",
+            text = "${daySchedule.day}, ${daySchedule.date} de ${daySchedule.month}",
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
             color = Ink
         )
 
         Spacer(modifier = Modifier.height(12.dp))
+
+        if (daySchedule.classes.isEmpty()) {
+            Text(
+                text = "No tienes clases este día 🎉",
+                fontSize = 12.sp,
+                color = MutedText
+            )
+        }
 
         // Lessons List
         LazyColumn(
@@ -131,7 +143,7 @@ fun ScheduleScreen(
 @Composable
 fun LessonCard(
     lesson: ClassLesson,
-    onNavigateToMap: () -> Unit
+    onNavigateToMap: (String?) -> Unit
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -178,7 +190,8 @@ fun LessonCard(
             Spacer(modifier = Modifier.height(14.dp))
 
             OutlinedButton(
-                onClick = onNavigateToMap,
+                onClick = { onNavigateToMap(lesson.poiId) },
+                enabled = lesson.poiId != null,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(40.dp),
@@ -186,7 +199,7 @@ fun LessonCard(
                 border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
             ) {
                 Text(
-                    text = "Cómo llegar al ${lesson.room} ➔",
+                    text = if (lesson.poiId != null) "Cómo llegar al ${lesson.room} ➔" else "${lesson.room} aún no está en el plano",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = Ink

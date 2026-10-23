@@ -47,7 +47,7 @@ import com.example.aplicacionmovilnpi.ui.theme.UgrRedDark
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit
+    onLoginSuccess: (rememberAccount: Boolean) -> Unit
 ) {
     var email by remember { mutableStateOf("lucia@correo.ugr.es") }
     var password by remember { mutableStateOf("••••••••") }
@@ -238,7 +238,7 @@ fun LoginScreen(
 
                 // Primary Login Button
                 Button(
-                    onClick = onLoginSuccess,
+                    onClick = { onLoginSuccess(rememberAccount) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
@@ -257,7 +257,7 @@ fun LoginScreen(
 
                 // Demo Direct Button
                 OutlinedButton(
-                    onClick = onLoginSuccess,
+                    onClick = { onLoginSuccess(rememberAccount) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),

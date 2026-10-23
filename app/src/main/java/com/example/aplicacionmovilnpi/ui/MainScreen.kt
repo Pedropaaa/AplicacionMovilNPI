@@ -27,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.aplicacionmovilnpi.data.FacultyData
 import com.example.aplicacionmovilnpi.ui.screens.AccessibilityScreen
 import com.example.aplicacionmovilnpi.ui.screens.CalendarScreen
 import com.example.aplicacionmovilnpi.ui.screens.GradesScreen
@@ -62,9 +64,16 @@ enum class NavTab(val id: String, val label: String, val icon: String) {
 fun MainScreen(
     onLogout: () -> Unit
 ) {
-    var activeTab by remember { mutableStateOf(NavTab.HOME) }
-    var currentSubScreen by remember { mutableStateOf<String?>(null) }
+    var activeTab by rememberSaveable { mutableStateOf(NavTab.HOME) }
+    var currentSubScreen by rememberSaveable { mutableStateOf<String?>(null) }
     var showMenu by remember { mutableStateOf(false) }
+    // POI al que debe guiar el mapa al abrirlo desde otra pantalla (null = mapa sin ruta)
+    var mapDestination by rememberSaveable { mutableStateOf<String?>(null) }
+    val openMap: (String?) -> Unit = { poiId ->
+        mapDestination = poiId
+        activeTab = NavTab.MAP
+        currentSubScreen = null
+    }
 
     Scaffold(
         topBar = {
@@ -88,6 +97,7 @@ fun MainScreen(
                 onTabSelected = { tab ->
                     activeTab = tab
                     currentSubScreen = null
+                    mapDestination = null
                 }
             )
         },
@@ -109,16 +119,12 @@ fun MainScreen(
                 activeTab == NavTab.HOME -> HomeScreen(
                     onNavigateToSchedule = { activeTab = NavTab.SCHEDULE; currentSubScreen = null },
                     onNavigateToProfessors = { activeTab = NavTab.PROFESSORS; currentSubScreen = null },
-                    onNavigateToMap = { activeTab = NavTab.MAP; currentSubScreen = null },
+                    onNavigateToMap = openMap,
                     onNavigateToCalendar = { activeTab = NavTab.MORE; currentSubScreen = "calendar" }
                 )
-                activeTab == NavTab.SCHEDULE -> ScheduleScreen(
-                    onNavigateToMap = { activeTab = NavTab.MAP; currentSubScreen = null }
-                )
-                activeTab == NavTab.PROFESSORS -> ProfessorsScreen(
-                    onNavigateToMap = { activeTab = NavTab.MAP; currentSubScreen = null }
-                )
-                activeTab == NavTab.MAP -> MapScreen()
+                activeTab == NavTab.SCHEDULE -> ScheduleScreen(onNavigateToMap = openMap)
+                activeTab == NavTab.PROFESSORS -> ProfessorsScreen(onNavigateToMap = openMap)
+                activeTab == NavTab.MAP -> MapScreen(initialDestPoiId = mapDestination)
                 activeTab == NavTab.MORE -> MoreScreen(
                     onNavigateToSubScreen = { subScreen -> currentSubScreen = subScreen }
                 )
@@ -193,7 +199,7 @@ fun UgrHeader(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(
-                            text = "LM",
+                            text = FacultyData.Student.initials,
                             color = Color(0xFF5E3850),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Black
@@ -208,8 +214,8 @@ fun UgrHeader(
                     DropdownMenuItem(
                         text = {
                             Column {
-                                Text(text = "Lucía Martín García", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                Text(text = "lucia@correo.ugr.es", fontSize = 10.sp, color = MutedText)
+                                Text(text = FacultyData.Student.name, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                Text(text = FacultyData.Student.email, fontSize = 10.sp, color = MutedText)
                             }
                         },
                         onClick = onProfileClick
@@ -236,8 +242,7 @@ fun UgrBottomBar(
 ) {
     NavigationBar(
         containerColor = Color.White,
-        tonalElevation = 8.dp,
-        modifier = Modifier.height(72.dp)
+        tonalElevation = 8.dp
     ) {
         NavTab.entries.forEach { tab ->
             val selected = activeTab == tab
@@ -249,6 +254,8 @@ fun UgrBottomBar(
                     Text(
                         text = tab.label,
                         fontSize = 10.sp,
+                        maxLines = 1,
+                        softWrap = false,
                         fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
                     )
                 },

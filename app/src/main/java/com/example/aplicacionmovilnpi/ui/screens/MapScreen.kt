@@ -1,6 +1,9 @@
 package com.example.aplicacionmovilnpi.ui.screens
 
 import android.graphics.BitmapFactory
+import android.hardware.Sensor
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -14,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
@@ -37,6 +41,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,14 +55,27 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.aplicacionmovilnpi.data.CampusItem
 import com.example.aplicacionmovilnpi.data.SampleData
+import com.example.aplicacionmovilnpi.location.IndoorTracker
+import com.example.aplicacionmovilnpi.location.LocationPermissions
+import com.example.aplicacionmovilnpi.location.LocationPrefs
+import com.example.aplicacionmovilnpi.location.MapPoint
+import com.example.aplicacionmovilnpi.location.PressureEffect
+import com.example.aplicacionmovilnpi.location.StepEffect
+import com.example.aplicacionmovilnpi.location.hasSensor
+import com.example.aplicacionmovilnpi.location.rememberAppInForeground
+import com.example.aplicacionmovilnpi.location.rememberCompassAzimuth
+import com.example.aplicacionmovilnpi.location.rememberGpsLocation
 import com.example.aplicacionmovilnpi.model.EdgeType
 import com.example.aplicacionmovilnpi.model.Node
 import com.example.aplicacionmovilnpi.model.PointOfInterest
@@ -69,6 +88,7 @@ import com.example.aplicacionmovilnpi.ui.theme.MutedText
 import com.example.aplicacionmovilnpi.ui.theme.SoftBg
 import com.example.aplicacionmovilnpi.ui.theme.ToneBlueBg
 import com.example.aplicacionmovilnpi.ui.theme.UgrRed
+import kotlinx.coroutines.launch
 
 fun getFloorName(floor: Int): String = when (floor) {
     4 -> "P4"
@@ -163,19 +183,37 @@ fun parseRouteSegments(route: List<Node>): List<RouteFloorSegment> {
     return segments
 }
 
+/**
+ * @param initialDestPoiId Si llega un POI (desde Horario, Profesorado o Inicio), se abre directamente la ruta hasta él.
+ */
 @Composable
-fun MapScreen() {
+fun MapScreen(initialDestPoiId: String? = null) {
     val routeManager = remember { RouteManager() }
     val allPois = remember { EtsiitData.pois }
 
-    var mapMode by remember { mutableStateOf("indoor") } // "city" or "indoor"
-    var selectedFloor by remember { mutableStateOf("P1") }
+    var mapMode by rememberSaveable { mutableStateOf("indoor") } // "city" or "indoor"
+    var selectedFloor by rememberSaveable { mutableStateOf("P1") }
 
     // Routing State
-    var startPoiId by remember { mutableStateOf("poi_entrada") }
-    var destPoiId by remember { mutableStateOf("poi_aula12") }
-    var isRouteOpen by remember { mutableStateOf(false) }
-    var isAccessibleRoute by remember { mutableStateOf(false) }
+    var startPoiId by rememberSaveable { mutableStateOf("poi_entrada") }
+    var destPoiId by rememberSaveable(initialDestPoiId) { mutableStateOf(initialDestPoiId ?: "poi_aula12") }
+    var isRouteOpen by rememberSaveable(initialDestPoiId) { mutableStateOf(initialDestPoiId != null) }
+    var isAccessibleRoute by rememberSaveable { mutableStateOf(false) }
+
+    // Sensores de localización: GPS fuera del edificio; barómetro, brújula y pasos dentro
+    val context = LocalContext.current
+    val inForeground = rememberAppInForeground()
+    var hasLocationPermission by remember { mutableStateOf(LocationPermissions.hasLocation(context)) }
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        hasLocationPermission = LocationPermissions.hasLocation(context)
+    }
+    val gpsLocation = rememberGpsLocation(active = inForeground && hasLocationPermission)
+    val hasBarometer = remember { hasSensor(context, Sensor.TYPE_PRESSURE) }
+    val tracker = remember { IndoorTracker(LocationPrefs.mapNorth(context)) }
+    var isTracking by rememberSaveable { mutableStateOf(false) }
+    val indoorSensorsActive = inForeground && mapMode == "indoor"
+    PressureEffect(active = indoorSensorsActive) { hPa, timestampMs -> tracker.onPressure(hPa, timestampMs) }
+    val azimuth = rememberCompassAzimuth(active = indoorSensorsActive)
 
     // 1. Obtener la ruta calculada por Dijkstra en RouteManager.calculateRoute
     val calculatedRoute = remember(startPoiId, destPoiId, isAccessibleRoute, isRouteOpen) {
@@ -188,12 +226,31 @@ fun MapScreen() {
 
     // 2. Parsear estrictamente la ruta calculada en tramos por planta según los nodos intermedios de EtsiitData
     val routeSegments = remember(calculatedRoute) { parseRouteSegments(calculatedRoute) }
-    var activeSegmentIndex by remember(routeSegments) { mutableIntStateOf(0) }
+    var activeSegmentIndex by rememberSaveable(routeSegments) { mutableIntStateOf(0) }
 
-    // 3. Sincronizar selectedFloor con la planta del tramo activo
+    // 3. Sincronizar selectedFloor con la planta del tramo activo.
+    // Al empezar cada tramo suponemos que la persona está en su primer nodo: ahí se calibran
+    // el barómetro (planta conocida) y la posición de partida de los pasos.
     LaunchedEffect(activeSegmentIndex, routeSegments) {
         if (routeSegments.isNotEmpty() && activeSegmentIndex in routeSegments.indices) {
-            selectedFloor = routeSegments[activeSegmentIndex].floorName
+            val segment = routeSegments[activeSegmentIndex]
+            selectedFloor = segment.floorName
+            tracker.calibrateFloor(segment.floorNumber)
+            tracker.followPath(segment.segmentNodes)
+        } else {
+            tracker.stopFollowing()
+        }
+    }
+    LaunchedEffect(routeSegments) { tracker.resetSteps() }
+
+    // 4. Si el barómetro detecta que ya estamos en la planta siguiente, pasamos solos al siguiente tramo
+    LaunchedEffect(tracker.estimatedFloor) {
+        val floor = tracker.estimatedFloor ?: return@LaunchedEffect
+        val segment = routeSegments.getOrNull(activeSegmentIndex)
+        if (isRouteOpen && segment?.nextFloorNumber == floor) {
+            activeSegmentIndex += 1
+        } else if (!isRouteOpen) {
+            selectedFloor = getFloorName(floor)
         }
     }
 
@@ -201,11 +258,26 @@ fun MapScreen() {
     val destPoi = remember(destPoiId) { allPois.find { it.id == destPoiId } }
     val activeSegment = routeSegments.getOrNull(activeSegmentIndex)
 
+    StepEffect(active = indoorSensorsActive && isTracking && isRouteOpen) { tracker.onStep(azimuth) }
+    // El punto azul solo tiene sentido en la planta del tramo que se está siguiendo
+    val userPosition = tracker.position.takeIf { isTracking && isRouteOpen && activeSegment?.floorName == selectedFloor }
+    val userHeadingMapDeg = azimuth?.let { it - tracker.mapNorthDeg }
+
+    // Al abrir una ruta, bajamos hasta el selector de plantas para ver a la vez el plano y los pasos
+    val scrollState = rememberScrollState()
+    val scope = rememberCoroutineScope()
+    var floorSectionTop by remember { mutableIntStateOf(0) }
+    LaunchedEffect(isRouteOpen, routeSegments, floorSectionTop) {
+        if (isRouteOpen && routeSegments.isNotEmpty() && floorSectionTop > 0) {
+            scrollState.animateScrollTo(floorSectionTop)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 20.dp)
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
     ) {
         Spacer(modifier = Modifier.height(20.dp))
 
@@ -273,6 +345,32 @@ fun MapScreen() {
         Spacer(modifier = Modifier.height(20.dp))
 
         if (mapMode == "city") {
+            // Mapa de Granada (OpenStreetMap) con ruta a pie
+            Text(
+                text = "Cómo llegar a pie",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Ink
+            )
+            Text(
+                text = "Toca el mapa o elige un origen, y el destino",
+                fontSize = 11.sp,
+                color = MutedText,
+                modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)
+            )
+
+            CityRouteSection(
+                gpsLocation = gpsLocation,
+                hasLocationPermission = hasLocationPermission,
+                onRequestPermission = { permissionLauncher.launch(LocationPermissions.all) },
+                onContinueIndoors = {
+                    mapMode = "indoor"
+                    scope.launch { scrollState.scrollTo(0) }
+                }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
             // City Map View
             Text(
                 text = "Campus Universitarios UGR",
@@ -289,7 +387,6 @@ fun MapScreen() {
             }
         } else {
             // Indoor Building Plan View
-            val context = LocalContext.current
             val floorNumber = when (selectedFloor) {
                 "P4" -> 4
                 "P3" -> 3
@@ -312,7 +409,8 @@ fun MapScreen() {
                 text = "Seleccionar Planta",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
-                color = Ink
+                color = Ink,
+                modifier = Modifier.onGloballyPositioned { floorSectionTop = it.positionInParent().y.toInt() }
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -395,10 +493,58 @@ fun MapScreen() {
                         activeSegment = activeSegment,
                         fullRoute = calculatedRoute,
                         isFirstSegment = activeSegmentIndex == 0,
-                        isLastSegment = activeSegmentIndex == routeSegments.size - 1
+                        isLastSegment = activeSegmentIndex == routeSegments.size - 1,
+                        userPosition = userPosition,
+                        userHeadingMapDeg = userHeadingMapDeg
                     )
+
+                    if (userPosition != null && activeSegment != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        NavigationHintStrip(
+                            tracker = tracker,
+                            azimuthDeg = azimuth,
+                            arrivalText = arrivalText(activeSegment, destPoi?.nameEs ?: "tu destino")
+                        )
+                    }
                 }
             }
+
+            // Pasos de la ruta justo debajo del plano, para seguirlos sin perder el mapa de vista
+            if (isRouteOpen && routeSegments.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                RouteStepNavigationCard(
+                    segments = routeSegments,
+                    currentIndex = activeSegmentIndex,
+                    startPoiName = startPoi?.nameEs ?: "Origen",
+                    destPoiName = destPoi?.nameEs ?: "Destino",
+                    onSegmentChange = { activeSegmentIndex = it },
+                    onClose = { isRouteOpen = false }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            LocationStatusCard(
+                hasLocationPermission = hasLocationPermission,
+                onRequestPermission = { permissionLauncher.launch(LocationPermissions.all) },
+                gpsLocation = gpsLocation,
+                hasBarometer = hasBarometer,
+                tracker = tracker,
+                azimuthDeg = azimuth,
+                selectedFloorName = selectedFloor,
+                onCalibrateFloor = { tracker.calibrateFloor(floorNumber) },
+                isRouteOpen = isRouteOpen && routeSegments.isNotEmpty(),
+                isTracking = isTracking,
+                onTrackingChange = { isTracking = it },
+                onAlignCompass = {
+                    azimuth?.let { az ->
+                        tracker.alignCompass(az)?.let { LocationPrefs.setMapNorth(context, it) }
+                    }
+                },
+                onUseEntranceAsStart = if (startPoiId != "poi_entrada") {
+                    { startPoiId = "poi_entrada" }
+                } else null
+            )
 
             Spacer(modifier = Modifier.height(20.dp))
 
@@ -449,19 +595,7 @@ fun MapScreen() {
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
 
-            // Step-by-Step Multi-Floor Guidance strictly following RouteManager calculation
-            if (isRouteOpen && routeSegments.isNotEmpty()) {
-                RouteStepNavigationCard(
-                    segments = routeSegments,
-                    currentIndex = activeSegmentIndex,
-                    startPoiName = startPoi?.nameEs ?: "Origen",
-                    destPoiName = destPoi?.nameEs ?: "Destino",
-                    onSegmentChange = { activeSegmentIndex = it },
-                    onClose = { isRouteOpen = false }
-                )
-            }
         }
 
         Spacer(modifier = Modifier.height(30.dp))
@@ -475,7 +609,9 @@ fun FloorPlanCanvasOverlay(
     activeSegment: RouteFloorSegment?,
     fullRoute: List<Node>,
     isFirstSegment: Boolean,
-    isLastSegment: Boolean
+    isLastSegment: Boolean,
+    userPosition: MapPoint? = null,
+    userHeadingMapDeg: Float? = null
 ) {
     var scale by remember { mutableStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
@@ -594,6 +730,8 @@ fun FloorPlanCanvasOverlay(
                             }
                         }
                     }
+
+                    userPosition?.let { drawUserMarker(it, userHeadingMapDeg, scaleX, scaleY) }
                 }
             }
 
@@ -626,6 +764,8 @@ fun FloorPlanCanvasOverlay(
             fullRoute = fullRoute,
             isFirstSegment = isFirstSegment,
             isLastSegment = isLastSegment,
+            userPosition = userPosition,
+            userHeadingMapDeg = userHeadingMapDeg,
             onDismiss = { isFullScreenOpen = false }
         )
     }
@@ -639,6 +779,8 @@ fun ZoomableMapDialog(
     fullRoute: List<Node>,
     isFirstSegment: Boolean,
     isLastSegment: Boolean,
+    userPosition: MapPoint? = null,
+    userHeadingMapDeg: Float? = null,
     onDismiss: () -> Unit
 ) {
     var scale by remember { mutableStateOf(1.8f) }
@@ -796,6 +938,8 @@ fun ZoomableMapDialog(
                                 }
                             }
                         }
+
+                        userPosition?.let { drawUserMarker(it, userHeadingMapDeg, scaleX, scaleY) }
                     }
                 }
 
@@ -839,14 +983,14 @@ fun RouteStepNavigationCard(
         shadowElevation = 8.dp,
         border = androidx.compose.foundation.BorderStroke(1.5.dp, UgrRed)
     ) {
-        Column(modifier = Modifier.padding(18.dp)) {
+        Column(modifier = Modifier.padding(14.dp)) {
             // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "PASO ${currentIndex + 1} DE ${segments.size} · PLANTA ${currentSegment.floorName}",
                         fontSize = 10.sp,
@@ -855,7 +999,7 @@ fun RouteStepNavigationCard(
                     )
                     Text(
                         text = "$startPoiName ➔ $destPoiName",
-                        fontSize = 15.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = Ink
                     )
@@ -865,11 +1009,13 @@ fun RouteStepNavigationCard(
                     text = "✖",
                     fontSize = 16.sp,
                     color = MutedText,
-                    modifier = Modifier.clickable { onClose() }
+                    modifier = Modifier
+                        .clickable { onClose() }
+                        .padding(start = 8.dp)
                 )
             }
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
 
             // Instructions for transition node or destination node
             if (currentSegment.transitionNode != null) {
@@ -897,14 +1043,14 @@ fun RouteStepNavigationCard(
                             color = Ink
                         )
                         Text(
-                            text = "Nodo intermedio marcado en naranja 🟠 (${currentSegment.transitionNode.id})",
+                            text = "Marcado en naranja 🟠 en el plano",
                             fontSize = 11.sp,
                             color = MutedText
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 // Action button when arrived at stairs/elevator
                 Button(
@@ -913,16 +1059,18 @@ fun RouteStepNavigationCard(
                             onSegmentChange(currentIndex + 1)
                         }
                     },
+                    // Altura mínima, no fija: si el texto ocupa dos líneas el botón crece
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(44.dp),
+                        .heightIn(min = 44.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = UgrRed),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = "He llegado a $actionName ➔ Dibujar en Planta $nextFloorName",
+                        text = "He llegado a $actionName ➔ Ir a Planta $nextFloorName",
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
                     )
                 }
             } else {
@@ -955,27 +1103,28 @@ fun RouteStepNavigationCard(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Button(
                     onClick = onClose,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(44.dp),
+                        .heightIn(min = 44.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = GreenStatus),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
                         text = "🏁 ¡Llegada al Destino! Finalizar guía",
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
                     )
                 }
             }
 
             // Manual segment switcher controls
             if (segments.size > 1) {
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -1166,6 +1315,7 @@ fun PoiRouteSelectorCard(
 
 @Composable
 fun CampusCard(campus: CampusItem) {
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = Color.White,
