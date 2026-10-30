@@ -72,7 +72,7 @@ class ProximitySensor(private val context: Context) : SensorEventListener {
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
-        if (event == null || event.sensor.type != Sensor.TYPE_PROXIMITY) return
+        if (event?.sensor?.type != Sensor.TYPE_PROXIMITY) return
 
         val distance = event.values[0]
         val maxRange = proximitySensor?.maximumRange ?: 5.0f

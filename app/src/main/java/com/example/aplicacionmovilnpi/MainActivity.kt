@@ -25,13 +25,15 @@ class MainActivity : ComponentActivity() {
         setContent {
             AplicacionMovilNPITheme {
                 val context = LocalContext.current
-                var isAuthenticated by rememberSaveable { mutableStateOf(SessionStore.isLoggedIn(this)) }
+                var isAuthenticated by rememberSaveable {
+                    mutableStateOf(SessionStore.isLoggedIn(context))
+                }
 
                 // Estado para almacenar el valor de proximidad
                 var isNear by remember { mutableStateOf(false) }
 
                 // Control de ciclo de vida para el sensor de proximidad
-                DisposableEffect(Unit) {
+                DisposableEffect(context) {
                     val sensor = ProximitySensor(context).apply {
                         onProximityChanged = { near ->
                             isNear = near
@@ -48,14 +50,14 @@ class MainActivity : ComponentActivity() {
                 if (!isAuthenticated) {
                     LoginScreen(
                         onLoginSuccess = { rememberAccount ->
-                            SessionStore.setLoggedIn(this, rememberAccount)
+                            SessionStore.setLoggedIn(context, rememberAccount)
                             isAuthenticated = true
                         }
                     )
                 } else {
                     MainScreen(
                         onLogout = {
-                            SessionStore.setLoggedIn(this, false)
+                            SessionStore.setLoggedIn(context, false)
                             isAuthenticated = false
                         }
                     )
