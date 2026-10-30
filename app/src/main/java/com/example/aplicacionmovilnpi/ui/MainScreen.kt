@@ -242,8 +242,7 @@ fun UgrBottomBar(
 ) {
     NavigationBar(
         containerColor = Color.White,
-        tonalElevation = 8.dp,
-        modifier = Modifier.height(72.dp)
+        tonalElevation = 8.dp
     ) {
         NavTab.entries.forEach { tab ->
             val selected = activeTab == tab
