@@ -623,7 +623,7 @@ fun FloorPlanCanvasOverlay(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(280.dp)
+                .height(350.dp)
                 .clip(RoundedCornerShape(14.dp))
                 .background(Color.White)
         ) {
@@ -648,7 +648,7 @@ fun FloorPlanCanvasOverlay(
                         bitmap = bitmap,
                         contentDescription = "Plano Planta $selectedFloorName",
                         modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Fit
+                        contentScale = ContentScale.FillBounds
                     )
                 }
 
@@ -838,7 +838,7 @@ fun ZoomableMapDialog(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(vertical = 100.dp)
+                        .padding(top = 80.dp, bottom = 70.dp, start = 8.dp, end = 8.dp)
                         .pointerInput(Unit) {
                             detectTransformGestures { _, pan, zoom, _ ->
                                 scale = (scale * zoom).coerceIn(1f, 6f)
@@ -858,7 +858,7 @@ fun ZoomableMapDialog(
                             bitmap = bitmap,
                             contentDescription = "Plano Planta $selectedFloorName",
                             modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Fit
+                            contentScale = ContentScale.FillBounds
                         )
                     }
 
