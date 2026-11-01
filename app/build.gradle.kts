@@ -48,6 +48,16 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.osmdroid.android)
+
+    // CameraX para el escáner de código QR
+    implementation("androidx.camera:camera-core:1.3.1")
+    implementation("androidx.camera:camera-camera2:1.3.1")
+    implementation("androidx.camera:camera-lifecycle:1.3.1")
+    implementation("androidx.camera:camera-view:1.3.1")
+
+    // ML Kit Barcode Scanning para leer los códigos QR (AÑADIDO)
+    implementation("com.google.mlkit:barcode-scanning:17.2.0")
+
     testImplementation(libs.junit)
     // org.json real para los tests (el de Android es solo un esqueleto fuera del móvil)
     testImplementation(libs.org.json)
