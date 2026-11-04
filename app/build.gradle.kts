@@ -34,6 +34,11 @@ android {
     buildFeatures {
         compose = true
     }
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
+    }
 }
 
 dependencies {
@@ -55,8 +60,11 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.3.1")
     implementation("androidx.camera:camera-view:1.3.1")
 
-    // ML Kit Barcode Scanning para leer los códigos QR (AÑADIDO)
+    // ML Kit Barcode Scanning para leer los códigos QR
     implementation("com.google.mlkit:barcode-scanning:17.2.0")
+
+    // ZXing para la generación de códigos QR
+    implementation(libs.zxing.core)
 
     testImplementation(libs.junit)
     // org.json real para los tests (el de Android es solo un esqueleto fuera del móvil)

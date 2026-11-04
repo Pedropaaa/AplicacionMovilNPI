@@ -82,6 +82,7 @@ import com.example.aplicacionmovilnpi.model.PointOfInterest
 import com.example.aplicacionmovilnpi.navigation.EtsiitData
 import com.example.aplicacionmovilnpi.navigation.RouteManager
 import com.example.aplicacionmovilnpi.qr.QrLocationScannerScreen
+import com.example.aplicacionmovilnpi.qr.QrScanResult
 import com.example.aplicacionmovilnpi.ui.theme.CardBorder
 import com.example.aplicacionmovilnpi.ui.theme.GreenStatus
 import com.example.aplicacionmovilnpi.ui.theme.Ink
@@ -184,8 +185,9 @@ fun MapScreen(initialDestPoiId: String? = null) {
     var isRouteOpen by rememberSaveable(initialDestPoiId) { mutableStateOf(initialDestPoiId != null) }
     var isAccessibleRoute by rememberSaveable { mutableStateOf(false) }
 
-    // Estado para el escaner QR
+    // Estado para el escaner QR y diálogo de QR de Ruta
     var isScanningQr by rememberSaveable { mutableStateOf(false) }
+    var showRouteQrDialog by rememberSaveable { mutableStateOf(false) }
 
     // 2. SENSORES DE LOCALIZACIÓN (Utilizan mapMode declarado arriba)
     val context = LocalContext.current
@@ -202,24 +204,6 @@ fun MapScreen(initialDestPoiId: String? = null) {
     PressureEffect(active = indoorSensorsActive) { hPa, timestampMs -> tracker.onPressure(hPa, timestampMs) }
     val azimuth = rememberCompassAzimuth(active = indoorSensorsActive)
 
-    // Si el usuario presiona escanear QR, abrimos la vista de cámara
-    if (isScanningQr) {
-        QrLocationScannerScreen(
-            onNodeDetected = { detectedNode ->
-                val matchingPoi = allPois.find { it.nodeId == detectedNode.id }
-                if (matchingPoi != null) {
-                    startPoiId = matchingPoi.id
-                }
-                selectedFloor = getFloorName(detectedNode.floor)
-                isScanningQr = false
-            },
-            onCancel = {
-                isScanningQr = false
-            }
-        )
-        return
-    }
-
     val calculatedRoute = remember(startPoiId, destPoiId, isAccessibleRoute, isRouteOpen) {
         if (isRouteOpen && startPoiId.isNotEmpty() && destPoiId.isNotEmpty()) {
             routeManager.calculateRoute(startPoiId, destPoiId, isAccessibleRoute)
@@ -230,6 +214,51 @@ fun MapScreen(initialDestPoiId: String? = null) {
 
     val routeSegments = remember(calculatedRoute) { parseRouteSegments(calculatedRoute) }
     var activeSegmentIndex by rememberSaveable(routeSegments) { mutableIntStateOf(0) }
+
+    val startPoi = remember(startPoiId) { allPois.find { it.id == startPoiId } }
+    val destPoi = remember(destPoiId) { allPois.find { it.id == destPoiId } }
+    val activeSegment = routeSegments.getOrNull(activeSegmentIndex)
+
+    // Si el usuario presiona escanear QR, abrimos la vista de cámara
+    if (isScanningQr) {
+        QrLocationScannerScreen(
+            onResultDetected = { result ->
+                when (result) {
+                    is QrScanResult.Location -> {
+                        val matchingPoi = allPois.find { it.nodeId == result.node.id }
+                        if (matchingPoi != null) {
+                            startPoiId = matchingPoi.id
+                        }
+                        selectedFloor = getFloorName(result.node.floor)
+                    }
+                    is QrScanResult.Route -> {
+                        startPoiId = result.startPoi.id
+                        destPoiId = result.destPoi.id
+                        isAccessibleRoute = result.isAccessible
+                        isRouteOpen = true
+                        activeSegmentIndex = 0
+                        EtsiitData.nodes[result.startPoi.nodeId]?.let { node ->
+                            selectedFloor = getFloorName(node.floor)
+                        }
+                    }
+                }
+                isScanningQr = false
+            },
+            onCancel = {
+                isScanningQr = false
+            }
+        )
+        return
+    }
+
+    if (showRouteQrDialog && startPoi != null && destPoi != null) {
+        RouteQrDialog(
+            startPoi = startPoi,
+            destPoi = destPoi,
+            isAccessible = isAccessibleRoute,
+            onDismiss = { showRouteQrDialog = false }
+        )
+    }
 
     LaunchedEffect(activeSegmentIndex, routeSegments) {
         if (routeSegments.isNotEmpty() && activeSegmentIndex in routeSegments.indices) {
@@ -252,10 +281,6 @@ fun MapScreen(initialDestPoiId: String? = null) {
             selectedFloor = getFloorName(floor)
         }
     }
-
-    val startPoi = remember(startPoiId) { allPois.find { it.id == startPoiId } }
-    val destPoi = remember(destPoiId) { allPois.find { it.id == destPoiId } }
-    val activeSegment = routeSegments.getOrNull(activeSegmentIndex)
 
     StepEffect(active = indoorSensorsActive && isTracking && isRouteOpen) { tracker.onStep(azimuth) }
     val userPosition = tracker.position.takeIf { isTracking && isRouteOpen && activeSegment?.floorName == selectedFloor }
@@ -507,6 +532,7 @@ fun MapScreen(initialDestPoiId: String? = null) {
                     startPoiName = startPoi?.nameEs ?: "Origen",
                     destPoiName = destPoi?.nameEs ?: "Destino",
                     onSegmentChange = { activeSegmentIndex = it },
+                    onGenerateQrClick = { showRouteQrDialog = true },
                     onClose = { isRouteOpen = false }
                 )
             }
@@ -566,6 +592,8 @@ fun MapScreen(initialDestPoiId: String? = null) {
                     isRouteOpen = true
                     activeSegmentIndex = 0
                 },
+                onGenerateQrClick = { showRouteQrDialog = true },
+                isRouteActive = isRouteOpen && routeSegments.isNotEmpty(),
                 onClearRoute = { isRouteOpen = false }
             )
 
@@ -959,6 +987,7 @@ fun RouteStepNavigationCard(
     startPoiName: String,
     destPoiName: String,
     onSegmentChange: (Int) -> Unit,
+    onGenerateQrClick: (() -> Unit)? = null,
     onClose: () -> Unit
 ) {
     val currentSegment = segments.getOrNull(currentIndex) ?: return
@@ -1104,6 +1133,22 @@ fun RouteStepNavigationCard(
                 }
             }
 
+            if (onGenerateQrClick != null) {
+                Spacer(modifier = Modifier.height(10.dp))
+                OutlinedButton(
+                    onClick = onGenerateQrClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text(
+                        text = "📱 Generar QR de esta ruta",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Ink
+                    )
+                }
+            }
+
             if (segments.size > 1) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
@@ -1163,6 +1208,8 @@ fun PoiRouteSelectorCard(
     isAccessible: Boolean,
     onAccessibleToggle: (Boolean) -> Unit,
     onCalculateRoute: () -> Unit,
+    onGenerateQrClick: (() -> Unit)? = null,
+    isRouteActive: Boolean = false,
     onClearRoute: () -> Unit
 ) {
     var expandedStart by remember { mutableStateOf(false) }
@@ -1277,6 +1324,17 @@ fun PoiRouteSelectorCard(
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Text(text = "📍 Dibujar Ruta", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+
+                if (onGenerateQrClick != null && isRouteActive) {
+                    Button(
+                        onClick = onGenerateQrClick,
+                        modifier = Modifier.height(42.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF333333)),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text(text = "📱 QR", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
 
                 OutlinedButton(
