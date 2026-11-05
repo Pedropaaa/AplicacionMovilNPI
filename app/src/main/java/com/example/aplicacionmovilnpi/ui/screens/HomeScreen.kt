@@ -246,8 +246,57 @@ fun HomeScreen(
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            // Categorías que ya tenías
             items(SampleData.places) { place ->
-                PlaceCategoryCard(place = place, onClick = { onNavigateToMap(null) })
+                PlaceCategoryCard(
+                    place = place,
+                    onClick = { onNavigateToMap(null) }
+                )
+            }
+
+            // Acceso directo: aseo más cercano
+            item {
+                PlaceCategoryCard(
+                    place = PlaceCategory(
+                        name = "Aseos",
+                        detail = "Más cercano",
+                        icon = "toilet",
+                        tone = "blue"
+                    ),
+                    onClick = {
+                        onNavigateToMap("__dest_aseo_cercano__")
+                    }
+                )
+            }
+
+            // Acceso directo: fuente más cercana
+            item {
+                PlaceCategoryCard(
+                    place = PlaceCategory(
+                        name = "Fuentes",
+                        detail = "Más cercana",
+                        icon = "water",
+                        tone = "blue"
+                    ),
+                    onClick = {
+                        onNavigateToMap("__dest_fuente_cercana__")
+                    }
+                )
+            }
+
+            // Acceso directo: biblioteca
+            item {
+                PlaceCategoryCard(
+                    place = PlaceCategory(
+                        name = "Biblioteca",
+                        detail = "Ir a biblioteca",
+                        icon = "book",
+                        tone = "rose"
+                    ),
+                    onClick = {
+                        onNavigateToMap("ID_REAL_BIBLIOTECA")
+                    }
+                )
             }
         }
 

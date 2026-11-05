@@ -170,6 +170,80 @@ fun parseRouteSegments(route: List<Node>): List<RouteFloorSegment> {
     return segments
 }
 
+private const val DEST_ASEO_CERCANO = "__dest_aseo_cercano__"
+private const val DEST_FUENTE_CERCANA = "__dest_fuente_cercana__"
+
+private data class DestinationResolution(
+    val poi: PointOfInterest?,
+    val route: List<Node>? = null
+)
+
+private fun normalizePoiText(value: String): String =
+    value.lowercase(java.util.Locale.ROOT)
+        .replace("á", "a")
+        .replace("é", "e")
+        .replace("í", "i")
+        .replace("ó", "o")
+        .replace("ú", "u")
+        .replace("ü", "u")
+
+private fun PointOfInterest.isAseo(): Boolean {
+    val text = normalizePoiText("$nameEs $category")
+
+    return listOf(
+        "aseo", "bano", "wc", "toilet", "restroom"
+    ).any { text.contains(it) }
+}
+
+private fun PointOfInterest.isFuente(): Boolean {
+    val text = normalizePoiText("$nameEs $category")
+
+    return listOf(
+        "fuente", "fontana", "water fountain"
+    ).any { text.contains(it) }
+}
+
+/**
+ * Busca el POI alcanzable cuya ruta tiene menos nodos.
+ */
+private fun resolveNearestPoi(
+    startPoiId: String,
+    candidates: List<PointOfInterest>,
+    routeManager: RouteManager,
+    isAccessibleRoute: Boolean
+): DestinationResolution {
+
+    val possibleRoutes = candidates.mapNotNull { poi ->
+
+        val route = if (poi.id == startPoiId) {
+            EtsiitData.nodes[poi.nodeId]?.let { listOf(it) } ?: emptyList()
+        } else {
+            routeManager.calculateRoute(
+                startPoiId,
+                poi.id,
+                isAccessibleRoute
+            )
+        }
+
+        if (route.isNotEmpty()) {
+            poi to route
+        } else {
+            null
+        }
+    }
+
+    val nearest = possibleRoutes.minByOrNull { (_, route) ->
+        route.size
+    }
+
+    return nearest?.let { (poi, route) ->
+        DestinationResolution(
+            poi = poi,
+            route = route
+        )
+    } ?: DestinationResolution(poi = null)
+}
+
 @Composable
 fun MapScreen(initialDestPoiId: String? = null) {
     val routeManager = remember { RouteManager() }
@@ -180,8 +254,8 @@ fun MapScreen(initialDestPoiId: String? = null) {
     var selectedFloor by rememberSaveable { mutableStateOf("P1") }
 
     // Routing State
-    var startPoiId by rememberSaveable { mutableStateOf("poi_entrada") }
-    var destPoiId by rememberSaveable(initialDestPoiId) { mutableStateOf(initialDestPoiId ?: "poi_aula12") }
+    var startPoiId by rememberSaveable { mutableStateOf("") }
+    var destPoiId by rememberSaveable(initialDestPoiId) { mutableStateOf(initialDestPoiId ?: "") }
     var isRouteOpen by rememberSaveable(initialDestPoiId) { mutableStateOf(initialDestPoiId != null) }
     var isAccessibleRoute by rememberSaveable { mutableStateOf(false) }
 
@@ -204,9 +278,63 @@ fun MapScreen(initialDestPoiId: String? = null) {
     PressureEffect(active = indoorSensorsActive) { hPa, timestampMs -> tracker.onPressure(hPa, timestampMs) }
     val azimuth = rememberCompassAzimuth(active = indoorSensorsActive)
 
-    val calculatedRoute = remember(startPoiId, destPoiId, isAccessibleRoute, isRouteOpen) {
-        if (isRouteOpen && startPoiId.isNotEmpty() && destPoiId.isNotEmpty()) {
-            routeManager.calculateRoute(startPoiId, destPoiId, isAccessibleRoute)
+    // Resolver el destino seleccionado.
+// Si es un destino especial, buscamos el POI real más cercano.
+    val destinationResolution = remember(
+        startPoiId,
+        destPoiId,
+        isAccessibleRoute,
+        allPois
+    ) {
+        when (destPoiId) {
+
+            DEST_ASEO_CERCANO -> {
+                resolveNearestPoi(
+                    startPoiId = startPoiId,
+                    candidates = allPois.filter { it.isAseo() },
+                    routeManager = routeManager,
+                    isAccessibleRoute = isAccessibleRoute
+                )
+            }
+
+            DEST_FUENTE_CERCANA -> {
+                resolveNearestPoi(
+                    startPoiId = startPoiId,
+                    candidates = allPois.filter { it.isFuente() },
+                    routeManager = routeManager,
+                    isAccessibleRoute = isAccessibleRoute
+                )
+            }
+
+            else -> {
+                DestinationResolution(
+                    poi = allPois.find { it.id == destPoiId }
+                )
+            }
+        }
+    }
+
+// Calculamos la ruta utilizando el POI real resuelto.
+    val calculatedRoute = remember(
+        startPoiId,
+        destPoiId,
+        destinationResolution.poi?.id,
+        destinationResolution.route,
+        isAccessibleRoute,
+        isRouteOpen
+    ) {
+        val resolvedDest = destinationResolution.poi
+
+        if (isRouteOpen && startPoiId.isNotEmpty() && resolvedDest != null) {
+
+            // Si es un destino especial, reutilizamos la ruta que ya hemos calculado.
+            destinationResolution.route
+                ?: routeManager.calculateRoute(
+                    startPoiId,
+                    resolvedDest.id,
+                    isAccessibleRoute
+                )
+
         } else {
             emptyList()
         }
@@ -215,8 +343,35 @@ fun MapScreen(initialDestPoiId: String? = null) {
     val routeSegments = remember(calculatedRoute) { parseRouteSegments(calculatedRoute) }
     var activeSegmentIndex by rememberSaveable(routeSegments) { mutableIntStateOf(0) }
 
-    val startPoi = remember(startPoiId) { allPois.find { it.id == startPoiId } }
-    val destPoi = remember(destPoiId) { allPois.find { it.id == destPoiId } }
+    val startPoi = remember(startPoiId) {
+        allPois.find { it.id == startPoiId }
+    }
+
+// Este POI puede ser uno normal o el aseo/fuente que se ha resuelto.
+    val destPoi = destinationResolution.poi
+
+    val selectedDestLabel = when (destPoiId) {
+
+        DEST_ASEO_CERCANO ->
+            destPoi?.let { "🚻 Aseo más cercano · ${it.nameEs}" }
+                ?: "🚻 Aseo más cercano"
+
+        DEST_FUENTE_CERCANA ->
+            destPoi?.let { "🚰 Fuente más cercana · ${it.nameEs}" }
+                ?: "🚰 Fuente más cercana"
+
+        else -> destPoi?.nameEs ?: "Seleccionar Destino"
+    }
+
+    val destinationError = when {
+        destPoiId == DEST_ASEO_CERCANO && destPoi == null ->
+            "No se ha encontrado un aseo con ruta disponible desde este origen."
+
+        destPoiId == DEST_FUENTE_CERCANA && destPoi == null ->
+            "No se ha encontrado una fuente con ruta disponible desde este origen."
+
+        else -> null
+    }
     val activeSegment = routeSegments.getOrNull(activeSegmentIndex)
 
     // Si el usuario presiona escanear QR, abrimos la vista de cámara
@@ -584,14 +739,24 @@ fun MapScreen(initialDestPoiId: String? = null) {
                 pois = allPois,
                 startPoi = startPoi,
                 destPoi = destPoi,
+
+                selectedDestLabel = selectedDestLabel,
+                destinationError = destinationError,
+
                 onStartPoiChange = { startPoiId = it.id },
                 onDestPoiChange = { destPoiId = it.id },
+
+                // Opciones especiales exclusivamente para el destino.
+                onSpecialDestChange = { destPoiId = it },
+
                 isAccessible = isAccessibleRoute,
                 onAccessibleToggle = { isAccessibleRoute = it },
+
                 onCalculateRoute = {
                     isRouteOpen = true
                     activeSegmentIndex = 0
                 },
+
                 onGenerateQrClick = { showRouteQrDialog = true },
                 isRouteActive = isRouteOpen && routeSegments.isNotEmpty(),
                 onClearRoute = { isRouteOpen = false }
@@ -1203,8 +1368,14 @@ fun PoiRouteSelectorCard(
     pois: List<PointOfInterest>,
     startPoi: PointOfInterest?,
     destPoi: PointOfInterest?,
+
+    selectedDestLabel: String,
+    destinationError: String?,
+
     onStartPoiChange: (PointOfInterest) -> Unit,
     onDestPoiChange: (PointOfInterest) -> Unit,
+    onSpecialDestChange: (String) -> Unit,
+
     isAccessible: Boolean,
     onAccessibleToggle: (Boolean) -> Unit,
     onCalculateRoute: () -> Unit,
@@ -1269,7 +1440,7 @@ fun PoiRouteSelectorCard(
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Text(
-                        text = destPoi?.nameEs ?: "Seleccionar Destino",
+                        text = selectedDestLabel,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
                         color = Ink,
@@ -1280,9 +1451,36 @@ fun PoiRouteSelectorCard(
                     expanded = expandedDest,
                     onDismissRequest = { expandedDest = false }
                 ) {
+
+                    // OPCIONES ESPECIALES
+                    DropdownMenuItem(
+                        text = {
+                            Text("🚻 Aseo más cercano")
+                        },
+                        onClick = {
+                            onSpecialDestChange(DEST_ASEO_CERCANO)
+                            expandedDest = false
+                        }
+                    )
+
+                    DropdownMenuItem(
+                        text = {
+                            Text("🚰 Fuente más cercana")
+                        },
+                        onClick = {
+                            onSpecialDestChange(DEST_FUENTE_CERCANA)
+                            expandedDest = false
+                        }
+                    )
+
+                    HorizontalDivider()
+
+                    // POI NORMALES
                     pois.forEach { poi ->
                         DropdownMenuItem(
-                            text = { Text("${poi.nameEs} (${poi.category})") },
+                            text = {
+                                Text("${poi.nameEs} (${poi.category})")
+                            },
                             onClick = {
                                 onDestPoiChange(poi)
                                 expandedDest = false
@@ -1290,6 +1488,14 @@ fun PoiRouteSelectorCard(
                         )
                     }
                 }
+            }
+            if (destinationError != null) {
+                Text(
+                    text = destinationError,
+                    fontSize = 10.sp,
+                    color = UgrRed,
+                    modifier = Modifier.padding(top = 6.dp)
+                )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -1317,13 +1523,20 @@ fun PoiRouteSelectorCard(
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Button(
                     onClick = onCalculateRoute,
+                    enabled = destPoi != null,
                     modifier = Modifier
                         .weight(1f)
                         .height(42.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = UgrRed),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = UgrRed
+                    ),
                     shape = RoundedCornerShape(10.dp)
                 ) {
-                    Text(text = "📍 Dibujar Ruta", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "📍 Dibujar Ruta",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
 
                 if (onGenerateQrClick != null && isRouteActive) {
