@@ -5,6 +5,7 @@ import com.example.aplicacionmovilnpi.model.EdgeType
 import com.example.aplicacionmovilnpi.model.Node
 import com.example.aplicacionmovilnpi.model.PointOfInterest
 
+
 object EtsiitData {
 
     // 1. Nodos físicos sobre el plano con coordenadas calibradas (0..1000f)
@@ -30,12 +31,12 @@ object EtsiitData {
         // --- PLANTA 0 ---
         Node("n_escaleras_entrada_p-1", x = 257f, y = 701f, floor = 0),
         Node("n_entrada", x = 145f, y = 775f, floor = 0),
-        Node("n_patio", x = 520f, y = 650f, floor = 0),
+        Node("n_patio", x = 500f, y = 605f, floor = 0),
         Node("n_hall", x = 380f, y = 470f, floor = 0),
         Node("n_secretaria", x = 450f, y = 400f, floor = 0),
         Node("n_distribuidor_entrada_principal_p0", x = 283f, y = 565f, floor = 0),
         Node("n_conserjeria_edificio_principal", x = 270f, y = 565f, floor = 0),
-        Node("n_entrada_edificio_principal_p0", x = 405f, y = 615f, floor = 0),
+        Node("n_entrada_edificio_principal_p0", x = 360f, y = 630f, floor = 0),
         Node("n_ascensor_principal_p0", x = 335f, y = 580f, floor = 0),
         Node("n_escaleras_principal_p0", x = 315f, y = 595f, floor = 0),
         Node("n_banos_edificio_principal_p0", x = 282f, y = 635f, floor = 0),
@@ -170,6 +171,7 @@ object EtsiitData {
         // Patio conecta con la entrada lateral del Edificio Principal
         Edge(from = "n_patio", to = "n_entrada_edificio_principal_p0", weight = 12f),
         Edge(from = "n_entrada_edificio_principal_p0", to = "n_hall", weight = 14f),
+        Edge(from = "n_entrada_edificio_principal_p0", to = "n_distribuidor_entrada_principal_p0", weight = 7f),
         Edge(from = "n_hall", to = "n_secretaria", weight = 13f),
 
         // Hall comunica la zona central con la entrada general
@@ -225,7 +227,12 @@ object EtsiitData {
         Edge(from = "n_ascensor_p1", to = "n_aula16", weight = 8f, type = EdgeType.WALKWAY),
         Edge(from = "n_escaleras_p1", to = "n_aula16", weight = 12f, type = EdgeType.STAIRS),
         Edge(from = "n_banos_p1", to = "n_aula16", weight = 12f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_p1", to = "n_aula17", weight = 8f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_p1", to = "n_aula17", weight = 12f, type = EdgeType.STAIRS),
+        Edge(from = "n_banos_p1", to = "n_aula17", weight = 12f, type = EdgeType.WALKWAY),
         Edge(from = "n_ascensor_p1", to = "n_banos_p1", weight = 7f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_p1", to = "n_escaleras_p1", weight = 5f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_p1", to = "n_banos_p1", weight = 5f, type = EdgeType.WALKWAY),
 
         // Pasillo Aulario P1
         Edge(from = "n_aula11", to = "n_aula12", weight = 5f),
@@ -238,15 +245,24 @@ object EtsiitData {
 
         // --- CONEXIONES PLANTA 2 ---
         Edge(from = "n_escaleras_principal_p2", to = "n_despachos_p2_12", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_principal_p2", to = "n_despachos_p2_3-26", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_principal_p2", to = "n_despachos_p2_27-40", weight = 6f, type = EdgeType.WALKWAY),
         Edge(from = "n_despachos_p2_12", to = "n_despachos_p2_3-26", weight = 6f, type = EdgeType.WALKWAY),
         Edge(from = "n_despachos_p2_3-26", to = "n_despachos_p2_27-40", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_principal_p2", to = "n_despachos_p2_3-26", weight = 4f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_principal_p2", to = "n_despachos_p2_27-40", weight = 4f, type = EdgeType.WALKWAY),
         Edge(from = "n_ascensor_principal_p2", to = "n_despachos_p2_12", weight = 4f, type = EdgeType.WALKWAY),
 
         Edge(from = "n_entrada_lateral_aulas_p2", to = "n_aula21", weight = 6f),
         Edge(from = "n_ascensor_p2", to = "n_aula27", weight = 9f, type = EdgeType.WALKWAY),
         Edge(from = "n_escaleras_p2", to = "n_aula27", weight = 14f, type = EdgeType.STAIRS),
         Edge(from = "n_banos_p2", to = "n_aula27", weight = 14f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_p2", to = "n_aula28", weight = 9f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_p2", to = "n_aula28", weight = 14f, type = EdgeType.STAIRS),
+        Edge(from = "n_banos_p2", to = "n_aula28", weight = 14f, type = EdgeType.WALKWAY),
         Edge(from = "n_ascensor_p2", to = "n_banos_p2", weight = 5f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_p2", to = "n_escaleras_p2", weight = 5f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_p2", to = "n_banos_p2", weight = 5f, type = EdgeType.WALKWAY),
 
         // Pasillo Aulario P2
         Edge(from = "n_sala_operadores", to = "n_aula21", weight = 4f),
@@ -262,15 +278,24 @@ object EtsiitData {
 
         // --- CONEXIONES PLANTA 3 ---
         Edge(from = "n_escaleras_principal_p3", to = "n_despachos_p3_12", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_principal_p3", to = "n_despachos_p3_3-26", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_principal_p3", to = "n_despachos_p3_27-40", weight = 6f, type = EdgeType.WALKWAY),
         Edge(from = "n_despachos_p3_12", to = "n_despachos_p3_3-26", weight = 6f, type = EdgeType.WALKWAY),
         Edge(from = "n_despachos_p3_3-26", to = "n_despachos_p3_27-40", weight = 6f, type = EdgeType.WALKWAY),
         Edge(from = "n_ascensor_principal_p3", to = "n_despachos_p3_12", weight = 4f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_principal_p3", to = "n_despachos_p3_27-40", weight = 4f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_principal_p3", to = "n_despachos_p3_3-26", weight = 4f, type = EdgeType.WALKWAY),
 
         Edge(from = "n_entrada_lateral_aulas_p3", to = "n_aula31", weight = 8f),
         Edge(from = "n_ascensor_p3", to = "n_aula38", weight = 7f, type = EdgeType.WALKWAY),
         Edge(from = "n_escaleras_p3", to = "n_aula38", weight = 10f, type = EdgeType.STAIRS),
         Edge(from = "n_banos_p3", to = "n_aula38", weight = 11f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_p3", to = "n_aula39", weight = 7f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_p3", to = "n_aula39", weight = 10f, type = EdgeType.STAIRS),
+        Edge(from = "n_banos_p3", to = "n_aula39", weight = 11f, type = EdgeType.WALKWAY),
         Edge(from = "n_ascensor_p3", to = "n_banos_p3", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_p3", to = "n_escaleras_p3", weight = 5f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_p3", to = "n_banos_p3", weight = 5f, type = EdgeType.WALKWAY),
 
         // Pasillo Aulario P3
         Edge(from = "n_conserjeria_p3", to = "n_aula31", weight = 5f),
@@ -291,9 +316,13 @@ object EtsiitData {
 
         // Aulario P4
         Edge(from = "n_escaleras_principal_p4", to = "n_despachos_p4_12", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_principal_p4", to = "n_despachos_p4_3-26", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_principal_p4", to = "n_despachos_p4_27-40", weight = 6f, type = EdgeType.WALKWAY),
         Edge(from = "n_despachos_p4_12", to = "n_despachos_p4_3-26", weight = 6f, type = EdgeType.WALKWAY),
         Edge(from = "n_despachos_p4_3-26", to = "n_despachos_p4_27-40", weight = 6f, type = EdgeType.WALKWAY),
         Edge(from = "n_ascensor_principal_p4", to = "n_despachos_p4_12", weight = 4f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_principal_p4", to = "n_despachos_p4_27-40", weight = 4f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_principal_p4", to = "n_despachos_p4_3-26", weight = 4f, type = EdgeType.WALKWAY),
 
         // --- CONEXIONES VERTICALES (ASCENSOR AULARIO P0 a P4) ---
         Edge(from = "n_ascensor_p0", to = "n_ascensor_p1", weight = 50f, type = EdgeType.ELEVATOR),
