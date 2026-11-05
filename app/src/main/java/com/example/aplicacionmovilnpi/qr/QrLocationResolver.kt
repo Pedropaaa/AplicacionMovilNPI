@@ -10,9 +10,28 @@ data class QrMatchResult(
 )
 
 object QrLocationResolver {
+    // Almacena la lista completa de IDs de nodos cuando se escanea una ruta con comas
+    var scannedRouteNodeIds: List<String> = emptyList()
 
     fun resolveQrCode(qrContent: String): QrMatchResult? {
         val cleanContent = qrContent.trim()
+        scannedRouteNodeIds = emptyList() // Limpiamos en cada nueva lectura
+
+        // Si el contenido contiene comas, es una ruta completa (ej: "n_entrada,n_patio")
+        if (cleanContent.contains(",")) {
+            val nodeIds = cleanContent.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+            scannedRouteNodeIds = nodeIds // Guardamos la lista completa para el mapa
+
+            val lastNodeId = nodeIds.lastOrNull()
+            if (lastNodeId != null) {
+                val directNode = EtsiitData.nodes[lastNodeId]
+                if (directNode != null) {
+                    val associatedPoi = EtsiitData.pois.find { it.nodeId == directNode.id }
+                    return QrMatchResult(directNode, associatedPoi)
+                }
+            }
+            return null
+        }
 
         // 1. Coincidencia directa por ID de Nodo (ej: "n_aula12")
         val directNode = EtsiitData.nodes[cleanContent]

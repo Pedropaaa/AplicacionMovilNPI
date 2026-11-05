@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aplicacionmovilnpi.data.FacultyData
+import com.example.aplicacionmovilnpi.qr.RouteQrScreen
 import com.example.aplicacionmovilnpi.ui.screens.AccessibilityScreen
 import com.example.aplicacionmovilnpi.ui.screens.CalendarScreen
 import com.example.aplicacionmovilnpi.ui.screens.GradesScreen
@@ -67,6 +68,11 @@ fun MainScreen(
     var activeTab by rememberSaveable { mutableStateOf(NavTab.HOME) }
     var currentSubScreen by rememberSaveable { mutableStateOf<String?>(null) }
     var showMenu by remember { mutableStateOf(false) }
+
+    // ESTADOS AÑADIDOS PARA EL QR DE LA RUTA
+    var showRouteQr by rememberSaveable { mutableStateOf(false) }
+    var routeTextForQr by rememberSaveable { mutableStateOf("") }
+
     // POI al que debe guiar el mapa al abrirlo desde otra pantalla (null = mapa sin ruta)
     var mapDestination by rememberSaveable { mutableStateOf<String?>(null) }
     val openMap: (String?) -> Unit = { poiId ->
@@ -127,6 +133,14 @@ fun MainScreen(
                 activeTab == NavTab.MAP -> MapScreen(initialDestPoiId = mapDestination)
                 activeTab == NavTab.MORE -> MoreScreen(
                     onNavigateToSubScreen = { subScreen -> currentSubScreen = subScreen }
+                )
+            }
+
+            // PANTALLA SUPERPUESTA DEL QR AÑADIDA (Se muestra cuando showRouteQr es true)
+            if (showRouteQr) {
+                RouteQrScreen(
+                    routeDetails = routeTextForQr,
+                    onClose = { showRouteQr = false }
                 )
             }
         }

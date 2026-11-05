@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -81,7 +82,9 @@ import com.example.aplicacionmovilnpi.model.Node
 import com.example.aplicacionmovilnpi.model.PointOfInterest
 import com.example.aplicacionmovilnpi.navigation.EtsiitData
 import com.example.aplicacionmovilnpi.navigation.RouteManager
+import com.example.aplicacionmovilnpi.qr.QrLocationResolver
 import com.example.aplicacionmovilnpi.qr.QrLocationScannerScreen
+import com.example.aplicacionmovilnpi.qr.RouteQrScreen
 import com.example.aplicacionmovilnpi.ui.theme.CardBorder
 import com.example.aplicacionmovilnpi.ui.theme.GreenStatus
 import com.example.aplicacionmovilnpi.ui.theme.Ink
@@ -174,7 +177,7 @@ fun MapScreen(initialDestPoiId: String? = null) {
     val routeManager = remember { RouteManager() }
     val allPois = remember { EtsiitData.pois }
 
-    // 1. DECLARACIONES DE ESTADO (Primero)
+    // 1. DECLARACIONES DE ESTADO
     var mapMode by rememberSaveable { mutableStateOf("indoor") }
     var selectedFloor by rememberSaveable { mutableStateOf("P1") }
 
@@ -184,10 +187,24 @@ fun MapScreen(initialDestPoiId: String? = null) {
     var isRouteOpen by rememberSaveable(initialDestPoiId) { mutableStateOf(initialDestPoiId != null) }
     var isAccessibleRoute by rememberSaveable { mutableStateOf(false) }
 
-    // Estado para el escaner QR
+    // Estado para el escaner QR y generación de QR de ruta
     var isScanningQr by rememberSaveable { mutableStateOf(false) }
+    var showRouteQr by rememberSaveable { mutableStateOf(false) }
+    var routeTextForQr by rememberSaveable { mutableStateOf("") }
 
-    // 2. SENSORES DE LOCALIZACIÓN (Utilizan mapMode declarado arriba)
+    // Declaración anticipada de la ruta y los segmentos para que activeSegmentIndex esté disponible en el escáner
+    val calculatedRoute = remember(startPoiId, destPoiId, isAccessibleRoute, isRouteOpen) {
+        if (isRouteOpen && startPoiId.isNotEmpty() && destPoiId.isNotEmpty()) {
+            routeManager.calculateRoute(startPoiId, destPoiId, isAccessibleRoute)
+        } else {
+            emptyList()
+        }
+    }
+
+    val routeSegments = remember(calculatedRoute) { parseRouteSegments(calculatedRoute) }
+    var activeSegmentIndex by rememberSaveable(routeSegments) { mutableIntStateOf(0) }
+
+    // 2. SENSORES DE LOCALIZACIÓN
     val context = LocalContext.current
     val inForeground = rememberAppInForeground()
     var hasLocationPermission by remember { mutableStateOf(LocationPermissions.hasLocation(context)) }
@@ -206,9 +223,24 @@ fun MapScreen(initialDestPoiId: String? = null) {
     if (isScanningQr) {
         QrLocationScannerScreen(
             onNodeDetected = { detectedNode ->
-                val matchingPoi = allPois.find { it.nodeId == detectedNode.id }
-                if (matchingPoi != null) {
-                    startPoiId = matchingPoi.id
+                val routeIds = QrLocationResolver.scannedRouteNodeIds
+                if (routeIds.isNotEmpty()) {
+                    val firstNodeId = routeIds.first()
+                    val lastNodeId = routeIds.last()
+
+                    val startPoi = allPois.find { it.nodeId == firstNodeId }
+                    val destPoi = allPois.find { it.nodeId == lastNodeId }
+
+                    if (startPoi != null) startPoiId = startPoi.id
+                    if (destPoi != null) destPoiId = destPoi.id
+
+                    isRouteOpen = true
+                    activeSegmentIndex = 0
+                } else {
+                    val matchingPoi = allPois.find { it.nodeId == detectedNode.id }
+                    if (matchingPoi != null) {
+                        startPoiId = matchingPoi.id
+                    }
                 }
                 selectedFloor = getFloorName(detectedNode.floor)
                 isScanningQr = false
@@ -220,16 +252,14 @@ fun MapScreen(initialDestPoiId: String? = null) {
         return
     }
 
-    val calculatedRoute = remember(startPoiId, destPoiId, isAccessibleRoute, isRouteOpen) {
-        if (isRouteOpen && startPoiId.isNotEmpty() && destPoiId.isNotEmpty()) {
-            routeManager.calculateRoute(startPoiId, destPoiId, isAccessibleRoute)
-        } else {
-            emptyList()
-        }
+    // Si se activa la pantalla del QR de la ruta generada
+    if (showRouteQr) {
+        RouteQrScreen(
+            routeDetails = routeTextForQr,
+            onClose = { showRouteQr = false }
+        )
+        return
     }
-
-    val routeSegments = remember(calculatedRoute) { parseRouteSegments(calculatedRoute) }
-    var activeSegmentIndex by rememberSaveable(routeSegments) { mutableIntStateOf(0) }
 
     LaunchedEffect(activeSegmentIndex, routeSegments) {
         if (routeSegments.isNotEmpty() && activeSegmentIndex in routeSegments.indices) {
@@ -259,7 +289,7 @@ fun MapScreen(initialDestPoiId: String? = null) {
 
     StepEffect(active = indoorSensorsActive && isTracking && isRouteOpen) { tracker.onStep(azimuth) }
     val userPosition = tracker.position.takeIf { isTracking && isRouteOpen && activeSegment?.floorName == selectedFloor }
-    val userHeadingMapDeg = azimuth?.let { it - tracker.mapNorthDeg }
+    val userHeadingMapDeg = azimuth?.let { it - LocationPrefs.mapNorth(context) }
 
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
@@ -509,6 +539,30 @@ fun MapScreen(initialDestPoiId: String? = null) {
                     onSegmentChange = { activeSegmentIndex = it },
                     onClose = { isRouteOpen = false }
                 )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // BOTÓN AÑADIDO: Generar QR con la ruta actual calculada[cite: 3]
+                Button(
+                    onClick = {
+                        if (calculatedRoute.isNotEmpty()) {
+                            routeTextForQr = calculatedRoute.joinToString(",") { it.id }
+                            showRouteQr = true
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = UgrRed),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = "📷 Generar Código QR de esta Ruta",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))

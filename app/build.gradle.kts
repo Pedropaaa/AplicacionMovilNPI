@@ -5,9 +5,7 @@ plugins {
 
 android {
     namespace = "com.example.aplicacionmovilnpi"
-    compileSdk {
-        version = release(37)
-    }
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.example.aplicacionmovilnpi"
@@ -21,10 +19,11 @@ android {
 
     buildTypes {
         release {
-            optimization {
-                enable = true
-                packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")
-            }
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
     compileOptions {
@@ -55,8 +54,11 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.3.1")
     implementation("androidx.camera:camera-view:1.3.1")
 
-    // ML Kit Barcode Scanning para leer los códigos QR (AÑADIDO)
+    // ML Kit Barcode Scanning para leer los códigos QR
     implementation("com.google.mlkit:barcode-scanning:17.2.0")
+
+    // ZXing para generar códigos QR
+    implementation("com.google.zxing:core:3.5.2")
 
     testImplementation(libs.junit)
     // org.json real para los tests (el de Android es solo un esqueleto fuera del móvil)
