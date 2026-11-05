@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -81,6 +82,9 @@ import com.example.aplicacionmovilnpi.model.Node
 import com.example.aplicacionmovilnpi.model.PointOfInterest
 import com.example.aplicacionmovilnpi.navigation.EtsiitData
 import com.example.aplicacionmovilnpi.navigation.RouteManager
+import com.example.aplicacionmovilnpi.qr.QrLocationResolver
+import com.example.aplicacionmovilnpi.qr.QrLocationScannerScreen
+import com.example.aplicacionmovilnpi.qr.RouteQrScreen
 import com.example.aplicacionmovilnpi.ui.theme.CardBorder
 import com.example.aplicacionmovilnpi.ui.theme.GreenStatus
 import com.example.aplicacionmovilnpi.ui.theme.Ink
@@ -100,17 +104,6 @@ fun getFloorName(floor: Int): String = when (floor) {
     else -> "P$floor"
 }
 
-/**
- * Representa el tramo de ruta correspondiente a una sola planta.
- *
- * @property floorNumber Número de la planta (-1, 0, 1, 2, 3, 4)
- * @property floorName Nombre legible de la planta ("S1", "PB", "P1", etc.)
- * @property segmentNodes Lista ordenada de nodos de la ruta devuelta por RouteManager que pertenecen a esta planta
- * @property transitionNode Nodo intermedio (escalera o ascensor) donde se realiza el cambio de planta
- * @property nextFloorNumber Planta a la que se asciende o desciende
- * @property nextFloorName Nombre legible de la planta de destino
- * @property isElevator Indica si la transición entre plantas es por ascensor (true) o escaleras (false)
- */
 data class RouteFloorSegment(
     val floorNumber: Int,
     val floorName: String,
@@ -121,10 +114,6 @@ data class RouteFloorSegment(
     val isElevator: Boolean
 )
 
-/**
- * Parsea estrictamente la ruta devuelta por RouteManager.calculateRoute,
- * identificando los nodos intermedios (escaleras/ascensores) y agrupando los nodos por planta.
- */
 fun parseRouteSegments(route: List<Node>): List<RouteFloorSegment> {
     if (route.isEmpty()) return emptyList()
 
@@ -183,15 +172,13 @@ fun parseRouteSegments(route: List<Node>): List<RouteFloorSegment> {
     return segments
 }
 
-/**
- * @param initialDestPoiId Si llega un POI (desde Horario, Profesorado o Inicio), se abre directamente la ruta hasta él.
- */
 @Composable
 fun MapScreen(initialDestPoiId: String? = null) {
     val routeManager = remember { RouteManager() }
     val allPois = remember { EtsiitData.pois }
 
-    var mapMode by rememberSaveable { mutableStateOf("indoor") } // "city" or "indoor"
+    // 1. DECLARACIONES DE ESTADO
+    var mapMode by rememberSaveable { mutableStateOf("indoor") }
     var selectedFloor by rememberSaveable { mutableStateOf("P1") }
 
     // Routing State
@@ -200,7 +187,24 @@ fun MapScreen(initialDestPoiId: String? = null) {
     var isRouteOpen by rememberSaveable(initialDestPoiId) { mutableStateOf(initialDestPoiId != null) }
     var isAccessibleRoute by rememberSaveable { mutableStateOf(false) }
 
-    // Sensores de localización: GPS fuera del edificio; barómetro, brújula y pasos dentro
+    // Estado para el escaner QR y generación de QR de ruta
+    var isScanningQr by rememberSaveable { mutableStateOf(false) }
+    var showRouteQr by rememberSaveable { mutableStateOf(false) }
+    var routeTextForQr by rememberSaveable { mutableStateOf("") }
+
+    // Declaración anticipada de la ruta y los segmentos para que activeSegmentIndex esté disponible en el escáner
+    val calculatedRoute = remember(startPoiId, destPoiId, isAccessibleRoute, isRouteOpen) {
+        if (isRouteOpen && startPoiId.isNotEmpty() && destPoiId.isNotEmpty()) {
+            routeManager.calculateRoute(startPoiId, destPoiId, isAccessibleRoute)
+        } else {
+            emptyList()
+        }
+    }
+
+    val routeSegments = remember(calculatedRoute) { parseRouteSegments(calculatedRoute) }
+    var activeSegmentIndex by rememberSaveable(routeSegments) { mutableIntStateOf(0) }
+
+    // 2. SENSORES DE LOCALIZACIÓN
     val context = LocalContext.current
     val inForeground = rememberAppInForeground()
     var hasLocationPermission by remember { mutableStateOf(LocationPermissions.hasLocation(context)) }
@@ -215,22 +219,48 @@ fun MapScreen(initialDestPoiId: String? = null) {
     PressureEffect(active = indoorSensorsActive) { hPa, timestampMs -> tracker.onPressure(hPa, timestampMs) }
     val azimuth = rememberCompassAzimuth(active = indoorSensorsActive)
 
-    // 1. Obtener la ruta calculada por Dijkstra en RouteManager.calculateRoute
-    val calculatedRoute = remember(startPoiId, destPoiId, isAccessibleRoute, isRouteOpen) {
-        if (isRouteOpen && startPoiId.isNotEmpty() && destPoiId.isNotEmpty()) {
-            routeManager.calculateRoute(startPoiId, destPoiId, isAccessibleRoute)
-        } else {
-            emptyList()
-        }
+    // Si el usuario presiona escanear QR, abrimos la vista de cámara
+    if (isScanningQr) {
+        QrLocationScannerScreen(
+            onNodeDetected = { detectedNode ->
+                val routeIds = QrLocationResolver.scannedRouteNodeIds
+                if (routeIds.isNotEmpty()) {
+                    val firstNodeId = routeIds.first()
+                    val lastNodeId = routeIds.last()
+
+                    val startPoi = allPois.find { it.nodeId == firstNodeId }
+                    val destPoi = allPois.find { it.nodeId == lastNodeId }
+
+                    if (startPoi != null) startPoiId = startPoi.id
+                    if (destPoi != null) destPoiId = destPoi.id
+
+                    isRouteOpen = true
+                    activeSegmentIndex = 0
+                } else {
+                    val matchingPoi = allPois.find { it.nodeId == detectedNode.id }
+                    if (matchingPoi != null) {
+                        startPoiId = matchingPoi.id
+                    }
+                }
+                selectedFloor = getFloorName(detectedNode.floor)
+                isScanningQr = false
+            },
+            onCancel = {
+                isScanningQr = false
+            }
+        )
+        return
     }
 
-    // 2. Parsear estrictamente la ruta calculada en tramos por planta según los nodos intermedios de EtsiitData
-    val routeSegments = remember(calculatedRoute) { parseRouteSegments(calculatedRoute) }
-    var activeSegmentIndex by rememberSaveable(routeSegments) { mutableIntStateOf(0) }
+    // Si se activa la pantalla del QR de la ruta generada
+    if (showRouteQr) {
+        RouteQrScreen(
+            routeDetails = routeTextForQr,
+            onClose = { showRouteQr = false }
+        )
+        return
+    }
 
-    // 3. Sincronizar selectedFloor con la planta del tramo activo.
-    // Al empezar cada tramo suponemos que la persona está en su primer nodo: ahí se calibran
-    // el barómetro (planta conocida) y la posición de partida de los pasos.
     LaunchedEffect(activeSegmentIndex, routeSegments) {
         if (routeSegments.isNotEmpty() && activeSegmentIndex in routeSegments.indices) {
             val segment = routeSegments[activeSegmentIndex]
@@ -243,7 +273,6 @@ fun MapScreen(initialDestPoiId: String? = null) {
     }
     LaunchedEffect(routeSegments) { tracker.resetSteps() }
 
-    // 4. Si el barómetro detecta que ya estamos en la planta siguiente, pasamos solos al siguiente tramo
     LaunchedEffect(tracker.estimatedFloor) {
         val floor = tracker.estimatedFloor ?: return@LaunchedEffect
         val segment = routeSegments.getOrNull(activeSegmentIndex)
@@ -259,11 +288,9 @@ fun MapScreen(initialDestPoiId: String? = null) {
     val activeSegment = routeSegments.getOrNull(activeSegmentIndex)
 
     StepEffect(active = indoorSensorsActive && isTracking && isRouteOpen) { tracker.onStep(azimuth) }
-    // El punto azul solo tiene sentido en la planta del tramo que se está siguiendo
     val userPosition = tracker.position.takeIf { isTracking && isRouteOpen && activeSegment?.floorName == selectedFloor }
-    val userHeadingMapDeg = azimuth?.let { it - tracker.mapNorthDeg }
+    val userHeadingMapDeg = azimuth?.let { it - LocationPrefs.mapNorth(context) }
 
-    // Al abrir una ruta, bajamos hasta el selector de plantas para ver a la vez el plano y los pasos
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
     var floorSectionTop by remember { mutableIntStateOf(0) }
@@ -296,7 +323,6 @@ fun MapScreen(initialDestPoiId: String? = null) {
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        // Toggle Switch: City vs Indoor
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = Color.White,
@@ -345,7 +371,6 @@ fun MapScreen(initialDestPoiId: String? = null) {
         Spacer(modifier = Modifier.height(20.dp))
 
         if (mapMode == "city") {
-            // Mapa de Granada (OpenStreetMap) con ruta a pie
             Text(
                 text = "Cómo llegar a pie",
                 fontSize = 16.sp,
@@ -371,7 +396,6 @@ fun MapScreen(initialDestPoiId: String? = null) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // City Map View
             Text(
                 text = "Campus Universitarios UGR",
                 fontSize = 16.sp,
@@ -386,7 +410,6 @@ fun MapScreen(initialDestPoiId: String? = null) {
                 Spacer(modifier = Modifier.height(12.dp))
             }
         } else {
-            // Indoor Building Plan View
             val floorNumber = when (selectedFloor) {
                 "P4" -> 4
                 "P3" -> 3
@@ -404,7 +427,6 @@ fun MapScreen(initialDestPoiId: String? = null) {
                 }.getOrNull()
             }
 
-            // Floor Selector Section
             Text(
                 text = "Seleccionar Planta",
                 fontSize = 14.sp,
@@ -415,7 +437,6 @@ fun MapScreen(initialDestPoiId: String? = null) {
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Floors Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -453,7 +474,6 @@ fun MapScreen(initialDestPoiId: String? = null) {
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // Floor Plan View with Active Route Segment Overlay
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 color = ToneBlueBg,
@@ -509,7 +529,6 @@ fun MapScreen(initialDestPoiId: String? = null) {
                 }
             }
 
-            // Pasos de la ruta justo debajo del plano, para seguirlos sin perder el mapa de vista
             if (isRouteOpen && routeSegments.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
                 RouteStepNavigationCard(
@@ -520,10 +539,42 @@ fun MapScreen(initialDestPoiId: String? = null) {
                     onSegmentChange = { activeSegmentIndex = it },
                     onClose = { isRouteOpen = false }
                 )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // BOTÓN AÑADIDO: Generar QR con la ruta actual calculada[cite: 3]
+                Button(
+                    onClick = {
+                        if (calculatedRoute.isNotEmpty()) {
+                            routeTextForQr = calculatedRoute.joinToString(",") { it.id }
+                            showRouteQr = true
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = UgrRed),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = "📷 Generar Código QR de esta Ruta",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            // Tu botón de escaneo QR
+            QrScanButton(
+                onScanClick = { isScanningQr = true }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Tarjeta original de tus compañeros
             LocationStatusCard(
                 hasLocationPermission = hasLocationPermission,
                 onRequestPermission = { permissionLauncher.launch(LocationPermissions.all) },
@@ -548,7 +599,6 @@ fun MapScreen(initialDestPoiId: String? = null) {
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Selector de Origen y Destino para la Ruta
             Text(
                 text = "Navegación Interactiva",
                 fontSize = 15.sp,
@@ -575,7 +625,6 @@ fun MapScreen(initialDestPoiId: String? = null) {
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Points of Interest Quick Selector
             Text(
                 text = "Puntos de Interés Rápidos",
                 fontSize = 15.sp,
@@ -594,8 +643,6 @@ fun MapScreen(initialDestPoiId: String? = null) {
                     }
                 }
             }
-
-
         }
 
         Spacer(modifier = Modifier.height(30.dp))
@@ -660,13 +707,12 @@ fun FloorPlanCanvasOverlay(
                     val scaleX = size.width / refWidth
                     val scaleY = size.height / refHeight
 
-                    // 1. Dibujar líneas estrictamente conectando los nodos del tramo actual devueltos por RouteManager
                     for (i in 0 until (nodesToDraw.size - 1)) {
                         val n1 = nodesToDraw[i]
                         val n2 = nodesToDraw[i + 1]
 
                         drawLine(
-                            color = Color(0xFFD32F2F), // UgrRed
+                            color = Color(0xFFD32F2F),
                             start = Offset(n1.x * scaleX, n1.y * scaleY),
                             end = Offset(n2.x * scaleX, n2.y * scaleY),
                             strokeWidth = 6.dp.toPx(),
@@ -674,7 +720,6 @@ fun FloorPlanCanvasOverlay(
                         )
                     }
 
-                    // 2. Dibujar nodos sobre el mapa
                     nodesToDraw.forEach { node ->
                         val px = node.x * scaleX
                         val py = node.y * scaleY
@@ -687,7 +732,7 @@ fun FloorPlanCanvasOverlay(
                         when {
                             isStartNode -> {
                                 drawCircle(
-                                    color = Color(0xFF2E7D32), // Verde Origen
+                                    color = Color(0xFF2E7D32),
                                     radius = 10.dp.toPx(),
                                     center = Offset(px, py)
                                 )
@@ -699,7 +744,7 @@ fun FloorPlanCanvasOverlay(
                             }
                             isEndNode -> {
                                 drawCircle(
-                                    color = Color(0xFFD32F2F), // Rojo Destino
+                                    color = Color(0xFFD32F2F),
                                     radius = 10.dp.toPx(),
                                     center = Offset(px, py)
                                 )
@@ -711,7 +756,7 @@ fun FloorPlanCanvasOverlay(
                             }
                             isTransitionNode -> {
                                 drawCircle(
-                                    color = Color(0xFFE65100), // Naranja Nodo Intermedio Escalera/Ascensor
+                                    color = Color(0xFFE65100),
                                     radius = 11.dp.toPx(),
                                     center = Offset(px, py)
                                 )
@@ -735,7 +780,6 @@ fun FloorPlanCanvasOverlay(
                 }
             }
 
-            // Quick Zoom & Fullscreen Action Bar
             Row(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
@@ -797,7 +841,6 @@ fun ZoomableMapDialog(
             color = Color.Black.copy(alpha = 0.95f)
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                // Top Header Bar
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -834,7 +877,6 @@ fun ZoomableMapDialog(
                     }
                 }
 
-                // Interactive Zoomable Map Area
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -943,7 +985,6 @@ fun ZoomableMapDialog(
                     }
                 }
 
-                // Floating Zoom Controls Bar
                 Row(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -984,7 +1025,6 @@ fun RouteStepNavigationCard(
         border = androidx.compose.foundation.BorderStroke(1.5.dp, UgrRed)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1017,7 +1057,6 @@ fun RouteStepNavigationCard(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
 
-            // Instructions for transition node or destination node
             if (currentSegment.transitionNode != null) {
                 val actionName = if (currentSegment.isElevator) "el ascensor 🛗" else "las escaleras 🪜"
                 val nextFloorName = currentSegment.nextFloorName ?: ""
@@ -1052,14 +1091,12 @@ fun RouteStepNavigationCard(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Action button when arrived at stairs/elevator
                 Button(
                     onClick = {
                         if (currentIndex < segments.size - 1) {
                             onSegmentChange(currentIndex + 1)
                         }
                     },
-                    // Altura mínima, no fija: si el texto ocupa dos líneas el botón crece
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 44.dp),
@@ -1074,7 +1111,6 @@ fun RouteStepNavigationCard(
                     )
                 }
             } else {
-                // Final Segment
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
                         color = ToneBlueBg,
@@ -1122,7 +1158,6 @@ fun RouteStepNavigationCard(
                 }
             }
 
-            // Manual segment switcher controls
             if (segments.size > 1) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
@@ -1194,7 +1229,6 @@ fun PoiRouteSelectorCard(
         border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Origen Selector
             Text(text = "🟢 Punto de Origen", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Ink)
             Spacer(modifier = Modifier.height(4.dp))
             Box {
@@ -1231,7 +1265,6 @@ fun PoiRouteSelectorCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Destino Selector
             Text(text = "🔴 Punto de Destino", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Ink)
             Spacer(modifier = Modifier.height(4.dp))
             Box {
@@ -1268,7 +1301,6 @@ fun PoiRouteSelectorCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Switch PMR
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1315,7 +1347,6 @@ fun PoiRouteSelectorCard(
 
 @Composable
 fun CampusCard(campus: CampusItem) {
-
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = Color.White,

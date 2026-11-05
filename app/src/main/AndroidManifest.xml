@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- PERMISO DE CÁMARA PARA EL ESCÁNER QR -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
     <!-- Permiso necesario para el sensor de proximidad virtual (ProToS) -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
@@ -14,7 +17,8 @@
     <!-- Sensor de pasos del sistema (Android 10+); sin él se usa el acelerómetro -->
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
 
-    <!-- Ningún sensor es obligatorio: la app funciona sin ellSos, con la planta y el origen elegidos a mano -->
+    <!-- Ningún sensor es obligatorio: la app funciona sin ellos, con la planta y el origen elegidos a mano -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
     <uses-feature android:name="android.hardware.sensor.barometer" android:required="false" />
     <uses-feature android:name="android.hardware.sensor.compass" android:required="false" />

@@ -5,6 +5,7 @@ import com.example.aplicacionmovilnpi.model.EdgeType
 import com.example.aplicacionmovilnpi.model.Node
 import com.example.aplicacionmovilnpi.model.PointOfInterest
 
+
 object EtsiitData {
 
     // 1. Nodos físicos sobre el plano con coordenadas calibradas (0..1000f)
@@ -12,6 +13,8 @@ object EtsiitData {
         // --- PLANTA -1 (SÓTANO Y PATIO INFERIOR EXTERIOR) ---
         Node("n_escaleras_entrada_p-1", x = 257f, y = 701f, floor = 0),
         Node("n_pasillo_abierto_p-1", x = 240f, y = 650f, floor = -1),
+        Node("n_aula-11", x = 200f, y = 650f, floor = -1),
+        Node("n_aula-12", x = 200f, y = 550f, floor = -1),
         Node("n_entrada_edificio_principal_p-1", x = 275f, y = 605f, floor = -1),
         Node("n_escaleras_internas_p-1_a_p0", x = 320f, y = 635f, floor = -1),
         Node("n_ascensor_principal_p-1", x = 330f, y = 610f, floor = -1),
@@ -26,107 +29,109 @@ object EtsiitData {
         Node("n_patio_inferior_p-1", x = 535f, y = 425f, floor = -1),
 
         // --- PLANTA 0 ---
+        Node("n_escaleras_entrada_p-1", x = 257f, y = 701f, floor = 0),
         Node("n_entrada", x = 145f, y = 775f, floor = 0),
-        Node("n_patio", x = 520f, y = 650f, floor = 0),
+        Node("n_patio", x = 500f, y = 605f, floor = 0),
         Node("n_hall", x = 380f, y = 470f, floor = 0),
-
-        // Edificio Principal P0
+        Node("n_secretaria", x = 450f, y = 400f, floor = 0),
         Node("n_distribuidor_entrada_principal_p0", x = 283f, y = 565f, floor = 0),
-        Node("n_entrada_edificio_principal_p0", x = 405f, y = 615f, floor = 0),
+        Node("n_conserjeria_edificio_principal", x = 270f, y = 565f, floor = 0),
+        Node("n_entrada_edificio_principal_p0", x = 360f, y = 630f, floor = 0),
         Node("n_ascensor_principal_p0", x = 335f, y = 580f, floor = 0),
         Node("n_escaleras_principal_p0", x = 315f, y = 595f, floor = 0),
         Node("n_banos_edificio_principal_p0", x = 282f, y = 635f, floor = 0),
-
         Node("n_corredor_central", x = 610f, y = 530f, floor = 0),
         Node("n_corredor_lateral", x = 500f, y = 330f, floor = 0),
-
         Node("n_escaleras_lateral_p0", x = 510f, y = 300f, floor = 0),
         Node("n_escaleras_patio_central_p0", x = 630f, y = 590f, floor = 0),
-
-        Node("n_entrada_lateral_aulas", x = 550f, y = 309f, floor = 0),
+        Node("n_entrada_lateral_aulas", x = 560f, y = 309f, floor = 0),
         Node("n_entrada_central_aulas", x = 650f, y = 510f, floor = 0),
-
-        // Pasillo de aulas P0
-        Node("n_aula01", x = 560f, y = 210f, floor = 0),
-        Node("n_aula02", x = 605f, y = 260f, floor = 0),
-        Node("n_aula03", x = 640f, y = 310f, floor = 0),
-        Node("n_aula04", x = 685f, y = 380f, floor = 0),
-        Node("n_aula05", x = 740f, y = 460f, floor = 0),
-        Node("n_aula06", x = 785f, y = 530f, floor = 0),
-        Node("n_aula07", x = 835f, y = 615f, floor = 0),
-        Node("n_aula08", x = 890f, y = 710f, floor = 0),
-
-        // Cilindro P0
-        Node("n_escaleras_p0", x = 760f, y = 580f, floor = 0),
+        Node("n_conserjeria_p0", x = 645f, y = 460f, floor = 0),
+        Node("n_aula01", x = 520f, y = 230f, floor = 0),
+        Node("n_aula02", x = 535f, y = 260f, floor = 0),
+        Node("n_aula03", x = 590f, y = 360f, floor = 0),
+        Node("n_aula04", x = 625f, y = 420f, floor = 0),
+        Node("n_aula05", x = 670f, y = 490f, floor = 0),
+        Node("n_aula06", x = 715f, y = 550f, floor = 0),
+        Node("n_aula07", x = 775f, y = 655f, floor = 0),
+        Node("n_aula08", x = 820f, y = 740f, floor = 0),
+        Node("n_escaleras_p0", x = 750f, y = 620f, floor = 0),
         Node("n_ascensor_p0", x = 700f, y = 530f, floor = 0),
         Node("n_banos_p0", x = 720f, y = 590f, floor = 0),
 
-        // --- PLANTA 1 ---
+        // --- PLANTA 1 --
         Node("n_ascensor_principal_p1", x = 320f, y = 550f, floor = 1),
         Node("n_escaleras_principal_p1", x = 310f, y = 570f, floor = 1),
         Node("n_biblioteca", x = 350f, y = 500f, floor = 1),
-
-        Node("n_entrada_lateral_aulas_p1", x = 560f, y = 280f, floor = 1),
+        Node("n_entrada_lateral_aulas_p1", x = 560f, y = 275f, floor = 1),
         Node("n_escaleras_lateral_p1", x = 480f, y = 310f, floor = 1),
-        Node("n_aula11", x = 600f, y = 250f, floor = 1),
-        Node("n_aula12", x = 635f, y = 290f, floor = 1),
-        Node("n_aula13", x = 683f, y = 362f, floor = 1),
-        Node("n_aula14", x = 730f, y = 430f, floor = 1),
-        Node("n_aula15", x = 770f, y = 500f, floor = 1),
-        Node("n_aula16", x = 830f, y = 600f, floor = 1),
-
+        Node("n_aula11", x = 535f, y = 225f, floor = 1),
+        Node("n_aula12", x = 580f, y = 300f, floor = 1),
+        Node("n_aula13", x = 613f, y = 357f, floor = 1),
+        Node("n_aula14", x = 660f, y = 430f, floor = 1),
+        Node("n_aula15", x = 695f, y = 495f, floor = 1),
+        Node("n_aula16", x = 735f, y = 550f, floor = 1),
+        Node("n_aula17", x = 790f, y = 645f, floor = 1),
+        Node("n_aula18", x = 825f, y = 700f, floor = 1),
         Node("n_escaleras_p1", x = 745f, y = 580f, floor = 1),
-        Node("n_ascensor_p1", x = 700f, y = 530f, floor = 1),
-        Node("n_banos_p1", x = 710f, y = 600f, floor = 1),
+        Node("n_ascensor_p1", x = 715f, y = 530f, floor = 1),
+        Node("n_banos_p1", x = 755f, y = 600f, floor = 1),
 
         // --- PLANTA 2 ---
         Node("n_ascensor_principal_p2", x = 305f, y = 535f, floor = 2),
         Node("n_escaleras_principal_p2", x = 325f, y = 555f, floor = 2),
-        Node("n_despachos_p2", x = 285f, y = 505f, floor = 2),
-
+        Node("n_despachos_p2_12", x = 280f, y = 505f, floor = 2),
+        Node("n_despachos_p2_3-26", x = 250f, y = 560f, floor = 2),
+        Node("n_despachos_p2_27-40", x = 330f, y = 470f, floor = 2),
         Node("n_entrada_lateral_aulas_p2", x = 560f, y = 250f, floor = 2),
         Node("n_escaleras_lateral_p2", x = 530f, y = 270f, floor = 2),
-        Node("n_aula21", x = 570f, y = 190f, floor = 2),
-        Node("n_aula22", x = 595f, y = 225f, floor = 2),
-        Node("n_aula23", x = 620f, y = 270f, floor = 2),
-        Node("n_aula24", x = 640f, y = 310f, floor = 2),
-        Node("n_aula25", x = 680f, y = 350f, floor = 2),
-        Node("n_aula26", x = 710f, y = 390f, floor = 2),
-        Node("n_aula27", x = 750f, y = 440f, floor = 2),
-        Node("n_aula28", x = 780f, y = 505f, floor = 2),
-        Node("n_aula29", x = 815f, y = 550f, floor = 2),
-        Node("n_aula210", x = 855f, y = 625f, floor = 2),
-
+        Node("n_sala_operadores", x = 540f, y = 200f, floor = 2),
+        Node("n_aula21", x = 550f, y = 225f, floor = 2),
+        Node("n_aula22", x = 575f, y = 275f, floor = 2),
+        Node("n_aula23", x = 610f, y = 330f, floor = 2),
+        Node("n_aula24", x = 640f, y = 380f, floor = 2),
+        Node("n_aula25", x = 670f, y = 430f, floor = 2),
+        Node("n_aula26", x = 700f, y = 470f, floor = 2),
+        Node("n_aula27", x = 720f, y = 500f, floor = 2),
+        Node("n_aula28", x = 780f, y = 595f, floor = 2),
+        Node("n_aula29", x = 805f, y = 640f, floor = 2),
+        Node("n_aula210", x = 830f, y = 685f, floor = 2),
         Node("n_escaleras_p2", x = 760f, y = 545f, floor = 2),
-        Node("n_ascensor_p2", x = 710f, y = 525f, floor = 2),
-        Node("n_banos_p2", x = 730f, y = 575f, floor = 2),
+        Node("n_ascensor_p2", x = 740f, y = 525f, floor = 2),
+        Node("n_banos_p2", x = 760f, y = 555f, floor = 2),
 
-        // --- PLANTA 3 ---
+
+        // --- PLANTA 3 --
         Node("n_ascensor_principal_p3", x = 290f, y = 510f, floor = 3),
         Node("n_escaleras_principal_p3", x = 310f, y = 530f, floor = 3),
-        Node("n_despachos_p3", x = 275f, y = 485f, floor = 3),
-
+        Node("n_despachos_p3_12", x = 265f, y = 480f, floor = 3),
+        Node("n_despachos_p3_3-26", x = 235f, y = 535f, floor = 3),
+        Node("n_despachos_p3_27-40", x = 315f, y = 460f, floor = 3),
         Node("n_entrada_lateral_aulas_p3", x = 545f, y = 225f, floor = 3),
         Node("n_escaleras_lateral_p3", x = 525f, y = 245f, floor = 3),
-        Node("n_aula31", x = 565f, y = 150f, floor = 3),
-        Node("n_aula32", x = 590f, y = 190f, floor = 3),
-        Node("n_aula33", x = 615f, y = 225f, floor = 3),
-        Node("n_aula34", x = 650f, y = 275f, floor = 3),
-        Node("n_aula35", x = 680f, y = 325f, floor = 3),
-        Node("n_aula36", x = 710f, y = 370f, floor = 3),
-        Node("n_aula37", x = 745f, y = 420f, floor = 3),
-        Node("n_aula38", x = 780f, y = 480f, floor = 3),
-        Node("n_aula39", x = 815f, y = 550f, floor = 3),
-        Node("n_aula310", x = 865f, y = 605f, floor = 3),
+        Node("n_conserjeria_p3", x = 515f, y = 155f, floor = 3),
+        Node("n_aula31", x = 550f, y = 200f, floor = 3),
+        Node("n_aula32", x = 565f, y = 220f, floor = 3),
+        Node("n_aula33", x = 575f, y = 255f, floor = 3),
+        Node("n_aula34", x = 600f, y = 290f, floor = 3),
+        Node("n_aula35", x = 635f, y = 345f, floor = 3),
+        Node("n_aula36", x = 665f, y = 385f, floor = 3),
+        Node("n_aula37", x = 695f, y = 430f, floor = 3),
+        Node("n_aula38", x = 730f, y = 480f, floor = 3),
+        Node("n_aula39", x = 785f, y = 565f, floor = 3),
+        Node("n_aula310", x = 805f, y = 610f, floor = 3),
+        Node("n_aula311", x = 835f, y = 660f, floor = 3),
+        Node("n_escaleras_p3", x = 750f, y = 515f, floor = 3),
+        Node("n_ascensor_p3", x = 740f, y = 500f, floor = 3),
+        Node("n_banos_p3", x = 750f, y = 515f, floor = 3),
 
-        Node("n_escaleras_p3", x = 755f, y = 520f, floor = 3),
-        Node("n_ascensor_p3", x = 710f, y = 500f, floor = 3),
-        Node("n_banos_p3", x = 715f, y = 565f, floor = 3),
 
         // --- PLANTA 4 ---
         Node("n_ascensor_principal_p4", x = 305f, y = 450f, floor = 4),
         Node("n_escaleras_principal_p4", x = 315f, y = 485f, floor = 4),
-        Node("n_despachos_p4", x = 260f, y = 435f, floor = 4),
+        Node("n_despachos_p4_12", x = 255f, y = 465f, floor = 4),
+        Node("n_despachos_p4_3-26", x = 235f, y = 515f, floor = 4),
+        Node("n_despachos_p4_27-40", x = 330f, y = 405f, floor = 4),
 
         Node("n_delegacion_estudiantes", x = 725f, y = 510f, floor = 4),
         Node("n_escaleras_p4", x = 780f, y = 490f, floor = 4),
@@ -139,6 +144,8 @@ object EtsiitData {
         Edge(from = "n_entrada", to = "n_escaleras_entrada_p-1", weight = 13f),
         Edge(from = "n_escaleras_entrada_p-1", to = "n_pasillo_abierto_p-1", weight = 15f, type = EdgeType.STAIRS),
         Edge(from = "n_pasillo_abierto_p-1", to = "n_entrada_edificio_principal_p-1", weight = 6f),
+        Edge(from = "n_pasillo_abierto_p-1", to = "n_aula-11", weight = 6f),
+        Edge(from = "n_pasillo_abierto_p-1", to = "n_aula-12", weight = 6f),
 
         // Escaleras internas conectadas exclusivamente a la entrada desde el patio en P0
         Edge(from = "n_entrada_edificio_principal_p0", to = "n_escaleras_internas_p-1_a_p0", weight = 15f, type = EdgeType.STAIRS),
@@ -164,6 +171,8 @@ object EtsiitData {
         // Patio conecta con la entrada lateral del Edificio Principal
         Edge(from = "n_patio", to = "n_entrada_edificio_principal_p0", weight = 12f),
         Edge(from = "n_entrada_edificio_principal_p0", to = "n_hall", weight = 14f),
+        Edge(from = "n_entrada_edificio_principal_p0", to = "n_distribuidor_entrada_principal_p0", weight = 7f),
+        Edge(from = "n_hall", to = "n_secretaria", weight = 13f),
 
         // Hall comunica la zona central con la entrada general
         Edge(from = "n_hall", to = "n_distribuidor_entrada_principal_p0", weight = 13f),
@@ -172,6 +181,7 @@ object EtsiitData {
         Edge(from = "n_distribuidor_entrada_principal_p0", to = "n_ascensor_principal_p0", weight = 5f, type = EdgeType.WALKWAY),
         Edge(from = "n_distribuidor_entrada_principal_p0", to = "n_escaleras_principal_p0", weight = 6f, type = EdgeType.STAIRS),
         Edge(from = "n_distribuidor_entrada_principal_p0", to = "n_banos_edificio_principal_p0", weight = 7f, type = EdgeType.WALKWAY),
+        Edge(from = "n_distribuidor_entrada_principal_p0", to = "n_conserjeria_edificio_principal", weight = 3f, type = EdgeType.WALKWAY),
 
         Edge(from = "n_patio", to = "n_corredor_central", weight = 15f),
         Edge(from = "n_corredor_central", to = "n_corredor_lateral", weight = 23f),
@@ -179,8 +189,9 @@ object EtsiitData {
         Edge(from = "n_corredor_central", to = "n_entrada_central_aulas", weight = 4f),
         Edge(from = "n_corredor_lateral", to = "n_entrada_lateral_aulas", weight = 5f),
         Edge(from = "n_entrada_lateral_aulas", to = "n_aula02", weight = 7f),
-        Edge(from = "n_entrada_central_aulas", to = "n_aula06", weight = 13f),
+        Edge(from = "n_entrada_central_aulas", to = "n_aula05", weight = 13f),
 
+        Edge(from = "n_entrada_central_aulas", to = "n_conserjeria_p0", weight = 5f, type = EdgeType.WALKWAY),
         Edge(from = "n_entrada_central_aulas", to = "n_escaleras_p0", weight = 15f, type = EdgeType.STAIRS),
         Edge(from = "n_entrada_central_aulas", to = "n_ascensor_p0", weight = 5f, type = EdgeType.WALKWAY),
         Edge(from = "n_entrada_central_aulas", to = "n_banos_p0", weight = 10f, type = EdgeType.WALKWAY),
@@ -212,11 +223,16 @@ object EtsiitData {
         Edge(from = "n_escaleras_principal_p1", to = "n_biblioteca", weight = 8f, type = EdgeType.WALKWAY),
         Edge(from = "n_ascensor_principal_p1", to = "n_biblioteca", weight = 6f, type = EdgeType.WALKWAY),
 
-        Edge(from = "n_entrada_lateral_aulas_p1", to = "n_aula11", weight = 5f),
-        Edge(from = "n_ascensor_p1", to = "n_aula15", weight = 8f, type = EdgeType.WALKWAY),
-        Edge(from = "n_escaleras_p1", to = "n_aula15", weight = 12f, type = EdgeType.STAIRS),
-        Edge(from = "n_banos_p1", to = "n_aula15", weight = 12f, type = EdgeType.WALKWAY),
+        Edge(from = "n_entrada_lateral_aulas_p1", to = "n_aula12", weight = 5f),
+        Edge(from = "n_ascensor_p1", to = "n_aula16", weight = 8f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_p1", to = "n_aula16", weight = 12f, type = EdgeType.STAIRS),
+        Edge(from = "n_banos_p1", to = "n_aula16", weight = 12f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_p1", to = "n_aula17", weight = 8f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_p1", to = "n_aula17", weight = 12f, type = EdgeType.STAIRS),
+        Edge(from = "n_banos_p1", to = "n_aula17", weight = 12f, type = EdgeType.WALKWAY),
         Edge(from = "n_ascensor_p1", to = "n_banos_p1", weight = 7f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_p1", to = "n_escaleras_p1", weight = 5f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_p1", to = "n_banos_p1", weight = 5f, type = EdgeType.WALKWAY),
 
         // Pasillo Aulario P1
         Edge(from = "n_aula11", to = "n_aula12", weight = 5f),
@@ -224,18 +240,32 @@ object EtsiitData {
         Edge(from = "n_aula13", to = "n_aula14", weight = 8f),
         Edge(from = "n_aula14", to = "n_aula15", weight = 8f),
         Edge(from = "n_aula15", to = "n_aula16", weight = 12f),
+        Edge(from = "n_aula16", to = "n_aula17", weight = 12f),
+        Edge(from = "n_aula17", to = "n_aula18", weight = 12f),
 
         // --- CONEXIONES PLANTA 2 ---
-        Edge(from = "n_escaleras_principal_p2", to = "n_despachos_p2", weight = 6f, type = EdgeType.WALKWAY),
-        Edge(from = "n_ascensor_principal_p2", to = "n_despachos_p2", weight = 4f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_principal_p2", to = "n_despachos_p2_12", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_principal_p2", to = "n_despachos_p2_3-26", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_principal_p2", to = "n_despachos_p2_27-40", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_despachos_p2_12", to = "n_despachos_p2_3-26", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_despachos_p2_3-26", to = "n_despachos_p2_27-40", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_principal_p2", to = "n_despachos_p2_3-26", weight = 4f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_principal_p2", to = "n_despachos_p2_27-40", weight = 4f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_principal_p2", to = "n_despachos_p2_12", weight = 4f, type = EdgeType.WALKWAY),
 
         Edge(from = "n_entrada_lateral_aulas_p2", to = "n_aula21", weight = 6f),
         Edge(from = "n_ascensor_p2", to = "n_aula27", weight = 9f, type = EdgeType.WALKWAY),
         Edge(from = "n_escaleras_p2", to = "n_aula27", weight = 14f, type = EdgeType.STAIRS),
         Edge(from = "n_banos_p2", to = "n_aula27", weight = 14f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_p2", to = "n_aula28", weight = 9f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_p2", to = "n_aula28", weight = 14f, type = EdgeType.STAIRS),
+        Edge(from = "n_banos_p2", to = "n_aula28", weight = 14f, type = EdgeType.WALKWAY),
         Edge(from = "n_ascensor_p2", to = "n_banos_p2", weight = 5f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_p2", to = "n_escaleras_p2", weight = 5f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_p2", to = "n_banos_p2", weight = 5f, type = EdgeType.WALKWAY),
 
         // Pasillo Aulario P2
+        Edge(from = "n_sala_operadores", to = "n_aula21", weight = 4f),
         Edge(from = "n_aula21", to = "n_aula22", weight = 4f),
         Edge(from = "n_aula22", to = "n_aula23", weight = 5f),
         Edge(from = "n_aula23", to = "n_aula24", weight = 4f),
@@ -247,16 +277,28 @@ object EtsiitData {
         Edge(from = "n_aula29", to = "n_aula210", weight = 8f),
 
         // --- CONEXIONES PLANTA 3 ---
-        Edge(from = "n_escaleras_principal_p3", to = "n_despachos_p3", weight = 6f, type = EdgeType.WALKWAY),
-        Edge(from = "n_ascensor_principal_p3", to = "n_despachos_p3", weight = 3f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_principal_p3", to = "n_despachos_p3_12", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_principal_p3", to = "n_despachos_p3_3-26", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_principal_p3", to = "n_despachos_p3_27-40", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_despachos_p3_12", to = "n_despachos_p3_3-26", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_despachos_p3_3-26", to = "n_despachos_p3_27-40", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_principal_p3", to = "n_despachos_p3_12", weight = 4f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_principal_p3", to = "n_despachos_p3_27-40", weight = 4f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_principal_p3", to = "n_despachos_p3_3-26", weight = 4f, type = EdgeType.WALKWAY),
 
         Edge(from = "n_entrada_lateral_aulas_p3", to = "n_aula31", weight = 8f),
         Edge(from = "n_ascensor_p3", to = "n_aula38", weight = 7f, type = EdgeType.WALKWAY),
         Edge(from = "n_escaleras_p3", to = "n_aula38", weight = 10f, type = EdgeType.STAIRS),
         Edge(from = "n_banos_p3", to = "n_aula38", weight = 11f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_p3", to = "n_aula39", weight = 7f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_p3", to = "n_aula39", weight = 10f, type = EdgeType.STAIRS),
+        Edge(from = "n_banos_p3", to = "n_aula39", weight = 11f, type = EdgeType.WALKWAY),
         Edge(from = "n_ascensor_p3", to = "n_banos_p3", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_p3", to = "n_escaleras_p3", weight = 5f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_p3", to = "n_banos_p3", weight = 5f, type = EdgeType.WALKWAY),
 
         // Pasillo Aulario P3
+        Edge(from = "n_conserjeria_p3", to = "n_aula31", weight = 5f),
         Edge(from = "n_aula31", to = "n_aula32", weight = 5f),
         Edge(from = "n_aula32", to = "n_aula33", weight = 4f),
         Edge(from = "n_aula33", to = "n_aula34", weight = 6f),
@@ -266,14 +308,21 @@ object EtsiitData {
         Edge(from = "n_aula37", to = "n_aula38", weight = 7f),
         Edge(from = "n_aula38", to = "n_aula39", weight = 8f),
         Edge(from = "n_aula39", to = "n_aula310", weight = 7f),
+        Edge(from = "n_aula310", to = "n_aula311", weight = 7f),
 
         // --- CONEXIONES PLANTA 4 ---
         Edge(from = "n_escaleras_principal_p4", to = "n_despachos_p4", weight = 7f, type = EdgeType.WALKWAY),
         Edge(from = "n_ascensor_principal_p4", to = "n_despachos_p4", weight = 5f, type = EdgeType.WALKWAY),
 
         // Aulario P4
-        Edge(from = "n_ascensor_p4", to = "n_delegacion_estudiantes", weight = 5f, type = EdgeType.WALKWAY),
-        Edge(from = "n_escaleras_p4", to = "n_delegacion_estudiantes", weight = 8f, type = EdgeType.STAIRS),
+        Edge(from = "n_escaleras_principal_p4", to = "n_despachos_p4_12", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_principal_p4", to = "n_despachos_p4_3-26", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_escaleras_principal_p4", to = "n_despachos_p4_27-40", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_despachos_p4_12", to = "n_despachos_p4_3-26", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_despachos_p4_3-26", to = "n_despachos_p4_27-40", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_principal_p4", to = "n_despachos_p4_12", weight = 4f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_principal_p4", to = "n_despachos_p4_27-40", weight = 4f, type = EdgeType.WALKWAY),
+        Edge(from = "n_ascensor_principal_p4", to = "n_despachos_p4_3-26", weight = 4f, type = EdgeType.WALKWAY),
 
         // --- CONEXIONES VERTICALES (ASCENSOR AULARIO P0 a P4) ---
         Edge(from = "n_ascensor_p0", to = "n_ascensor_p1", weight = 50f, type = EdgeType.ELEVATOR),
@@ -307,11 +356,16 @@ object EtsiitData {
         PointOfInterest("poi_comedor", "Comedor", "Dining Hall", "SERVICIO", "n_comedor", "Comedor universitario en Planta Sótano"),
         PointOfInterest("poi_patio_inferior_p-1", "Patio Cero / Zona Abierta (P-1)", "Lower Courtyard (Floor -1)", "ZONA_COMUN", "n_patio_inferior_p-1", "Patio inferior exterior para eventos"),
         PointOfInterest("poi_ascensor_principal_p-1", "Ascensor Principal (P-1)", "Main Elevator (Floor -1)", "ACCESIBILIDAD", "n_ascensor_principal_p-1", "Ascensor principal en Planta Sótano"),
+        PointOfInterest("poi_aula-11", "Aula -1.1", "Classroom -1.1", "AULA", "n_aula-11"),
+        PointOfInterest("poi_aula-12", "Aula -1.2", "Classroom -1.2", "AULA", "n_aula-12"),
+
 
         // --- POIs PLANTA 0 ---
         PointOfInterest("poi_entrada", "Entrada Principal (Recinto Abierto)", "Main Entrance (Open Enclosure)", "ACCESO", "n_entrada", "Recinto abierto exterior de la entrada principal"),
         PointOfInterest("poi_patio", "Patio Exterior", "Courtyard", "ZONA_COMUN", "n_patio", "Patio con mesas y bancos"),
         PointOfInterest("poi_hall", "Hall Central", "Central Hall", "ZONA_COMUN", "n_hall", "Distribuidor cilíndrico en el bloque principal"),
+        PointOfInterest("poi_secretaria", "Secretaría", "Administrative Office", "SERVICIO", "n_secretaria", "Secretaría"),
+        PointOfInterest("poi_conserjeria_edificio_principal", "Conserjería Edificio Principal", "Reception", "SERVICIO", "n_conserjeria_edificio_principal", "Conserjería del edificio principal"),
         PointOfInterest("poi_distribuidor_entrada_principal_p0", "Entrada General Edificio Principal", "Main Building Main Entrance", "ACCESO", "n_distribuidor_entrada_principal_p0", "Distribuidor interno de la entrada general con acceso a escaleras y ascensor principal"),
         PointOfInterest("poi_entrada_edificio_principal_p0", "Entrada Patio Edificio Principal (P0)", "Patio Building Entrance (P0)", "ACCESO", "n_entrada_edificio_principal_p0", "Puerta de acceso al edificio principal desde el patio exterior"),
         PointOfInterest("poi_ascensor_principal_p0", "Ascensor Principal (P0)", "Main Elevator (Floor 0)", "ACCESIBILIDAD", "n_ascensor_principal_p0", "Ascensor principal en Planta Baja"),
@@ -329,6 +383,7 @@ object EtsiitData {
         PointOfInterest("poi_ascensor_p0", "Ascensor Aulario (P0)", "Classrooms Elevator (Floor 0)", "ACCESIBILIDAD", "n_ascensor_p0", "Ascensor adaptado en Planta Baja"),
         PointOfInterest("poi_banos_p0", "Aseos Aulario (P0)", "Restrooms (Floor 0)", "SERVICIO", "n_banos_p0", "Baños en Planta Baja"),
 
+        PointOfInterest("poi_conserjeria_p0", "Conserjeria (P0)", "Reception (Floor 0)", "SERVICIO", "n_conserjeria_p0"),
         PointOfInterest("poi_aula01", "Aula 0.1", "Classroom 0.1", "AULA", "n_aula01"),
         PointOfInterest("poi_aula02", "Aula 0.2", "Classroom 0.2", "AULA", "n_aula02"),
         PointOfInterest("poi_aula03", "Aula 0.3", "Classroom 0.3", "AULA", "n_aula03"),
@@ -354,9 +409,14 @@ object EtsiitData {
         PointOfInterest("poi_aula14", "Aula 1.4", "Classroom 1.4", "AULA", "n_aula14"),
         PointOfInterest("poi_aula15", "Aula 1.5", "Classroom 1.5", "AULA", "n_aula15"),
         PointOfInterest("poi_aula16", "Aula 1.6", "Classroom 1.6", "AULA", "n_aula16"),
+        PointOfInterest("poi_aula17", "Aula 1.7", "Classroom 1.7", "AULA", "n_aula17"),
+        PointOfInterest("poi_aula18", "Aula 1.8", "Classroom 1.8", "AULA", "n_aula18"),
+
 
         // --- POIs PLANTA 2 ---
-        PointOfInterest("poi_despachos_p2", "Despachos Planta 2", "Offices Floor 2", "DESPACHO", "n_despachos_p2", "Pasillo principal de despachos del profesorado en Planta 2"),
+        PointOfInterest("poi_despachos_p2_12", "Despachos 1 y 2 Planta 2", "Offices 1 & 2 Floor 2", "DESPACHO", "n_despachos_p2_12", "Despachos 1 y 2 en la planta 2"),
+        PointOfInterest("poi_despachos_p2_3-26", "Despachos 3-26 Planta 2", "Offices 3-26 Floor 2", "DESPACHO", "n_despachos_p2_3-26", "Despachos del 3 al 26 en la planta 2"),
+        PointOfInterest("poi_despachos_p2_27-40", "Despachos 27-40 Planta 2", "Offices 27-40 Floor 2", "DESPACHO", "n_despachos_p2_27-40", "Despachos del 27 al 40 en la planta 2"),
         PointOfInterest("poi_ascensor_principal_p2", "Ascensor Principal (P2)", "Main Elevator (Floor 2)", "ACCESIBILIDAD", "n_ascensor_principal_p2", "Ascensor principal en Planta 2"),
         PointOfInterest("poi_escaleras_principal_p2", "Escaleras Edificio Principal (P2)", "Main Stairs (Floor 2)", "SERVICIO", "n_escaleras_principal_p2", "Escaleras principales Planta 2"),
         PointOfInterest("poi_entrada_lateral_aulas_p2", "Entrada Lateral Aulas (P2)", "Side Classrooms Entrance (P2)", "TRANSITO", "n_entrada_lateral_aulas_p2", "Acceso lateral Planta 2"),
@@ -365,6 +425,7 @@ object EtsiitData {
         PointOfInterest("poi_ascensor_p2", "Ascensor Aulario (P2)", "Classrooms Elevator (Floor 2)", "ACCESIBILIDAD", "n_ascensor_p2", "Ascensor adaptado en Planta 2"),
         PointOfInterest("poi_banos_p2", "Aseos Aulario (P2)", "Restrooms (Floor 2)", "SERVICIO", "n_banos_p2", "Baños en Planta 2"),
 
+        PointOfInterest("poi_sala_operadores", "Sala de Operadores", "Operators' Room", "SERVICIO", "n_sala_operadores"),
         PointOfInterest("poi_aula21", "Aula 2.1", "Classroom 2.1", "AULA", "n_aula21"),
         PointOfInterest("poi_aula22", "Aula 2.2", "Classroom 2.2", "AULA", "n_aula22"),
         PointOfInterest("poi_aula23", "Aula 2.3", "Classroom 2.3", "AULA", "n_aula23"),
@@ -377,7 +438,9 @@ object EtsiitData {
         PointOfInterest("poi_aula210", "Aula 2.10", "Classroom 2.10", "AULA", "n_aula210"),
 
         // --- POIs PLANTA 3 ---
-        PointOfInterest("poi_despachos_p3", "Despachos Planta 3", "Offices Floor 3", "DESPACHO", "n_despachos_p3", "Pasillo principal de despachos del profesorado en Planta 3"),
+        PointOfInterest("poi_despachos_p3_12", "Despachos 1 y 2 Planta 3", "Offices 1 & 2 Floor 3", "DESPACHO", "n_despachos_p3_12", "Despachos 1 y 2 en la planta 3"),
+        PointOfInterest("poi_despachos_p3_3-26", "Despachos 3-26 Planta 3", "Offices 3-26 Floor 3", "DESPACHO", "n_despachos_p3_3-26", "Despachos del 3 al 26 en la planta 3"),
+        PointOfInterest("poi_despachos_p3_27-40", "Despachos 27-40 Planta 3", "Offices 27-40 Floor 3", "DESPACHO", "n_despachos_p3_27-40", "Despachos del 27 al 40 en la planta 3"),
         PointOfInterest("poi_ascensor_principal_p3", "Ascensor Principal (P3)", "Main Elevator (Floor 3)", "ACCESIBILIDAD", "n_ascensor_principal_p3", "Ascensor principal en Planta 3"),
         PointOfInterest("poi_escaleras_principal_p3", "Escaleras Edificio Principal (P3)", "Main Stairs (Floor 3)", "SERVICIO", "n_escaleras_principal_p3", "Escaleras principales Planta 3"),
         PointOfInterest("poi_entrada_lateral_aulas_p3", "Entrada Lateral Aulas (P3)", "Side Classrooms Entrance (P3)", "TRANSITO", "n_entrada_lateral_aulas_p3", "Acceso lateral Planta 3"),
@@ -385,6 +448,7 @@ object EtsiitData {
         PointOfInterest("poi_ascensor_p3", "Ascensor Aulario (P3)", "Classrooms Elevator (Floor 3)", "ACCESIBILIDAD", "n_ascensor_p3", "Ascensor adaptado en Planta 3"),
         PointOfInterest("poi_banos_p3", "Aseos Aulario (P3)", "Restrooms (Floor 3)", "SERVICIO", "n_banos_p3", "Baños en Planta 3"),
 
+        PointOfInterest("poi_conserjeria_p3", "Conserjeria (P3)", "Reception (Floor 3)", "SERVICIO", "n_conserjeria_p3"),
         PointOfInterest("poi_aula31", "Aula 3.1", "Classroom 3.1", "AULA", "n_aula31"),
         PointOfInterest("poi_aula32", "Aula 3.2", "Classroom 3.2", "AULA", "n_aula32"),
         PointOfInterest("poi_aula33", "Aula 3.3", "Classroom 3.3", "AULA", "n_aula33"),
@@ -398,7 +462,9 @@ object EtsiitData {
         PointOfInterest("poi_aula311", "Aula 3.11", "Classroom 3.11", "AULA", "n_aula311"),
 
         // --- POIs PLANTA 4 ---
-        PointOfInterest("poi_despachos_p4", "Despachos Planta 4", "Offices Floor 4", "DESPACHO", "n_despachos_p4", "Pasillo principal de despachos del profesorado en Planta 4"),
+        PointOfInterest("poi_despachos_p4_12", "Despachos 1 y 2 Planta 4", "Offices 1 & 2 Floor 4", "DESPACHO", "n_despachos_p4_12", "Despachos 1 y 2 en la planta 4"),
+        PointOfInterest("poi_despachos_p4_3-26", "Despachos 3-26 Planta 4", "Offices 3-26 Floor 4", "DESPACHO", "n_despachos_p4_3-26", "Despachos del 3 al 26 en la planta 4"),
+        PointOfInterest("poi_despachos_p4_27-40", "Despachos 27-40 Planta 4", "Offices 27-40 Floor 4", "DESPACHO", "n_despachos_p4_27-40", "Despachos del 27 al 40 en la planta 4"),
         PointOfInterest("poi_ascensor_principal_p4", "Ascensor Principal (P4)", "Main Elevator (Floor 4)", "ACCESIBILIDAD", "n_ascensor_principal_p4", "Ascensor principal en Planta 4"),
         PointOfInterest("poi_escaleras_principal_p4", "Escaleras Edificio Principal (P4)", "Main Stairs (Floor 4)", "SERVICIO", "n_escaleras_principal_p4", "Escaleras principales Planta 4"),
         PointOfInterest("poi_delegacion_estudiantes", "Delegación de Estudiantes", "Student Council Office", "DESPACHO", "n_delegacion_estudiantes", "Oficina de Delegación de Estudiantes en Planta 4"),
