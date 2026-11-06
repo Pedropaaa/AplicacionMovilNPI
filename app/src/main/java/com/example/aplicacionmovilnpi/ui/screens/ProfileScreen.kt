@@ -121,10 +121,6 @@ fun ProfileScreen(onBack: () -> Unit) {
 
                 ProfileDetailRow(label = "Centro", value = "E.T.S. de Ingenierías Informática y de Telecomunicación")
                 Spacer(modifier = Modifier.height(10.dp))
-                ProfileDetailRow(label = "Curso", value = "${FacultyData.Student.course} (${FacultyData.Student.academicYear})")
-                Spacer(modifier = Modifier.height(10.dp))
-                ProfileDetailRow(label = "Grupo", value = FacultyData.Student.group)
-                Spacer(modifier = Modifier.height(10.dp))
                 ProfileDetailRow(label = "Asignaturas", value = FacultyData.studentSubjects.joinToString(", "))
                 Spacer(modifier = Modifier.height(10.dp))
                 ProfileDetailRow(label = "Correo UGR", value = FacultyData.Student.email)

@@ -62,12 +62,6 @@ fun ScheduleScreen(
             fontWeight = FontWeight.Black,
             color = Ink
         )
-        Text(
-            text = "${FacultyData.Student.course} · ${FacultyData.Student.group}",
-            fontSize = 12.sp,
-            color = MutedText,
-            modifier = Modifier.padding(top = 2.dp)
-        )
 
         Spacer(modifier = Modifier.height(18.dp))
 
