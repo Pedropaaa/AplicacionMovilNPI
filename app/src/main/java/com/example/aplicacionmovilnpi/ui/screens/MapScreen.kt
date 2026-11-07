@@ -96,6 +96,8 @@ import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Apartment
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.filled.CameraAlt
+import com.example.aplicacionmovilnpi.location.GeoPoint
+import com.example.aplicacionmovilnpi.location.GeoUtils
 
 fun getFloorName(floor: Int): String = when (floor) {
     4 -> "P4"
@@ -197,6 +199,7 @@ fun parseRouteSegments(route: List<Node>): List<RouteFloorSegment> {
 
 private const val DEST_ASEO_CERCANO = "__dest_aseo_cercano__"
 private const val DEST_FUENTE_CERCANA = "__dest_fuente_cercana__"
+private const val DEST_COMEDOR_CERCANO = "__dest_comedor_cercano__"
 
 private data class DestinationResolution(
     val poi: PointOfInterest?,
@@ -278,13 +281,36 @@ fun MapScreen(
     val allPois = remember { EtsiitData.pois }
 
     // 1. DECLARACIONES DE ESTADO (Primero)
-    var mapMode by rememberSaveable { mutableStateOf("city") }
-    var selectedFloor by rememberSaveable { mutableStateOf("P1") }
+    val isComedorShortcut = initialDestPoiId == DEST_COMEDOR_CERCANO
 
-    // Routing State
-    var startPoiId by rememberSaveable { mutableStateOf("") }
-    var destPoiId by rememberSaveable(initialDestPoiId) { mutableStateOf(initialDestPoiId ?: "") }
-    var isRouteOpen by rememberSaveable(initialDestPoiId) { mutableStateOf(initialDestPoiId != null) }
+    var mapMode by rememberSaveable {
+        mutableStateOf("city")
+    }
+
+    var selectedFloor by rememberSaveable(initialDestPoiId, mapEntryKey) {
+        mutableStateOf(
+            if (isComedorShortcut) "S1" else "P1"
+        )
+    }
+
+// Routing State
+    var startPoiId by rememberSaveable(initialDestPoiId, mapEntryKey) {
+        mutableStateOf("")
+    }
+
+    var destPoiId by rememberSaveable(initialDestPoiId, mapEntryKey) {
+        mutableStateOf(
+            if (isComedorShortcut) "poi_comedor"
+            else initialDestPoiId ?: ""
+        )
+    }
+
+    var isRouteOpen by rememberSaveable(initialDestPoiId, mapEntryKey) {
+        mutableStateOf(
+            initialDestPoiId != null && !isComedorShortcut
+        )
+    }
+
     var isAccessibleRoute by rememberSaveable { mutableStateOf(false) }
 
     // Estado para el escaner QR y diálogo de QR de Ruta
@@ -306,25 +332,44 @@ fun MapScreen(
         mutableIntStateOf(-1)
     }
 
-    LaunchedEffect(mapEntryKey, gpsLocation, hasLocationPermission) {
-        if (autoModeAppliedForEntry == mapEntryKey) return@LaunchedEffect
+LaunchedEffect(
+mapEntryKey,
+gpsLocation,
+hasLocationPermission,
+initialDestPoiId
+) {
+    if (autoModeAppliedForEntry == mapEntryKey) return@LaunchedEffect
 
-        if (!hasLocationPermission) {
-            // Se solicita permiso al entrar en Mapa solo una vez por entrada.
-            if (permissionRequestedForEntry != mapEntryKey) {
-                permissionRequestedForEntry = mapEntryKey
-                permissionLauncher.launch(LocationPermissions.all)
-            }
-            return@LaunchedEffect
+    if (!hasLocationPermission) {
+        if (permissionRequestedForEntry != mapEntryKey) {
+            permissionRequestedForEntry = mapEntryKey
+            permissionLauncher.launch(LocationPermissions.all)
         }
-
-        val location = gpsLocation ?: return@LaunchedEffect
-        // Evita cambiar de plano con una lectura GPS demasiado imprecisa.
-        if (location.accuracy > 100f) return@LaunchedEffect
-
-        mapMode = if (isNearEtsiit(location)) "indoor" else "city"
-        autoModeAppliedForEntry = mapEntryKey
+        return@LaunchedEffect
     }
+
+    val location = gpsLocation ?: return@LaunchedEffect
+
+    // Esperamos una lectura GPS suficientemente precisa.
+    if (location.accuracy > 100f) return@LaunchedEffect
+
+    val currentPoint = GeoPoint(
+        location.latitude,
+        location.longitude
+    )
+
+    // Para el comedor utilizamos el radio específico de GeoUtils (120 m).
+    // Para el resto de accesos conservamos el comportamiento actual.
+    val atEtsiit = if (initialDestPoiId == DEST_COMEDOR_CERCANO) {
+        GeoUtils.isAtEtsiit(currentPoint)
+    } else {
+        isNearEtsiit(location)
+    }
+
+    mapMode = if (atEtsiit) "indoor" else "city"
+
+    autoModeAppliedForEntry = mapEntryKey
+}
     val hasBarometer = remember { hasSensor(context, Sensor.TYPE_PRESSURE) }
     val tracker = remember { IndoorTracker(LocationPrefs.mapNorth(context)) }
     var isTracking by rememberSaveable { mutableStateOf(false) }
@@ -332,41 +377,46 @@ fun MapScreen(
     PressureEffect(active = indoorSensorsActive) { hPa, timestampMs -> tracker.onPressure(hPa, timestampMs) }
     val azimuth = rememberCompassAzimuth(active = indoorSensorsActive)
 
-    // Resolver el destino seleccionado.
 // Si es un destino especial, buscamos el POI real más cercano.
-    val destinationResolution = remember(
-        startPoiId,
-        destPoiId,
-        isAccessibleRoute,
-        allPois
-    ) {
-        when (destPoiId) {
+val destinationResolution = remember(
+    startPoiId,
+    destPoiId,
+    isAccessibleRoute,
+    allPois
+) {
+    when (destPoiId) {
 
-            DEST_ASEO_CERCANO -> {
-                resolveNearestPoi(
-                    startPoiId = startPoiId,
-                    candidates = allPois.filter { it.isAseo() },
-                    routeManager = routeManager,
-                    isAccessibleRoute = isAccessibleRoute
-                )
-            }
+        DEST_ASEO_CERCANO -> {
+            resolveNearestPoi(
+                startPoiId = startPoiId,
+                candidates = allPois.filter { it.isAseo() },
+                routeManager = routeManager,
+                isAccessibleRoute = isAccessibleRoute
+            )
+        }
 
-            DEST_FUENTE_CERCANA -> {
-                resolveNearestPoi(
-                    startPoiId = startPoiId,
-                    candidates = allPois.filter { it.isFuente() },
-                    routeManager = routeManager,
-                    isAccessibleRoute = isAccessibleRoute
-                )
-            }
+        DEST_FUENTE_CERCANA -> {
+            resolveNearestPoi(
+                startPoiId = startPoiId,
+                candidates = allPois.filter { it.isFuente() },
+                routeManager = routeManager,
+                isAccessibleRoute = isAccessibleRoute
+            )
+        }
 
-            else -> {
-                DestinationResolution(
-                    poi = allPois.find { it.id == destPoiId }
-                )
-            }
+        DEST_COMEDOR_CERCANO -> {
+            DestinationResolution(
+                poi = allPois.find { it.id == "poi_comedor" }
+            )
+        }
+
+        else -> {
+            DestinationResolution(
+                poi = allPois.find { it.id == destPoiId }
+            )
         }
     }
+}
 
 // Calculamos la ruta utilizando el POI real resuelto.
     val calculatedRoute = remember(
@@ -400,8 +450,6 @@ fun MapScreen(
     val startPoi = remember(startPoiId) {
         allPois.find { it.id == startPoiId }
     }
-
-// Este POI puede ser uno normal o el aseo/fuente que se ha resuelto.
     val destPoi = destinationResolution.poi
 
     val selectedDestLabel = when (destPoiId) {
@@ -414,6 +462,10 @@ fun MapScreen(
             destPoi?.let { "🚰 Fuente más cercana · ${it.nameEs}" }
                 ?: "🚰 Fuente más cercana"
 
+        DEST_COMEDOR_CERCANO ->
+            destPoi?.let { "🍽️ ${it.nameEs}" }
+                ?: "🍽️ Comedor de la ETSIIT"
+
         else -> destPoi?.nameEs ?: "Seleccionar Destino"
     }
 
@@ -423,6 +475,9 @@ fun MapScreen(
 
         destPoiId == DEST_FUENTE_CERCANA && destPoi == null ->
             "No se ha encontrado una fuente con ruta disponible desde este origen."
+
+        destPoiId == DEST_COMEDOR_CERCANO && destPoi == null ->
+            "No se ha encontrado el comedor de la ETSIIT."
 
         else -> null
     }
@@ -559,31 +614,36 @@ fun MapScreen(
             }
         }
 
-        if (mapMode == "city") {
-            Text(
-                text = "Cómo llegar a pie",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = Ink
-            )
-            Text(
-                text = "Toca el mapa o elige un origen, y el destino",
-                fontSize = 11.sp,
-                color = MutedText,
-                modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)
-            )
+    if (mapMode == "city") {
+        CityRouteSection(
+            gpsLocation = gpsLocation,
+            hasLocationPermission = hasLocationPermission,
 
-            CityRouteSection(
-                gpsLocation = gpsLocation,
-                hasLocationPermission = hasLocationPermission,
-                onRequestPermission = { permissionLauncher.launch(LocationPermissions.all) },
-                onContinueIndoors = {
-                    mapMode = "indoor"
-                    scope.launch { scrollState.scrollTo(0) }
+            onRequestPermission = {
+                permissionLauncher.launch(LocationPermissions.all)
+            },
+
+            onContinueIndoors = {
+                mapMode = "indoor"
+                scope.launch {
+                    scrollState.scrollTo(0)
                 }
-            )
+            },
 
-        } else {
+            // Petición especial del comedor más cercano.
+            initialDestinationId = initialDestPoiId.takeIf {
+                it == DEST_COMEDOR_CERCANO
+            },
+
+            // Esperamos a que se haya determinado la ubicación.
+            initialDestinationReady =
+                autoModeAppliedForEntry == mapEntryKey ||
+                        !hasLocationPermission,
+
+            // Identificador único de cada entrada al mapa.
+            destinationRequestKey = mapEntryKey
+        )
+    } else {
             val floorNumber = when (selectedFloor) {
                 "P4" -> 4
                 "P3" -> 3
@@ -728,8 +788,6 @@ fun MapScreen(
                     onClose = { isRouteOpen = false }
                 )
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
 
             Spacer(modifier = Modifier.height(12.dp))
 

@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedTextField
@@ -55,6 +56,8 @@ import com.example.aplicacionmovilnpi.ui.theme.ToneRoseBg
 import com.example.aplicacionmovilnpi.ui.theme.ToneRoseText
 import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 import com.example.aplicacionmovilnpi.ui.theme.UgrRedDark
+import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material3.Icon
 
 @Composable
 fun HomeScreen(
@@ -290,7 +293,7 @@ fun HomeScreen(
                         tone = "blue"
                     ),
                     onClick = {
-                        onNavigateToMap("ID_REAL_COMEDOR")
+                        onNavigateToMap("__dest_comedor_cercano__")
                     },
                     modifier = Modifier.weight(1f).fillMaxHeight()
                 )
@@ -303,42 +306,76 @@ fun HomeScreen(
                         tone = "rose"
                     ),
                     onClick = {
-                        onNavigateToMap("ID_REAL_BIBLIOTECA")
+                        onNavigateToMap("__dest_comedor_cercano__")
                     },
                     modifier = Modifier.weight(1f).fillMaxHeight()
                 )
             }
 
             // FILA 3
+
+// FILA 3
             Row(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+
+                // TARJETA IZQUIERDA: ESCÁNER QR
                 PlaceCategoryCard(
                     place = PlaceCategory(
-                        name = "Aseos",
-                        detail = "Más cercanos",
-                        icon = "toilet",
-                        tone = "blue"
+                        name = "Escáner QR",
+                        detail = "Escanea un código",
+                        icon = "qr",
+                        tone = "black"
                     ),
                     onClick = {
-                        onNavigateToMap("__dest_aseo_cercano__")
+                        // Acción del escáner
                     },
-                    modifier = Modifier.weight(1f).fillMaxHeight()
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
                 )
 
-                PlaceCategoryCard(
-                    place = PlaceCategory(
-                        name = "Fuentes",
-                        detail = "Más cercana",
-                        icon = "water",
-                        tone = "blue"
-                    ),
-                    onClick = {
-                        onNavigateToMap("__dest_fuente_cercana__")
-                    },
-                    modifier = Modifier.weight(1f).fillMaxHeight()
-                )
+                // COLUMNA DERECHA: ASEOS Y FUENTES
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+
+                    PlaceCategoryCard(
+                        place = PlaceCategory(
+                            name = "Aseos",
+                            detail = "Más cercanos",
+                            icon = "toilet",
+                            tone = "blue"
+                        ),
+                        onClick = {
+                            onNavigateToMap("__dest_aseo_cercano__")
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                    )
+
+                    PlaceCategoryCard(
+                        place = PlaceCategory(
+                            name = "Fuentes",
+                            detail = "Más cercana",
+                            icon = "water",
+                            tone = "blue"
+                        ),
+                        onClick = {
+                            onNavigateToMap("__dest_fuente_cercana__")
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                    )
+                }
             }
         }
 
@@ -395,10 +432,19 @@ fun PlaceCategoryCard(
                 modifier = Modifier.size(40.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text = iconText,
-                        fontSize = 20.sp
-                    )
+                    if (place.icon == "qr") {
+                        Icon(
+                            imageVector = Icons.Filled.QrCodeScanner,
+                            contentDescription = "Escáner QR",
+                            tint = Ink,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    } else {
+                        Text(
+                            text = iconText,
+                            fontSize = 28.sp
+                        )
+                    }
                 }
             }
 

@@ -88,9 +88,13 @@ import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
 import java.io.File
 import org.osmdroid.util.GeoPoint as OsmPoint
 import org.osmdroid.events.MapListener
+import androidx.compose.foundation.background
+import com.example.aplicacionmovilnpi.ui.theme.SoftBg
+import androidx.compose.ui.draw.clipToBounds
 
 private const val ORIGIN_GPS = "gps"
 private const val ORIGIN_MAP = "map"
+private const val DEST_COMEDOR_CERCANO = "__dest_comedor_cercano__"
 
 private fun GeoPoint.toOsm() = OsmPoint(lat, lon)
 
@@ -114,10 +118,16 @@ fun CityRouteSection(
     gpsLocation: Location?,
     hasLocationPermission: Boolean,
     onRequestPermission: () -> Unit,
-    onContinueIndoors: () -> Unit
+    onContinueIndoors: () -> Unit,
+    initialDestinationId: String? = null,
+    initialDestinationReady: Boolean = true,
+    destinationRequestKey: Int = 0
 ) {
     val scope = rememberCoroutineScope()
 
+    var handledComedorRequestKey by rememberSaveable {
+        mutableStateOf(-1)
+    }
     var originId by rememberSaveable { mutableStateOf(if (hasLocationPermission) ORIGIN_GPS else "sciences") }
     var destId by rememberSaveable { mutableStateOf(CityPlaces.etsiit.id) }
     var mapOriginLat by rememberSaveable { mutableStateOf<Double?>(null) }
@@ -170,6 +180,16 @@ fun CityRouteSection(
     }
 
     val gpsPoint = gpsLocation?.toGeoPoint()
+    val comedorCandidates = remember {
+        listOf(
+            "comedor_fuentenueva",
+            "comedor_cartuja",
+            "comedor_pts",
+            "comedor_etsiit"
+        ).mapNotNull { id ->
+            CityPlaces.byId(id)
+        }
+    }
     val mapOrigin = if (mapOriginLat != null && mapOriginLon != null) GeoPoint(mapOriginLat!!, mapOriginLon!!) else null
     val origin: GeoPoint? = when (originId) {
         ORIGIN_GPS -> gpsPoint
@@ -183,8 +203,450 @@ fun CityRouteSection(
         error = null
     }
 
+    // ======================================================
+// BÚSQUEDA AUTOMÁTICA DEL COMEDOR EXTERIOR MÁS CERCANO
+// ======================================================
+
+    LaunchedEffect(
+        initialDestinationId,
+        initialDestinationReady,
+        destinationRequestKey,
+        hasLocationPermission
+    ) {
+
+        // Solo actuamos cuando se solicita el comedor especial.
+        if (initialDestinationId != DEST_COMEDOR_CERCANO) {
+            return@LaunchedEffect
+        }
+
+        // Esperamos a que MapScreen haya terminado de determinar
+        // si el usuario está dentro o fuera de la ETSIIT.
+        if (!initialDestinationReady) {
+            return@LaunchedEffect
+        }
+
+        // Evitamos procesar dos veces la misma petición.
+        if (handledComedorRequestKey == destinationRequestKey) {
+            return@LaunchedEffect
+        }
+
+        // Sin permiso GPS no podemos saber qué comedor está más cerca.
+        if (!hasLocationPermission) {
+            error = "Necesitamos tu ubicación para encontrar el comedor más cercano."
+            return@LaunchedEffect
+        }
+
+        val location = gpsLocation
+
+        if (location == null) {
+            error = "Esperando a obtener tu ubicación GPS..."
+            return@LaunchedEffect
+        }
+
+        // Utilizamos el mismo criterio de precisión que MapScreen.
+        if (location.accuracy > 100f) {
+            error = "La señal GPS todavía no es suficientemente precisa."
+            return@LaunchedEffect
+        }
+
+        val currentPosition = gpsPoint ?: return@LaunchedEffect
+
+        // Buscamos el comedor geográficamente más próximo.
+        val nearestComedor = comedorCandidates.minByOrNull { comedor ->
+            GeoUtils.distanceMeters(
+                currentPosition,
+                comedor.point
+            )
+        }
+
+        if (nearestComedor == null) {
+            error = "No se han encontrado comedores universitarios."
+            return@LaunchedEffect
+        }
+
+        // Marcamos la petición como procesada.
+        handledComedorRequestKey = destinationRequestKey
+
+        // Establecemos el GPS como origen.
+        originId = ORIGIN_GPS
+        originSearchQuery = "📍 Mi ubicación"
+
+        // Establecemos el comedor encontrado como destino.
+        destId = nearestComedor.id
+        destSearchQuery = nearestComedor.name
+
+        isOriginSearchExpanded = false
+        isDestSearchExpanded = false
+
+        error = null
+        isLoading = true
+
+        // Calculamos la ruta peatonal desde el GPS hasta el comedor.
+        val result = WalkingRouteService.fetch(
+            from = currentPosition,
+            to = nearestComedor.point
+        )
+
+        result
+            .onSuccess { walkingRoute ->
+                route = walkingRoute
+                showAllSteps = false
+            }
+            .onFailure {
+                error = "No se pudo calcular la ruta al comedor. Comprueba tu conexión a internet."
+            }
+
+        isLoading = false
+    }
+
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (!hasLocationPermission) CityLocationPermissionButton(onRequestPermission)
+
+        if (
+            initialDestinationId == DEST_COMEDOR_CERCANO &&
+            !initialDestinationReady
+        ) {
+            Text(
+                text = "📍 Comprobando tu ubicación para encontrar el comedor más cercano...",
+                fontSize = 11.sp,
+                color = MutedText,
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
+        }
+
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            color = Color.White,
+            shape = RoundedCornerShape(16.dp),
+            shadowElevation = 2.dp,
+            border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+
+                // ORIGEN Y DESTINO CON RAÍL VISUAL
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+                    // Raíl visual igual que el menú interior
+                    Column(
+                        modifier = Modifier.width(18.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(9.dp)
+                                .background(GreenStatus, RoundedCornerShape(50))
+                        )
+
+                        repeat(3) {
+                            Spacer(modifier = Modifier.height(3.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(3.dp)
+                                    .background(CardBorder, RoundedCornerShape(50))
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(3.dp))
+
+                        Box(
+                            modifier = Modifier
+                                .size(9.dp)
+                                .background(UgrRed, RoundedCornerShape(50))
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(6.dp))
+
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+
+                        // CAMPO DE ORIGEN
+                        androidx.compose.material3.OutlinedTextField(
+                            value = originSearchQuery,
+                            onValueChange = {
+                                originSearchQuery = it
+                                isOriginSearchExpanded = true
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            textStyle = androidx.compose.ui.text.TextStyle(
+                                fontSize = 13.sp,
+                                color = Ink
+                            ),
+                            leadingIcon = {
+                                Text("🟢", fontSize = 13.sp)
+                            },
+                            placeholder = {
+                                Text("Seleccionar origen...", fontSize = 12.sp)
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = SoftBg,
+                                unfocusedContainerColor = SoftBg,
+                                focusedBorderColor = UgrRed,
+                                unfocusedBorderColor = CardBorder,
+                                cursorColor = UgrRed
+                            )
+                        )
+
+                        // RESULTADOS DEL ORIGEN
+                        if (isOriginSearchExpanded && filteredOrigins.isNotEmpty()) {
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = 160.dp),
+                                shape = RoundedCornerShape(10.dp),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    CardBorder
+                                ),
+                                color = Color(0xFFFAFAFA)
+                            ) {
+                                androidx.compose.foundation.lazy.LazyColumn {
+                                    items(filteredOrigins) { place ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    originId = place.id
+                                                    originSearchQuery = place.name
+                                                    isOriginSearchExpanded = false
+                                                }
+                                                .padding(
+                                                    horizontal = 12.dp,
+                                                    vertical = 10.dp
+                                                ),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Column {
+                                                Text(
+                                                    text = place.name,
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = Ink
+                                                )
+                                                Text(
+                                                    text = "Campus ${place.campus}",
+                                                    fontSize = 10.sp,
+                                                    color = MutedText
+                                                )
+                                            }
+                                        }
+
+                                        HorizontalDivider(
+                                            color = CardBorder.copy(alpha = 0.5f)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // CAMPO DE DESTINO
+                        androidx.compose.material3.OutlinedTextField(
+                            value = destSearchQuery,
+                            onValueChange = {
+                                destSearchQuery = it
+                                isDestSearchExpanded = true
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            textStyle = androidx.compose.ui.text.TextStyle(
+                                fontSize = 13.sp,
+                                color = Ink
+                            ),
+                            leadingIcon = {
+                                Text("🔴", fontSize = 13.sp)
+                            },
+                            placeholder = {
+                                Text("¿A dónde vas?", fontSize = 12.sp)
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = SoftBg,
+                                unfocusedContainerColor = SoftBg,
+                                focusedBorderColor = UgrRed,
+                                unfocusedBorderColor = CardBorder,
+                                cursorColor = UgrRed
+                            )
+                        )
+
+                        // RESULTADOS DEL DESTINO
+                        if (isDestSearchExpanded && filteredDestinations.isNotEmpty()) {
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = 160.dp),
+                                shape = RoundedCornerShape(10.dp),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    CardBorder
+                                ),
+                                color = Color(0xFFFAFAFA)
+                            ) {
+                                androidx.compose.foundation.lazy.LazyColumn {
+                                    items(filteredDestinations) { place ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    destId = place.id
+                                                    destSearchQuery = place.name
+                                                    isDestSearchExpanded = false
+
+                                                    if (originId == place.id) {
+                                                        originId =
+                                                            if (hasLocationPermission) {
+                                                                ORIGIN_GPS
+                                                            } else {
+                                                                ORIGIN_MAP
+                                                            }
+
+                                                        originSearchQuery =
+                                                            if (hasLocationPermission) {
+                                                                "📍 Mi ubicación"
+                                                            } else {
+                                                                "👆 Punto del mapa"
+                                                            }
+                                                    }
+                                                }
+                                                .padding(
+                                                    horizontal = 12.dp,
+                                                    vertical = 10.dp
+                                                ),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Column {
+                                                Text(
+                                                    text = place.name,
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = Ink
+                                                )
+                                                Text(
+                                                    text = "Campus ${place.campus}",
+                                                    fontSize = 10.sp,
+                                                    color = MutedText
+                                                )
+                                            }
+                                        }
+
+                                        HorizontalDivider(
+                                            color = CardBorder.copy(alpha = 0.5f)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // OPCIONES RÁPIDAS DE ORIGEN
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    PlaceChip(
+                        "📍 Mi ubicación",
+                        selected = originId == ORIGIN_GPS
+                    ) {
+                        if (hasLocationPermission) {
+                            originId = ORIGIN_GPS
+                            originSearchQuery = "📍 Mi ubicación"
+                            isOriginSearchExpanded = false
+                        } else {
+                            onRequestPermission()
+                        }
+                    }
+
+                    PlaceChip(
+                        "👆 Punto del mapa",
+                        selected = originId == ORIGIN_MAP
+                    ) {
+                        if (mapOrigin != null) {
+                            originId = ORIGIN_MAP
+                            originSearchQuery = "👆 Punto del mapa"
+                            isOriginSearchExpanded = false
+                        } else {
+                            error = "Toca el mapa para elegir el punto de origen"
+                        }
+                    }
+                }
+
+                // ESTADO DEL GPS
+                if (originId == ORIGIN_GPS && gpsPoint == null) {
+                    Text(
+                        text = if (hasLocationPermission) {
+                            "Buscando tu ubicación GPS..."
+                        } else {
+                            "Permite la ubicación para usarla como origen"
+                        },
+                        fontSize = 11.sp,
+                        color = MutedText
+                    )
+                }
+
+                // CALCULAR RUTA
+                Button(
+                    onClick = {
+                        val from = origin ?: return@Button
+
+                        isLoading = true
+                        error = null
+                        isOriginSearchExpanded = false
+                        isDestSearchExpanded = false
+
+                        scope.launch {
+                            WalkingRouteService.fetch(from, destination.point)
+                                .onSuccess {
+                                    route = it
+                                    showAllSteps = false
+                                }
+                                .onFailure {
+                                    error = "No se pudo calcular la ruta. ¿Tienes conexión a internet?"
+                                }
+
+                            isLoading = false
+                        }
+                    },
+                    enabled = origin != null && !isLoading,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 44.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = UgrRed
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = if (isLoading) {
+                            "Calculando ruta..."
+                        } else {
+                            "🚶 Calcular ruta a pie"
+                        },
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                error?.let {
+                    Text(
+                        text = it,
+                        fontSize = 11.sp,
+                        color = UgrRed
+                    )
+                }
+            }
+        }
 
         OsmMap(
             gpsPoint = gpsPoint,
@@ -213,174 +675,6 @@ fun CityRouteSection(
                 else onRequestPermission()
             }
         )
-
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = Color.White,
-            shape = RoundedCornerShape(16.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
-        ) {
-            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                // ==================== SELECCIÓN DE ORIGEN ====================
-                Text(text = "🟢 Origen", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Ink)
-
-                // Botones de acción rápida para GPS y Mapa
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    PlaceChip("📍 Mi ubicación", selected = originId == ORIGIN_GPS) {
-                        if (hasLocationPermission) {
-                            originId = ORIGIN_GPS
-                            originSearchQuery = "📍 Mi ubicación"
-                            isOriginSearchExpanded = false
-                        } else onRequestPermission()
-                    }
-                    PlaceChip("👆 Punto del mapa", selected = originId == ORIGIN_MAP) {
-                        if (mapOrigin != null) {
-                            originId = ORIGIN_MAP
-                            originSearchQuery = "👆 Punto del mapa"
-                            isOriginSearchExpanded = false
-                        } else {
-                            error = "Toca el mapa para elegir el punto de origen"
-                        }
-                    }
-                }
-
-                // Campo de búsqueda de origen
-                androidx.compose.material3.OutlinedTextField(
-                    value = originSearchQuery,
-                    onValueChange = {
-                        originSearchQuery = it
-                        isOriginSearchExpanded = true
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    placeholder = { Text("O busca un origen UGR…", fontSize = 13.sp) },
-                    shape = RoundedCornerShape(12.dp)
-                )
-
-                // Resultados del buscador de origen
-                if (isOriginSearchExpanded && filteredOrigins.isNotEmpty()) {
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 160.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
-                        color = Color(0xFFFAFAFA)
-                    ) {
-                        androidx.compose.foundation.lazy.LazyColumn {
-                            items(filteredOrigins) { place ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            originId = place.id
-                                            originSearchQuery = place.name
-                                            isOriginSearchExpanded = false
-                                        }
-                                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column {
-                                        Text(text = place.name, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Ink)
-                                        Text(text = "Campus ${place.campus}", fontSize = 10.sp, color = MutedText)
-                                    }
-                                }
-                                HorizontalDivider(color = CardBorder.copy(alpha = 0.5f))
-                            }
-                        }
-                    }
-                }
-
-                // ==================== SELECCIÓN DE DESTINO ====================
-                Text(text = "🔴 Destino", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Ink)
-
-                androidx.compose.material3.OutlinedTextField(
-                    value = destSearchQuery,
-                    onValueChange = {
-                        destSearchQuery = it
-                        isDestSearchExpanded = true
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    placeholder = { Text("Buscar facultad o centro UGR…", fontSize = 13.sp) },
-                    shape = RoundedCornerShape(12.dp)
-                )
-
-                // Resultados del buscador de destino
-                if (isDestSearchExpanded && filteredDestinations.isNotEmpty()) {
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 160.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
-                        color = Color(0xFFFAFAFA)
-                    ) {
-                        androidx.compose.foundation.lazy.LazyColumn {
-                            items(filteredDestinations) { place ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            destId = place.id
-                                            destSearchQuery = place.name
-                                            isDestSearchExpanded = false
-                                            if (originId == place.id) {
-                                                originId = if (hasLocationPermission) ORIGIN_GPS else ORIGIN_MAP
-                                                originSearchQuery = if (hasLocationPermission) "📍 Mi ubicación" else "👆 Punto del mapa"
-                                            }
-                                        }
-                                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column {
-                                        Text(text = place.name, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Ink)
-                                        Text(text = "Campus ${place.campus}", fontSize = 10.sp, color = MutedText)
-                                    }
-                                }
-                                HorizontalDivider(color = CardBorder.copy(alpha = 0.5f))
-                            }
-                        }
-                    }
-                }
-
-                if (originId == ORIGIN_GPS && gpsPoint == null) {
-                    Text(
-                        text = if (hasLocationPermission) "Buscando tu ubicación GPS…" else "Permite la ubicación para usarla como origen",
-                        fontSize = 11.sp,
-                        color = MutedText
-                    )
-                }
-
-                Button(
-                    onClick = {
-                        val from = origin ?: return@Button
-                        isLoading = true
-                        error = null
-                        isOriginSearchExpanded = false
-                        isDestSearchExpanded = false
-                        scope.launch {
-                            WalkingRouteService.fetch(from, destination.point)
-                                .onSuccess { route = it; showAllSteps = false }
-                                .onFailure { error = "No se pudo calcular la ruta. ¿Tienes conexión a internet?" }
-                            isLoading = false
-                        }
-                    },
-                    enabled = origin != null && !isLoading,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = UgrRed),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = if (isLoading) "Calculando ruta…" else "🚶 Calcular ruta a pie",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                error?.let { Text(text = it, fontSize = 11.sp, color = UgrRed) }
-            }
-        }
 
         route?.let { r ->
             RouteInstructionsCard(
@@ -603,11 +897,13 @@ private fun OsmMap(
         modifier = Modifier
             .fillMaxWidth()
             .height(340.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .clipToBounds()
     ) {
         AndroidView(
             factory = { mapView },
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .clipToBounds(),
             update = { map ->
                 map.overlays.clear()
                 map.overlays.add(rotationOverlay)

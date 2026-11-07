@@ -29,6 +29,7 @@ object CityPlaces {
         // ==========================================
         CityPlace("etsiit", "ETSIIT - Informática y Telecomunicación", "Aynadamar", GeoPoint(37.197076, -3.624243)),
         CityPlace("bellas_artes", "Facultad de Bellas Artes", "Aynadamar", GeoPoint(37.193240, -3.626210)),
+        CityPlace("comedor_etsiit", "Comedor Universitario ETSIIT", "Aynadamar", GeoPoint(37.197076, -3.624243)),
 
         // ==========================================
         // CAMPUS FUENTENUEVA
@@ -49,7 +50,7 @@ object CityPlaces {
         CityPlace("educacion", "Facultad de Ciencias de la Educación", "Cartuja", GeoPoint(37.191763, -3.599298)),
         CityPlace("odontologia", "Facultad de Odontología", "Cartuja", GeoPoint(37.187654, -3.596637)),
         CityPlace("comunicacion", "Facultad de Comunicación y Documentación", "Cartuja", GeoPoint(37.189658, -3.598910)),
-        CityPlace("inef", "Facultad de Ciencias del Deporte (INEF)", "Cartuja", GeoPoint(37.198337, -3.595906)),
+        CityPlace("inef", "Facultad de Ciencias del Deporte (INEF)", "Cartuja", GeoPoint(37.2050953, -3.5979293)),
         CityPlace("comedor_cartuja", "Comedor Universitario Cartuja", "Cartuja", GeoPoint(37.191297, -3.599427)),
 
         // ==========================================
