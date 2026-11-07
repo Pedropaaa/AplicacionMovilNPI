@@ -75,33 +75,6 @@ object SampleData {
 
     val professors: List<Professor> get() = FacultyData.professors
 
-    val campuses = listOf(
-        CampusItem(
-            key = "etsiit",
-            name = "ETSIIT",
-            campus = "CAMPUS AYNADAMAR",
-            full = "Escuela Técnica Superior de Ingenierías Informática y de Telecomunicación",
-            distance = "1,2 km",
-            hours = "Abierto hasta 21:30"
-        ),
-        CampusItem(
-            key = "sciences",
-            name = "Ciencias",
-            campus = "CAMPUS FUENTENUEVA",
-            full = "Facultad de Ciencias",
-            distance = "2,8 km",
-            hours = "Abierto hasta 21:00"
-        ),
-        CampusItem(
-            key = "cartuja",
-            name = "Cartuja",
-            campus = "CAMPUS CARTUJA",
-            full = "Facultades de Psicología, Ciencias Económicas y Empresariales",
-            distance = "0,9 km",
-            hours = "Abierto hasta 21:30"
-        )
-    )
-
     val floorRooms = mapOf(
         "P2" to listOf("Despachos 2.01–2.20", "Sala de juntas", "Laboratorio 5", "Laboratorio 6", "Seminario 2"),
         "P1" to listOf("Aulas B-10–B-13", "Biblioteca", "Sala de estudio", "Laboratorio 2", "Aula B-08"),

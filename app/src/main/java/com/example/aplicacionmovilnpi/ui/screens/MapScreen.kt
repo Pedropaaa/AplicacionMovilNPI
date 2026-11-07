@@ -91,6 +91,11 @@ import com.example.aplicacionmovilnpi.ui.theme.ToneBlueText
 import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 import kotlinx.coroutines.launch
 import android.location.Location
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Apartment
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.filled.CameraAlt
 
 fun getFloorName(floor: Int): String = when (floor) {
     4 -> "P4"
@@ -502,25 +507,57 @@ fun MapScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 20.dp)
             .verticalScroll(scrollState)
     ) {
         Spacer(modifier = Modifier.height(20.dp))
 
-        Text(
-            text = "Mapa y Navegación",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Black,
-            color = Ink
-        )
-        Text(
-            text = "Ubica campus, edificios y aulas de la ETSIIT",
-            fontSize = 12.sp,
-            color = MutedText,
-            modifier = Modifier.padding(top = 2.dp)
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = "Mapa y Navegación",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Ink
+                )
+                Text(
+                    text = "Ubica campus, edificios y aulas de la ETSIIT",
+                    fontSize = 12.sp,
+                    color = MutedText,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
 
-        Spacer(modifier = Modifier.height(20.dp))
+            Surface(
+                modifier = Modifier
+                    .padding(start = 12.dp)
+                    .size(42.dp)
+                    .clickable {
+                        mapMode = if (mapMode == "indoor") "city" else "indoor"
+                    },
+                color = UgrRed,
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = if (mapMode == "indoor") {
+                            Icons.Filled.Map
+                        } else {
+                            Icons.Filled.Apartment
+                        },
+                        contentDescription = "Cambiar tipo de mapa",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+        }
 
         if (mapMode == "city") {
             Text(
@@ -546,19 +583,6 @@ fun MapScreen(
                 }
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
-            Text(
-                text = "Campus Universitarios UGR",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = Ink
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            SampleData.campuses.forEach { campus ->
-                CampusCard(campus = campus)
-                Spacer(modifier = Modifier.height(12.dp))
-            }
-
         } else {
             val floorNumber = when (selectedFloor) {
                 "P4" -> 4
@@ -577,18 +601,60 @@ fun MapScreen(
                 }.getOrNull()
             }
 
+            Spacer(modifier = Modifier.height(10.dp))
+
+            PoiRouteSelectorCard(
+                pois = allPois,
+                startPoi = startPoi,
+                destPoi = destPoi,
+
+                selectedDestLabel = selectedDestLabel,
+                destinationError = destinationError,
+
+                onStartPoiChange = { startPoiId = it.id },
+                onDestPoiChange = { destPoiId = it.id },
+
+                // Opciones especiales exclusivamente para el destino.
+                onSpecialDestChange = { destPoiId = it },
+
+                isAccessible = isAccessibleRoute,
+                onAccessibleToggle = { isAccessibleRoute = it },
+
+                onCalculateRoute = {
+                    isRouteOpen = true
+                    activeSegmentIndex = 0
+                },
+
+                onScanQrClick = {
+                    isScanningQr = true
+                },
+
+                onGenerateQrClick = { showRouteQrDialog = true },
+                isRouteActive = isRouteOpen && routeSegments.isNotEmpty(),
+                onClearRoute = { isRouteOpen = false }
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
             Text(
                 text = "Seleccionar Planta",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = Ink,
-                modifier = Modifier.onGloballyPositioned { floorSectionTop = it.positionInParent().y.toInt() }
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .onGloballyPositioned {
+                        floorSectionTop = it.positionInParent().y.toInt()
+                    }
             )
 
             Spacer(modifier = Modifier.height(10.dp))
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 listOf("P4", "P3", "P2", "P1", "PB", "S1").forEach { floor ->
@@ -624,59 +690,30 @@ fun MapScreen(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = ToneBlueBg,
-                shape = RoundedCornerShape(16.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                text = "Plano de la Planta $selectedFloor",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Ink
-                            )
-                            if (isRouteOpen && activeSegment != null) {
-                                Text(
-                                    text = "🔴 Tramo en Planta ${activeSegment.floorName} (Paso ${activeSegmentIndex + 1}/${routeSegments.size})",
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = UgrRed
-                                )
-                            }
-                        }
-                        Text(text = "ETSIIT · Modelo 3D", fontSize = 10.sp, color = MutedText)
-                    }
+            // PLANO INTERIOR A ANCHO COMPLETO
+            FloorPlanCanvasOverlay(
+                bitmap = floorImageBitmap,
+                selectedFloorName = selectedFloor,
+                activeSegment = activeSegment,
+                fullRoute = calculatedRoute,
+                isFirstSegment = activeSegmentIndex == 0,
+                isLastSegment = activeSegmentIndex == routeSegments.size - 1,
+                userPosition = userPosition,
+                userHeadingMapDeg = userHeadingMapDeg
+            )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+            // Indicaciones de navegación (separadas del plano)
+            if (userPosition != null && activeSegment != null) {
+                Spacer(modifier = Modifier.height(8.dp))
 
-                    FloorPlanCanvasOverlay(
-                        bitmap = floorImageBitmap,
-                        selectedFloorName = selectedFloor,
-                        activeSegment = activeSegment,
-                        fullRoute = calculatedRoute,
-                        isFirstSegment = activeSegmentIndex == 0,
-                        isLastSegment = activeSegmentIndex == routeSegments.size - 1,
-                        userPosition = userPosition,
-                        userHeadingMapDeg = userHeadingMapDeg
+                NavigationHintStrip(
+                    tracker = tracker,
+                    azimuthDeg = azimuth,
+                    arrivalText = arrivalText(
+                        activeSegment,
+                        destPoi?.nameEs ?: "tu destino"
                     )
-
-                    if (userPosition != null && activeSegment != null) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        NavigationHintStrip(
-                            tracker = tracker,
-                            azimuthDeg = azimuth,
-                            arrivalText = arrivalText(activeSegment, destPoi?.nameEs ?: "tu destino")
-                        )
-                    }
-                }
+                )
             }
 
             if (isRouteOpen && routeSegments.isNotEmpty()) {
@@ -693,11 +730,6 @@ fun MapScreen(
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-
-            // Tu botón de escaneo QR
-            QrScanButton(
-                onScanClick = { isScanningQr = true }
-            )
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -723,112 +755,6 @@ fun MapScreen(
                     { startPoiId = "poi_entrada" }
                 } else null
             )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Text(
-                text = "Navegación Interactiva",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                color = Ink
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            PoiRouteSelectorCard(
-                pois = allPois,
-                startPoi = startPoi,
-                destPoi = destPoi,
-
-                selectedDestLabel = selectedDestLabel,
-                destinationError = destinationError,
-
-                onStartPoiChange = { startPoiId = it.id },
-                onDestPoiChange = { destPoiId = it.id },
-
-                // Opciones especiales exclusivamente para el destino.
-                onSpecialDestChange = { destPoiId = it },
-
-                isAccessible = isAccessibleRoute,
-                onAccessibleToggle = { isAccessibleRoute = it },
-
-                onCalculateRoute = {
-                    isRouteOpen = true
-                    activeSegmentIndex = 0
-                },
-
-                onGenerateQrClick = { showRouteQrDialog = true },
-                isRouteActive = isRouteOpen && routeSegments.isNotEmpty(),
-                onClearRoute = { isRouteOpen = false }
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Text(
-                text = "Puntos de Interés Rápidos",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                color = Ink
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                items(allPois.take(8)) { poi ->
-                    PoiChip(poi = poi) {
-                        destPoiId = poi.id
-                        isRouteOpen = true
-                        activeSegmentIndex = 0
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(18.dp))
-
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = Color.White,
-            shape = RoundedCornerShape(14.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
-        ) {
-            Row(modifier = Modifier.padding(4.dp)) {
-                Surface(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(38.dp)
-                        .clickable { mapMode = "indoor" },
-                    color = if (mapMode == "indoor") UgrRed else Color.Transparent,
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "🏢 Plano Interior (ETSIIT)",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (mapMode == "indoor") Color.White else Ink
-                        )
-                    }
-                }
-
-                Surface(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(38.dp)
-                        .clickable { mapMode = "city" },
-                    color = if (mapMode == "city") UgrRed else Color.Transparent,
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "🗺️ Mapa Ciudad",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (mapMode == "city") Color.White else Ink
-                        )
-                    }
-                }
-            }
         }
     }
 }
@@ -855,7 +781,7 @@ fun FloorPlanCanvasOverlay(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(350.dp)
-                .clip(RoundedCornerShape(14.dp))
+                //.clip(RoundedCornerShape(14.dp))
                 .background(Color.White)
         ) {
             Box(
@@ -1343,22 +1269,6 @@ fun RouteStepNavigationCard(
                 }
             }
 
-            if (onGenerateQrClick != null) {
-                Spacer(modifier = Modifier.height(10.dp))
-                OutlinedButton(
-                    onClick = onGenerateQrClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Text(
-                        text = "📱 Generar QR de esta ruta",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Ink
-                    )
-                }
-            }
-
             if (segments.size > 1) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
@@ -1423,13 +1333,16 @@ fun PoiRouteSelectorCard(
     onCalculateRoute: () -> Unit,
     onGenerateQrClick: (() -> Unit)? = null,
     isRouteActive: Boolean = false,
-    onClearRoute: () -> Unit
+    onClearRoute: () -> Unit,
+    onScanQrClick: () -> Unit
 ) {
     var pickingStart by remember { mutableStateOf(false) }
     var pickingDest by remember { mutableStateOf(false) }
 
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp),
         color = Color.White,
         shape = RoundedCornerShape(16.dp),
         shadowElevation = 2.dp,
@@ -1466,42 +1379,81 @@ fun PoiRouteSelectorCard(
                 Spacer(modifier = Modifier.width(6.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
-                    PoiSelectorField(
-                        poi = startPoi,
-                        placeholder = "Origen",
-                        onClick = { pickingStart = true }
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    PoiSelectorField(
-                        poi = destPoi,
-                        displayText = selectedDestLabel,
-                        placeholder = "¿A dónde vas?",
-                        onClick = { pickingDest = true }
-                    )
-                }
 
-                Spacer(modifier = Modifier.width(4.dp))
+                    // FILA 1: Origen + Cámara QR
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(modifier = Modifier.weight(1f)) {
+                            PoiSelectorField(
+                                poi = startPoi,
+                                placeholder = "Origen",
+                                onClick = { pickingStart = true }
+                            )
+                        }
 
-                // Intercambiar origen y destino cuando ambos son POI reales.
-                Box(
-                    modifier = Modifier
-                        .size(34.dp)
-                        .clip(RoundedCornerShape(50))
-                        .clickable(enabled = startPoi != null && destPoi != null) {
-                            if (startPoi != null && destPoi != null) {
-                                onStartPoiChange(destPoi)
-                                onDestPoiChange(startPoi)
+                        Spacer(modifier = Modifier.width(6.dp))
+
+                        Surface(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clickable { onScanQrClick() },
+                            color = UgrRed,
+                            shape = RoundedCornerShape(11.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Filled.CameraAlt,
+                                    contentDescription = "Escanear QR de ubicación",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(23.dp)
+                                )
                             }
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "⇅",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MutedText
-                    )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // FILA 2: Destino + Intercambiador
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(modifier = Modifier.weight(1f)) {
+                            PoiSelectorField(
+                                poi = destPoi,
+                                displayText = selectedDestLabel,
+                                placeholder = "¿A dónde vas?",
+                                onClick = { pickingDest = true }
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(6.dp))
+
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(RoundedCornerShape(50))
+                                .clickable(enabled = startPoi != null && destPoi != null) {
+                                    if (startPoi != null && destPoi != null) {
+                                        onStartPoiChange(destPoi)
+                                        onDestPoiChange(startPoi)
+                                    }
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "⇅",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MutedText
+                            )
+                        }
+                    }
                 }
+
+                Spacer(modifier = Modifier.width(6.dp))
             }
 
             // Se conserva el selector en hoja, que permite buscar POI por texto.
@@ -1533,49 +1485,6 @@ fun PoiRouteSelectorCard(
                     },
                     onDismiss = { pickingDest = false }
                 )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Destinos rápidos",
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                color = MutedText
-            )
-            Spacer(modifier = Modifier.height(5.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Surface(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(50))
-                        .clickable { onSpecialDestChange(DEST_ASEO_CERCANO) },
-                    color = SoftBg,
-                    shape = RoundedCornerShape(50),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
-                ) {
-                    Text(
-                        text = "🚻 Aseo más cercano",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Ink,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)
-                    )
-                }
-                Surface(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(50))
-                        .clickable { onSpecialDestChange(DEST_FUENTE_CERCANA) },
-                    color = SoftBg,
-                    shape = RoundedCornerShape(50),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
-                ) {
-                    Text(
-                        text = "🚰 Fuente más cercana",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Ink,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)
-                    )
-                }
             }
 
             if (destinationError != null) {
@@ -1777,5 +1686,4 @@ fun PoiChip(poi: PointOfInterest, onClick: () -> Unit) {
             Text(text = poi.nameEs, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Ink)
         }
     }
-
 }
