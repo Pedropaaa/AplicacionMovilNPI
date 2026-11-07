@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import com.example.aplicacionmovilnpi.ui.theme.ToneBlueText
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,13 +30,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -323,6 +321,26 @@ fun MapScreen(initialDestPoiId: String? = null) {
 
         Spacer(modifier = Modifier.height(18.dp))
 
+        // La navegación interactiva solo aplica al plano interior
+        if (mapMode == "indoor") {
+            PoiRouteSelectorCard(
+                pois = allPois,
+                startPoi = startPoi,
+                destPoi = destPoi,
+                onStartPoiChange = { startPoiId = it.id },
+                onDestPoiChange = { destPoiId = it.id },
+                isAccessible = isAccessibleRoute,
+                onAccessibleToggle = { isAccessibleRoute = it },
+                onCalculateRoute = {
+                    isRouteOpen = true
+                    activeSegmentIndex = 0
+                },
+                onClearRoute = { isRouteOpen = false }
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+        }
+
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = Color.White,
@@ -422,7 +440,8 @@ fun MapScreen(initialDestPoiId: String? = null) {
 
             val floorImageBitmap = remember(floorNumber) {
                 runCatching {
-                    val inputStream = context.assets.open("Modelo 3D ETSIIT/ConSuelo/$floorNumber.jpg")
+                    // Planos apilados: cada planta lleva debajo las inferiores (ver scripts/apilar_plantas.py)
+                    val inputStream = context.assets.open("Modelo 3D ETSIIT/Apiladas/$floorNumber.jpg")
                     BitmapFactory.decodeStream(inputStream)?.asImageBitmap()
                 }.getOrNull()
             }
@@ -595,32 +614,6 @@ fun MapScreen(initialDestPoiId: String? = null) {
                 onUseEntranceAsStart = if (startPoiId != "poi_entrada") {
                     { startPoiId = "poi_entrada" }
                 } else null
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Text(
-                text = "Navegación Interactiva",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                color = Ink
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            PoiRouteSelectorCard(
-                pois = allPois,
-                startPoi = startPoi,
-                destPoi = destPoi,
-                onStartPoiChange = { startPoiId = it.id },
-                onDestPoiChange = { destPoiId = it.id },
-                isAccessible = isAccessibleRoute,
-                onAccessibleToggle = { isAccessibleRoute = it },
-                onCalculateRoute = {
-                    isRouteOpen = true
-                    activeSegmentIndex = 0
-                },
-                onClearRoute = { isRouteOpen = false }
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -1219,126 +1212,154 @@ fun PoiRouteSelectorCard(
     onCalculateRoute: () -> Unit,
     onClearRoute: () -> Unit
 ) {
-    var expandedStart by remember { mutableStateOf(false) }
-    var expandedDest by remember { mutableStateOf(false) }
+    var pickingStart by remember { mutableStateOf(false) }
+    var pickingDest by remember { mutableStateOf(false) }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = Color.White,
         shape = RoundedCornerShape(16.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+        shadowElevation = 2.dp
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = "🟢 Punto de Origen", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Ink)
-            Spacer(modifier = Modifier.height(4.dp))
-            Box {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { expandedStart = true },
-                    color = SoftBg,
-                    shape = RoundedCornerShape(10.dp)
+        Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Raíl a la izquierda: punto de origen, línea de puntos y punto de destino
+                Column(
+                    modifier = Modifier.width(18.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = startPoi?.nameEs ?: "Seleccionar Origen",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Ink,
-                        modifier = Modifier.padding(12.dp)
+                    Box(
+                        modifier = Modifier
+                            .size(9.dp)
+                            .background(GreenStatus, RoundedCornerShape(50))
                     )
-                }
-                DropdownMenu(
-                    expanded = expandedStart,
-                    onDismissRequest = { expandedStart = false }
-                ) {
-                    pois.forEach { poi ->
-                        DropdownMenuItem(
-                            text = { Text("${poi.nameEs} (${poi.category})") },
-                            onClick = {
-                                onStartPoiChange(poi)
-                                expandedStart = false
-                            }
+                    repeat(3) {
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(3.dp)
+                                .background(CardBorder, RoundedCornerShape(50))
                         )
                     }
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(9.dp)
+                            .background(UgrRed, RoundedCornerShape(50))
+                    )
+                }
+                Spacer(modifier = Modifier.width(6.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    PoiSelectorField(
+                        poi = startPoi,
+                        placeholder = "Origen",
+                        onClick = { pickingStart = true }
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    PoiSelectorField(
+                        poi = destPoi,
+                        placeholder = "¿A dónde vas?",
+                        onClick = { pickingDest = true }
+                    )
+                }
+                Spacer(modifier = Modifier.width(4.dp))
+                // Intercambiar origen y destino
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(RoundedCornerShape(50))
+                        .clickable(enabled = startPoi != null && destPoi != null) {
+                            if (startPoi != null && destPoi != null) {
+                                onStartPoiChange(destPoi)
+                                onDestPoiChange(startPoi)
+                            }
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = "⇅", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MutedText)
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(text = "🔴 Punto de Destino", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Ink)
-            Spacer(modifier = Modifier.height(4.dp))
-            Box {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { expandedDest = true },
-                    color = SoftBg,
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Text(
-                        text = destPoi?.nameEs ?: "Seleccionar Destino",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Ink,
-                        modifier = Modifier.padding(12.dp)
-                    )
-                }
-                DropdownMenu(
-                    expanded = expandedDest,
-                    onDismissRequest = { expandedDest = false }
-                ) {
-                    pois.forEach { poi ->
-                        DropdownMenuItem(
-                            text = { Text("${poi.nameEs} (${poi.category})") },
-                            onClick = {
-                                onDestPoiChange(poi)
-                                expandedDest = false
-                            }
-                        )
-                    }
-                }
+            if (pickingStart) {
+                PoiPickerSheet(
+                    title = "Elige el origen",
+                    accent = GreenStatus,
+                    pois = pois,
+                    selectedPoiId = startPoi?.id,
+                    excludedPoiId = destPoi?.id,
+                    onSelect = {
+                        onStartPoiChange(it)
+                        pickingStart = false
+                    },
+                    onDismiss = { pickingStart = false }
+                )
+            }
+            if (pickingDest) {
+                PoiPickerSheet(
+                    title = "Elige el destino",
+                    accent = UgrRed,
+                    pois = pois,
+                    selectedPoiId = destPoi?.id,
+                    excludedPoiId = startPoi?.id,
+                    onSelect = {
+                        onDestPoiChange(it)
+                        pickingDest = false
+                    },
+                    onDismiss = { pickingDest = false }
+                )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
+            // Fila de acciones: accesible · limpiar · ir
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "♿ Ruta accesible PMR (evitar escaleras)",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Ink
-                )
-                Switch(
-                    checked = isAccessible,
-                    onCheckedChange = onAccessibleToggle,
-                    colors = SwitchDefaults.colors(checkedThumbColor = UgrRed)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Button(
-                    onClick = onCalculateRoute,
+                Surface(
                     modifier = Modifier
-                        .weight(1f)
-                        .height(42.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = UgrRed),
-                    shape = RoundedCornerShape(10.dp)
+                        .clip(RoundedCornerShape(50))
+                        .clickable { onAccessibleToggle(!isAccessible) },
+                    color = if (isAccessible) ToneBlueBg else Color.White,
+                    shape = RoundedCornerShape(50),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        if (isAccessible) ToneBlueText else CardBorder
+                    )
                 ) {
-                    Text(text = "📍 Dibujar Ruta", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = if (isAccessible) "♿ Sin escaleras ✓" else "♿ Sin escaleras",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (isAccessible) ToneBlueText else Ink,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                    )
                 }
 
-                OutlinedButton(
-                    onClick = onClearRoute,
-                    modifier = Modifier.height(42.dp),
-                    shape = RoundedCornerShape(10.dp)
+                Spacer(modifier = Modifier.weight(1f))
+
+                Text(
+                    text = "Limpiar",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MutedText,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { onClearRoute() }
+                        .padding(horizontal = 10.dp, vertical = 8.dp)
+                )
+
+                Spacer(modifier = Modifier.width(4.dp))
+
+                Button(
+                    onClick = onCalculateRoute,
+                    enabled = startPoi != null && destPoi != null,
+                    modifier = Modifier.height(34.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = UgrRed),
+                    shape = RoundedCornerShape(50),
+                    contentPadding = PaddingValues(horizontal = 16.dp)
                 ) {
-                    Text(text = "Limpiar", fontSize = 12.sp, color = Ink)
+                    Text(text = "Ir", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -1402,6 +1423,46 @@ fun CampusCard(campus: CampusItem) {
 }
 
 @Composable
+private fun PoiSelectorField(
+    poi: PointOfInterest?,
+    placeholder: String,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .clickable { onClick() },
+        color = SoftBg,
+        shape = RoundedCornerShape(10.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = poi?.let { "${poiCategoryIcon(it.category)} ${it.nameEs}" } ?: placeholder,
+                fontSize = 13.sp,
+                fontWeight = if (poi != null) FontWeight.SemiBold else FontWeight.Normal,
+                color = if (poi != null) Ink else MutedText,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            poi?.let { poiFloor(it) }?.let { floor ->
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = getFloorName(floor),
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MutedText
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun PoiChip(poi: PointOfInterest, onClick: () -> Unit) {
     Surface(
         modifier = Modifier.clickable { onClick() },
@@ -1413,9 +1474,9 @@ fun PoiChip(poi: PointOfInterest, onClick: () -> Unit) {
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = poi.nameEs, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Ink)
+            Text(text = poiCategoryIcon(poi.category), fontSize = 12.sp)
             Spacer(modifier = Modifier.width(6.dp))
-            Text(text = "(${poi.category})", fontSize = 9.sp, color = MutedText)
+            Text(text = poi.nameEs, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Ink)
         }
     }
 }
