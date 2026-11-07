@@ -1,3 +1,4 @@
+
 package com.example.aplicacionmovilnpi.ui.screens
 
 import android.graphics.BitmapFactory
@@ -13,8 +14,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import com.example.aplicacionmovilnpi.ui.theme.ToneBlueText
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -80,17 +79,18 @@ import com.example.aplicacionmovilnpi.model.Node
 import com.example.aplicacionmovilnpi.model.PointOfInterest
 import com.example.aplicacionmovilnpi.navigation.EtsiitData
 import com.example.aplicacionmovilnpi.navigation.RouteManager
-import com.example.aplicacionmovilnpi.qr.QrLocationResolver
 import com.example.aplicacionmovilnpi.qr.QrLocationScannerScreen
-import com.example.aplicacionmovilnpi.qr.RouteQrScreen
+import com.example.aplicacionmovilnpi.qr.QrScanResult
 import com.example.aplicacionmovilnpi.ui.theme.CardBorder
 import com.example.aplicacionmovilnpi.ui.theme.GreenStatus
 import com.example.aplicacionmovilnpi.ui.theme.Ink
 import com.example.aplicacionmovilnpi.ui.theme.MutedText
 import com.example.aplicacionmovilnpi.ui.theme.SoftBg
 import com.example.aplicacionmovilnpi.ui.theme.ToneBlueBg
+import com.example.aplicacionmovilnpi.ui.theme.ToneBlueText
 import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 import kotlinx.coroutines.launch
+import android.location.Location
 
 fun getFloorName(floor: Int): String = when (floor) {
     4 -> "P4"
@@ -100,6 +100,26 @@ fun getFloorName(floor: Int): String = when (floor) {
     0 -> "PB"
     -1 -> "S1"
     else -> "P$floor"
+}
+
+private const val ETSIIT_LAT = 37.19722
+private const val ETSIIT_LON = -3.62389
+
+// Radio de detección: 250 metros
+private const val ETSIIT_RADIUS = 250f
+
+private fun isNearEtsiit(location: Location): Boolean {
+    val distance = FloatArray(1)
+
+    Location.distanceBetween(
+        location.latitude,
+        location.longitude,
+        ETSIIT_LAT,
+        ETSIIT_LON,
+        distance
+    )
+
+    return distance[0] <= ETSIIT_RADIUS
 }
 
 data class RouteFloorSegment(
@@ -170,30 +190,200 @@ fun parseRouteSegments(route: List<Node>): List<RouteFloorSegment> {
     return segments
 }
 
+private const val DEST_ASEO_CERCANO = "__dest_aseo_cercano__"
+private const val DEST_FUENTE_CERCANA = "__dest_fuente_cercana__"
+
+private data class DestinationResolution(
+    val poi: PointOfInterest?,
+    val route: List<Node>? = null
+)
+
+private fun normalizePoiText(value: String): String =
+    value.lowercase(java.util.Locale.ROOT)
+        .replace("á", "a")
+        .replace("é", "e")
+        .replace("í", "i")
+        .replace("ó", "o")
+        .replace("ú", "u")
+        .replace("ü", "u")
+
+private fun PointOfInterest.isAseo(): Boolean {
+    val text = normalizePoiText("$nameEs $category")
+
+    return listOf(
+        "aseo", "bano", "wc", "toilet", "restroom"
+    ).any { text.contains(it) }
+}
+
+private fun PointOfInterest.isFuente(): Boolean {
+    val text = normalizePoiText("$nameEs $category")
+
+    return listOf(
+        "fuente", "fontana", "water fountain"
+    ).any { text.contains(it) }
+}
+
+/**
+ * Busca el POI alcanzable cuya ruta tiene menos nodos.
+ */
+private fun resolveNearestPoi(
+    startPoiId: String,
+    candidates: List<PointOfInterest>,
+    routeManager: RouteManager,
+    isAccessibleRoute: Boolean
+): DestinationResolution {
+
+    val possibleRoutes = candidates.mapNotNull { poi ->
+
+        val route = if (poi.id == startPoiId) {
+            EtsiitData.nodes[poi.nodeId]?.let { listOf(it) } ?: emptyList()
+        } else {
+            routeManager.calculateRoute(
+                startPoiId,
+                poi.id,
+                isAccessibleRoute
+            )
+        }
+
+        if (route.isNotEmpty()) {
+            poi to route
+        } else {
+            null
+        }
+    }
+
+    val nearest = possibleRoutes.minByOrNull { (_, route) ->
+        route.size
+    }
+
+    return nearest?.let { (poi, route) ->
+        DestinationResolution(
+            poi = poi,
+            route = route
+        )
+    } ?: DestinationResolution(poi = null)
+}
+
 @Composable
-fun MapScreen(initialDestPoiId: String? = null) {
+fun MapScreen(
+    initialDestPoiId: String? = null,
+    mapEntryKey: Int = 0
+) {
     val routeManager = remember { RouteManager() }
     val allPois = remember { EtsiitData.pois }
 
-    // 1. DECLARACIONES DE ESTADO
-    var mapMode by rememberSaveable { mutableStateOf("indoor") }
+    // 1. DECLARACIONES DE ESTADO (Primero)
+    var mapMode by rememberSaveable { mutableStateOf("city") }
     var selectedFloor by rememberSaveable { mutableStateOf("P1") }
 
     // Routing State
-    var startPoiId by rememberSaveable { mutableStateOf("poi_entrada") }
-    var destPoiId by rememberSaveable(initialDestPoiId) { mutableStateOf(initialDestPoiId ?: "poi_aula12") }
+    var startPoiId by rememberSaveable { mutableStateOf("") }
+    var destPoiId by rememberSaveable(initialDestPoiId) { mutableStateOf(initialDestPoiId ?: "") }
     var isRouteOpen by rememberSaveable(initialDestPoiId) { mutableStateOf(initialDestPoiId != null) }
     var isAccessibleRoute by rememberSaveable { mutableStateOf(false) }
 
-    // Estado para el escaner QR y generación de QR de ruta
+    // Estado para el escaner QR y diálogo de QR de Ruta
     var isScanningQr by rememberSaveable { mutableStateOf(false) }
-    var showRouteQr by rememberSaveable { mutableStateOf(false) }
-    var routeTextForQr by rememberSaveable { mutableStateOf("") }
+    var showRouteQrDialog by rememberSaveable { mutableStateOf(false) }
 
-    // Declaración anticipada de la ruta y los segmentos para que activeSegmentIndex esté disponible en el escáner
-    val calculatedRoute = remember(startPoiId, destPoiId, isAccessibleRoute, isRouteOpen) {
-        if (isRouteOpen && startPoiId.isNotEmpty() && destPoiId.isNotEmpty()) {
-            routeManager.calculateRoute(startPoiId, destPoiId, isAccessibleRoute)
+    // 2. SENSORES DE LOCALIZACIÓN (Utilizan mapMode declarado arriba)
+    val context = LocalContext.current
+    val inForeground = rememberAppInForeground()
+    var hasLocationPermission by remember { mutableStateOf(LocationPermissions.hasLocation(context)) }
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        hasLocationPermission = LocationPermissions.hasLocation(context)
+    }
+    val gpsLocation = rememberGpsLocation(active = inForeground && hasLocationPermission)
+    var autoModeAppliedForEntry by rememberSaveable {
+        mutableIntStateOf(-1)
+    }
+    var permissionRequestedForEntry by rememberSaveable {
+        mutableIntStateOf(-1)
+    }
+
+    LaunchedEffect(mapEntryKey, gpsLocation, hasLocationPermission) {
+        if (autoModeAppliedForEntry == mapEntryKey) return@LaunchedEffect
+
+        if (!hasLocationPermission) {
+            // Se solicita permiso al entrar en Mapa solo una vez por entrada.
+            if (permissionRequestedForEntry != mapEntryKey) {
+                permissionRequestedForEntry = mapEntryKey
+                permissionLauncher.launch(LocationPermissions.all)
+            }
+            return@LaunchedEffect
+        }
+
+        val location = gpsLocation ?: return@LaunchedEffect
+        // Evita cambiar de plano con una lectura GPS demasiado imprecisa.
+        if (location.accuracy > 100f) return@LaunchedEffect
+
+        mapMode = if (isNearEtsiit(location)) "indoor" else "city"
+        autoModeAppliedForEntry = mapEntryKey
+    }
+    val hasBarometer = remember { hasSensor(context, Sensor.TYPE_PRESSURE) }
+    val tracker = remember { IndoorTracker(LocationPrefs.mapNorth(context)) }
+    var isTracking by rememberSaveable { mutableStateOf(false) }
+    val indoorSensorsActive = inForeground && mapMode == "indoor"
+    PressureEffect(active = indoorSensorsActive) { hPa, timestampMs -> tracker.onPressure(hPa, timestampMs) }
+    val azimuth = rememberCompassAzimuth(active = indoorSensorsActive)
+
+    // Resolver el destino seleccionado.
+// Si es un destino especial, buscamos el POI real más cercano.
+    val destinationResolution = remember(
+        startPoiId,
+        destPoiId,
+        isAccessibleRoute,
+        allPois
+    ) {
+        when (destPoiId) {
+
+            DEST_ASEO_CERCANO -> {
+                resolveNearestPoi(
+                    startPoiId = startPoiId,
+                    candidates = allPois.filter { it.isAseo() },
+                    routeManager = routeManager,
+                    isAccessibleRoute = isAccessibleRoute
+                )
+            }
+
+            DEST_FUENTE_CERCANA -> {
+                resolveNearestPoi(
+                    startPoiId = startPoiId,
+                    candidates = allPois.filter { it.isFuente() },
+                    routeManager = routeManager,
+                    isAccessibleRoute = isAccessibleRoute
+                )
+            }
+
+            else -> {
+                DestinationResolution(
+                    poi = allPois.find { it.id == destPoiId }
+                )
+            }
+        }
+    }
+
+// Calculamos la ruta utilizando el POI real resuelto.
+    val calculatedRoute = remember(
+        startPoiId,
+        destPoiId,
+        destinationResolution.poi?.id,
+        destinationResolution.route,
+        isAccessibleRoute,
+        isRouteOpen
+    ) {
+        val resolvedDest = destinationResolution.poi
+
+        if (isRouteOpen && startPoiId.isNotEmpty() && resolvedDest != null) {
+
+            // Si es un destino especial, reutilizamos la ruta que ya hemos calculado.
+            destinationResolution.route
+                ?: routeManager.calculateRoute(
+                    startPoiId,
+                    resolvedDest.id,
+                    isAccessibleRoute
+                )
+
         } else {
             emptyList()
         }
@@ -202,45 +392,60 @@ fun MapScreen(initialDestPoiId: String? = null) {
     val routeSegments = remember(calculatedRoute) { parseRouteSegments(calculatedRoute) }
     var activeSegmentIndex by rememberSaveable(routeSegments) { mutableIntStateOf(0) }
 
-    // 2. SENSORES DE LOCALIZACIÓN
-    val context = LocalContext.current
-    val inForeground = rememberAppInForeground()
-    var hasLocationPermission by remember { mutableStateOf(LocationPermissions.hasLocation(context)) }
-    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-        hasLocationPermission = LocationPermissions.hasLocation(context)
+    val startPoi = remember(startPoiId) {
+        allPois.find { it.id == startPoiId }
     }
-    val gpsLocation = rememberGpsLocation(active = inForeground && hasLocationPermission)
-    val hasBarometer = remember { hasSensor(context, Sensor.TYPE_PRESSURE) }
-    val tracker = remember { IndoorTracker(LocationPrefs.mapNorth(context)) }
-    var isTracking by rememberSaveable { mutableStateOf(false) }
-    val indoorSensorsActive = inForeground && mapMode == "indoor"
-    PressureEffect(active = indoorSensorsActive) { hPa, timestampMs -> tracker.onPressure(hPa, timestampMs) }
-    val azimuth = rememberCompassAzimuth(active = indoorSensorsActive)
+
+// Este POI puede ser uno normal o el aseo/fuente que se ha resuelto.
+    val destPoi = destinationResolution.poi
+
+    val selectedDestLabel = when (destPoiId) {
+
+        DEST_ASEO_CERCANO ->
+            destPoi?.let { "🚻 Aseo más cercano · ${it.nameEs}" }
+                ?: "🚻 Aseo más cercano"
+
+        DEST_FUENTE_CERCANA ->
+            destPoi?.let { "🚰 Fuente más cercana · ${it.nameEs}" }
+                ?: "🚰 Fuente más cercana"
+
+        else -> destPoi?.nameEs ?: "Seleccionar Destino"
+    }
+
+    val destinationError = when {
+        destPoiId == DEST_ASEO_CERCANO && destPoi == null ->
+            "No se ha encontrado un aseo con ruta disponible desde este origen."
+
+        destPoiId == DEST_FUENTE_CERCANA && destPoi == null ->
+            "No se ha encontrado una fuente con ruta disponible desde este origen."
+
+        else -> null
+    }
+    val activeSegment = routeSegments.getOrNull(activeSegmentIndex)
 
     // Si el usuario presiona escanear QR, abrimos la vista de cámara
     if (isScanningQr) {
         QrLocationScannerScreen(
-            onNodeDetected = { detectedNode ->
-                val routeIds = QrLocationResolver.scannedRouteNodeIds
-                if (routeIds.isNotEmpty()) {
-                    val firstNodeId = routeIds.first()
-                    val lastNodeId = routeIds.last()
-
-                    val startPoi = allPois.find { it.nodeId == firstNodeId }
-                    val destPoi = allPois.find { it.nodeId == lastNodeId }
-
-                    if (startPoi != null) startPoiId = startPoi.id
-                    if (destPoi != null) destPoiId = destPoi.id
-
-                    isRouteOpen = true
-                    activeSegmentIndex = 0
-                } else {
-                    val matchingPoi = allPois.find { it.nodeId == detectedNode.id }
-                    if (matchingPoi != null) {
-                        startPoiId = matchingPoi.id
+            onResultDetected = { result ->
+                when (result) {
+                    is QrScanResult.Location -> {
+                        val matchingPoi = allPois.find { it.nodeId == result.node.id }
+                        if (matchingPoi != null) {
+                            startPoiId = matchingPoi.id
+                        }
+                        selectedFloor = getFloorName(result.node.floor)
+                    }
+                    is QrScanResult.Route -> {
+                        startPoiId = result.startPoi.id
+                        destPoiId = result.destPoi.id
+                        isAccessibleRoute = result.isAccessible
+                        isRouteOpen = true
+                        activeSegmentIndex = 0
+                        EtsiitData.nodes[result.startPoi.nodeId]?.let { node ->
+                            selectedFloor = getFloorName(node.floor)
+                        }
                     }
                 }
-                selectedFloor = getFloorName(detectedNode.floor)
                 isScanningQr = false
             },
             onCancel = {
@@ -250,13 +455,13 @@ fun MapScreen(initialDestPoiId: String? = null) {
         return
     }
 
-    // Si se activa la pantalla del QR de la ruta generada
-    if (showRouteQr) {
-        RouteQrScreen(
-            routeDetails = routeTextForQr,
-            onClose = { showRouteQr = false }
+    if (showRouteQrDialog && startPoi != null && destPoi != null) {
+        RouteQrDialog(
+            startPoi = startPoi,
+            destPoi = destPoi,
+            isAccessible = isAccessibleRoute,
+            onDismiss = { showRouteQrDialog = false }
         )
-        return
     }
 
     LaunchedEffect(activeSegmentIndex, routeSegments) {
@@ -281,13 +486,9 @@ fun MapScreen(initialDestPoiId: String? = null) {
         }
     }
 
-    val startPoi = remember(startPoiId) { allPois.find { it.id == startPoiId } }
-    val destPoi = remember(destPoiId) { allPois.find { it.id == destPoiId } }
-    val activeSegment = routeSegments.getOrNull(activeSegmentIndex)
-
     StepEffect(active = indoorSensorsActive && isTracking && isRouteOpen) { tracker.onStep(azimuth) }
     val userPosition = tracker.position.takeIf { isTracking && isRouteOpen && activeSegment?.floorName == selectedFloor }
-    val userHeadingMapDeg = azimuth?.let { it - LocationPrefs.mapNorth(context) }
+    val userHeadingMapDeg = azimuth?.let { it - tracker.mapNorthDeg }
 
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
@@ -319,73 +520,6 @@ fun MapScreen(initialDestPoiId: String? = null) {
             modifier = Modifier.padding(top = 2.dp)
         )
 
-        Spacer(modifier = Modifier.height(18.dp))
-
-        // La navegación interactiva solo aplica al plano interior
-        if (mapMode == "indoor") {
-            PoiRouteSelectorCard(
-                pois = allPois,
-                startPoi = startPoi,
-                destPoi = destPoi,
-                onStartPoiChange = { startPoiId = it.id },
-                onDestPoiChange = { destPoiId = it.id },
-                isAccessible = isAccessibleRoute,
-                onAccessibleToggle = { isAccessibleRoute = it },
-                onCalculateRoute = {
-                    isRouteOpen = true
-                    activeSegmentIndex = 0
-                },
-                onClearRoute = { isRouteOpen = false }
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-        }
-
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = Color.White,
-            shape = RoundedCornerShape(14.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
-        ) {
-            Row(modifier = Modifier.padding(4.dp)) {
-                Surface(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(38.dp)
-                        .clickable { mapMode = "indoor" },
-                    color = if (mapMode == "indoor") UgrRed else Color.Transparent,
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "🏢 Plano Interior (ETSIIT)",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (mapMode == "indoor") Color.White else Ink
-                        )
-                    }
-                }
-
-                Surface(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(38.dp)
-                        .clickable { mapMode = "city" },
-                    color = if (mapMode == "city") UgrRed else Color.Transparent,
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "🗺️ Mapa Ciudad",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (mapMode == "city") Color.White else Ink
-                        )
-                    }
-                }
-            }
-        }
-
         Spacer(modifier = Modifier.height(20.dp))
 
         if (mapMode == "city") {
@@ -413,20 +547,18 @@ fun MapScreen(initialDestPoiId: String? = null) {
             )
 
             Spacer(modifier = Modifier.height(24.dp))
-
             Text(
                 text = "Campus Universitarios UGR",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = Ink
             )
-
             Spacer(modifier = Modifier.height(12.dp))
-
             SampleData.campuses.forEach { campus ->
                 CampusCard(campus = campus)
                 Spacer(modifier = Modifier.height(12.dp))
             }
+
         } else {
             val floorNumber = when (selectedFloor) {
                 "P4" -> 4
@@ -440,8 +572,7 @@ fun MapScreen(initialDestPoiId: String? = null) {
 
             val floorImageBitmap = remember(floorNumber) {
                 runCatching {
-                    // Planos apilados: cada planta lleva debajo las inferiores (ver scripts/apilar_plantas.py)
-                    val inputStream = context.assets.open("Modelo 3D ETSIIT/Apiladas/$floorNumber.jpg")
+                    val inputStream = context.assets.open("Modelo 3D ETSIIT/ConSuelo/$floorNumber.jpg")
                     BitmapFactory.decodeStream(inputStream)?.asImageBitmap()
                 }.getOrNull()
             }
@@ -556,32 +687,9 @@ fun MapScreen(initialDestPoiId: String? = null) {
                     startPoiName = startPoi?.nameEs ?: "Origen",
                     destPoiName = destPoi?.nameEs ?: "Destino",
                     onSegmentChange = { activeSegmentIndex = it },
+                    onGenerateQrClick = { showRouteQrDialog = true },
                     onClose = { isRouteOpen = false }
                 )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // BOTÓN AÑADIDO: Generar QR con la ruta actual calculada[cite: 3]
-                Button(
-                    onClick = {
-                        if (calculatedRoute.isNotEmpty()) {
-                            routeTextForQr = calculatedRoute.joinToString(",") { it.id }
-                            showRouteQr = true
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = UgrRed),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = "📷 Generar Código QR de esta Ruta",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -619,6 +727,44 @@ fun MapScreen(initialDestPoiId: String? = null) {
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
+                text = "Navegación Interactiva",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = Ink
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            PoiRouteSelectorCard(
+                pois = allPois,
+                startPoi = startPoi,
+                destPoi = destPoi,
+
+                selectedDestLabel = selectedDestLabel,
+                destinationError = destinationError,
+
+                onStartPoiChange = { startPoiId = it.id },
+                onDestPoiChange = { destPoiId = it.id },
+
+                // Opciones especiales exclusivamente para el destino.
+                onSpecialDestChange = { destPoiId = it },
+
+                isAccessible = isAccessibleRoute,
+                onAccessibleToggle = { isAccessibleRoute = it },
+
+                onCalculateRoute = {
+                    isRouteOpen = true
+                    activeSegmentIndex = 0
+                },
+
+                onGenerateQrClick = { showRouteQrDialog = true },
+                isRouteActive = isRouteOpen && routeSegments.isNotEmpty(),
+                onClearRoute = { isRouteOpen = false }
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
                 text = "Puntos de Interés Rápidos",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
@@ -638,7 +784,52 @@ fun MapScreen(initialDestPoiId: String? = null) {
             }
         }
 
-        Spacer(modifier = Modifier.height(30.dp))
+        Spacer(modifier = Modifier.height(18.dp))
+
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = Color.White,
+            shape = RoundedCornerShape(14.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+        ) {
+            Row(modifier = Modifier.padding(4.dp)) {
+                Surface(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(38.dp)
+                        .clickable { mapMode = "indoor" },
+                    color = if (mapMode == "indoor") UgrRed else Color.Transparent,
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "🏢 Plano Interior (ETSIIT)",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (mapMode == "indoor") Color.White else Ink
+                        )
+                    }
+                }
+
+                Surface(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(38.dp)
+                        .clickable { mapMode = "city" },
+                    color = if (mapMode == "city") UgrRed else Color.Transparent,
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "🗺️ Mapa Ciudad",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (mapMode == "city") Color.White else Ink
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -1006,6 +1197,7 @@ fun RouteStepNavigationCard(
     startPoiName: String,
     destPoiName: String,
     onSegmentChange: (Int) -> Unit,
+    onGenerateQrClick: (() -> Unit)? = null,
     onClose: () -> Unit
 ) {
     val currentSegment = segments.getOrNull(currentIndex) ?: return
@@ -1151,6 +1343,22 @@ fun RouteStepNavigationCard(
                 }
             }
 
+            if (onGenerateQrClick != null) {
+                Spacer(modifier = Modifier.height(10.dp))
+                OutlinedButton(
+                    onClick = onGenerateQrClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text(
+                        text = "📱 Generar QR de esta ruta",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Ink
+                    )
+                }
+            }
+
             if (segments.size > 1) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
@@ -1205,11 +1413,16 @@ fun PoiRouteSelectorCard(
     pois: List<PointOfInterest>,
     startPoi: PointOfInterest?,
     destPoi: PointOfInterest?,
+    selectedDestLabel: String,
+    destinationError: String?,
     onStartPoiChange: (PointOfInterest) -> Unit,
     onDestPoiChange: (PointOfInterest) -> Unit,
+    onSpecialDestChange: (String) -> Unit,
     isAccessible: Boolean,
     onAccessibleToggle: (Boolean) -> Unit,
     onCalculateRoute: () -> Unit,
+    onGenerateQrClick: (() -> Unit)? = null,
+    isRouteActive: Boolean = false,
     onClearRoute: () -> Unit
 ) {
     var pickingStart by remember { mutableStateOf(false) }
@@ -1219,11 +1432,12 @@ fun PoiRouteSelectorCard(
         modifier = Modifier.fillMaxWidth(),
         color = Color.White,
         shape = RoundedCornerShape(16.dp),
-        shadowElevation = 2.dp
+        shadowElevation = 2.dp,
+        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
     ) {
         Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Raíl a la izquierda: punto de origen, línea de puntos y punto de destino
+                // Raíl visual de origen y destino.
                 Column(
                     modifier = Modifier.width(18.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -1248,7 +1462,9 @@ fun PoiRouteSelectorCard(
                             .background(UgrRed, RoundedCornerShape(50))
                     )
                 }
+
                 Spacer(modifier = Modifier.width(6.dp))
+
                 Column(modifier = Modifier.weight(1f)) {
                     PoiSelectorField(
                         poi = startPoi,
@@ -1258,12 +1474,15 @@ fun PoiRouteSelectorCard(
                     Spacer(modifier = Modifier.height(6.dp))
                     PoiSelectorField(
                         poi = destPoi,
+                        displayText = selectedDestLabel,
                         placeholder = "¿A dónde vas?",
                         onClick = { pickingDest = true }
                     )
                 }
+
                 Spacer(modifier = Modifier.width(4.dp))
-                // Intercambiar origen y destino
+
+                // Intercambiar origen y destino cuando ambos son POI reales.
                 Box(
                     modifier = Modifier
                         .size(34.dp)
@@ -1276,10 +1495,16 @@ fun PoiRouteSelectorCard(
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = "⇅", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MutedText)
+                    Text(
+                        text = "⇅",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MutedText
+                    )
                 }
             }
 
+            // Se conserva el selector en hoja, que permite buscar POI por texto.
             if (pickingStart) {
                 PoiPickerSheet(
                     title = "Elige el origen",
@@ -1294,6 +1519,7 @@ fun PoiRouteSelectorCard(
                     onDismiss = { pickingStart = false }
                 )
             }
+
             if (pickingDest) {
                 PoiPickerSheet(
                     title = "Elige el destino",
@@ -1310,8 +1536,58 @@ fun PoiRouteSelectorCard(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Destinos rápidos",
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = MutedText
+            )
+            Spacer(modifier = Modifier.height(5.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Surface(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .clickable { onSpecialDestChange(DEST_ASEO_CERCANO) },
+                    color = SoftBg,
+                    shape = RoundedCornerShape(50),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+                ) {
+                    Text(
+                        text = "🚻 Aseo más cercano",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Ink,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)
+                    )
+                }
+                Surface(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .clickable { onSpecialDestChange(DEST_FUENTE_CERCANA) },
+                    color = SoftBg,
+                    shape = RoundedCornerShape(50),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+                ) {
+                    Text(
+                        text = "🚰 Fuente más cercana",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Ink,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)
+                    )
+                }
+            }
 
-            // Fila de acciones: accesible · limpiar · ir
+            if (destinationError != null) {
+                Text(
+                    text = destinationError,
+                    fontSize = 10.sp,
+                    color = UgrRed,
+                    modifier = Modifier.padding(top = 6.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -1357,9 +1633,25 @@ fun PoiRouteSelectorCard(
                     modifier = Modifier.height(34.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = UgrRed),
                     shape = RoundedCornerShape(50),
-                    contentPadding = PaddingValues(horizontal = 16.dp)
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp)
                 ) {
                     Text(text = "Ir", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            if (onGenerateQrClick != null && isRouteActive) {
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = onGenerateQrClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text(
+                        text = "📱 Generar QR de esta ruta",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Ink
+                    )
                 }
             }
         }
@@ -1425,9 +1717,14 @@ fun CampusCard(campus: CampusItem) {
 @Composable
 private fun PoiSelectorField(
     poi: PointOfInterest?,
+    displayText: String? = null,
     placeholder: String,
     onClick: () -> Unit
 ) {
+    val label = displayText
+        ?: poi?.let { "${poiCategoryIcon(it.category)} ${it.nameEs}" }
+        ?: placeholder
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -1441,14 +1738,15 @@ private fun PoiSelectorField(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = poi?.let { "${poiCategoryIcon(it.category)} ${it.nameEs}" } ?: placeholder,
+                text = label,
                 fontSize = 13.sp,
-                fontWeight = if (poi != null) FontWeight.SemiBold else FontWeight.Normal,
-                color = if (poi != null) Ink else MutedText,
+                fontWeight = if (poi != null || displayText != null) FontWeight.SemiBold else FontWeight.Normal,
+                color = if (poi != null || displayText != null) Ink else MutedText,
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f)
             )
+
             poi?.let { poiFloor(it) }?.let { floor ->
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
@@ -1479,4 +1777,5 @@ fun PoiChip(poi: PointOfInterest, onClick: () -> Unit) {
             Text(text = poi.nameEs, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Ink)
         }
     }
+
 }

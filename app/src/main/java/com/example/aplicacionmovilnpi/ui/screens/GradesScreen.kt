@@ -75,11 +75,6 @@ fun GradesScreen(onBack: () -> Unit) {
             fontWeight = FontWeight.Black,
             color = Ink
         )
-        Text(
-            text = "${FacultyData.Student.degree} · ${FacultyData.Student.course}",
-            fontSize = 12.sp,
-            color = MutedText
-        )
 
         Spacer(modifier = Modifier.height(16.dp))
 

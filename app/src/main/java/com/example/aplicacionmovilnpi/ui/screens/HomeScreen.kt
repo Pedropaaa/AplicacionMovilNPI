@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -115,31 +116,6 @@ fun HomeScreen(
             fontWeight = FontWeight.Black,
             color = Ink
         )
-        Text(
-            text = "${FacultyData.Student.course} · ETSIIT",
-            fontSize = 12.sp,
-            color = MutedText,
-            modifier = Modifier.padding(top = 4.dp)
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // Search Bar
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = { searchQuery = it },
-            placeholder = { Text(text = "¿Qué clase o despacho buscas?", fontSize = 12.sp, color = MutedText) },
-            leadingIcon = { Text(text = "🔍", fontSize = 16.sp) },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                unfocusedBorderColor = Color(0xFFDFE2E7),
-                focusedBorderColor = UgrRed,
-                unfocusedContainerColor = Color.White,
-                focusedContainerColor = Color.White
-            ),
-            singleLine = true
-        )
 
         Spacer(modifier = Modifier.height(20.dp))
 
@@ -233,63 +209,6 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Places Quick Categories Horizontal Row
-        Text(
-            text = "Explorar la facultad",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            color = Ink
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            items(SampleData.places) { place ->
-                PlaceCategoryCard(place = place, onClick = { onNavigateToMap(null) })
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Shortcuts Grid
-        Text(
-            text = "Accesos rápidos",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            color = Ink
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            ShortcutCard(
-                title = "Horario semanal",
-                subtitle = "Ver clases",
-                icon = "📅",
-                bgTone = TonePurpleBg,
-                iconTone = TonePurpleText,
-                onClick = onNavigateToSchedule,
-                modifier = Modifier.weight(1f)
-            )
-
-            ShortcutCard(
-                title = "Profesorado",
-                subtitle = "Tutorías y despachos",
-                icon = "👨‍🏫",
-                bgTone = ToneRoseBg,
-                iconTone = ToneRoseText,
-                onClick = onNavigateToProfessors,
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
         // Next Delivery Banner Card
         Surface(
             modifier = Modifier
@@ -339,12 +258,102 @@ fun HomeScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(30.dp))
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Places Quick Categories Horizontal Row
+        Text(
+            text = "Explorar la universidad",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = Ink
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+
+            // FILA 1
+            Row(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                PlaceCategoryCard(
+                    place = PlaceCategory(
+                        name = "Comedor",
+                        detail = "Más cercano",
+                        icon = "utensils",
+                        tone = "blue"
+                    ),
+                    onClick = {
+                        onNavigateToMap("ID_REAL_COMEDOR")
+                    },
+                    modifier = Modifier.weight(1f).fillMaxHeight()
+                )
+
+                PlaceCategoryCard(
+                    place = PlaceCategory(
+                        name = "Biblioteca",
+                        detail = "Más cercana",
+                        icon = "book",
+                        tone = "rose"
+                    ),
+                    onClick = {
+                        onNavigateToMap("ID_REAL_BIBLIOTECA")
+                    },
+                    modifier = Modifier.weight(1f).fillMaxHeight()
+                )
+            }
+
+            // FILA 3
+            Row(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                PlaceCategoryCard(
+                    place = PlaceCategory(
+                        name = "Aseos",
+                        detail = "Más cercanos",
+                        icon = "toilet",
+                        tone = "blue"
+                    ),
+                    onClick = {
+                        onNavigateToMap("__dest_aseo_cercano__")
+                    },
+                    modifier = Modifier.weight(1f).fillMaxHeight()
+                )
+
+                PlaceCategoryCard(
+                    place = PlaceCategory(
+                        name = "Fuentes",
+                        detail = "Más cercana",
+                        icon = "water",
+                        tone = "blue"
+                    ),
+                    onClick = {
+                        onNavigateToMap("__dest_fuente_cercana__")
+                    },
+                    modifier = Modifier.weight(1f).fillMaxHeight()
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
     }
 }
 
+
 @Composable
-fun PlaceCategoryCard(place: PlaceCategory, onClick: () -> Unit) {
+fun PlaceCategoryCard(
+    place: PlaceCategory,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val (bgColor, textColor) = when (place.tone) {
         "rose" -> ToneRoseBg to ToneRoseText
         "purple" -> TonePurpleBg to TonePurpleText
@@ -356,20 +365,27 @@ fun PlaceCategoryCard(place: PlaceCategory, onClick: () -> Unit) {
         "building" -> "🏢"
         "person" -> "👤"
         "book" -> "📚"
+        "toilet" -> "🚻"
+        "water" -> "🚰"
+        "car" -> "🚗"
+        "utensils" -> "🍽️"
         else -> "☕"
     }
 
     Surface(
-        modifier = Modifier
-            .width(100.dp)
-            .height(115.dp)
+        modifier = modifier
             .clickable { onClick() },
         color = Color.White,
         shape = RoundedCornerShape(16.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            CardBorder
+        )
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -379,15 +395,31 @@ fun PlaceCategoryCard(place: PlaceCategory, onClick: () -> Unit) {
                 modifier = Modifier.size(40.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text(text = iconText, fontSize = 20.sp)
+                    Text(
+                        text = iconText,
+                        fontSize = 20.sp
+                    )
                 }
             }
+
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = place.name, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Ink)
-            Text(text = place.detail, fontSize = 9.sp, color = MutedText)
+
+            Text(
+                text = place.name,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = Ink
+            )
+
+            Text(
+                text = place.detail,
+                fontSize = 9.sp,
+                color = MutedText
+            )
         }
     }
 }
+
 
 @Composable
 fun ShortcutCard(

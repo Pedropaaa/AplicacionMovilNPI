@@ -113,7 +113,7 @@ fun MoreScreen(
 
         MoreOptionCard(
             title = "Mi Perfil",
-            subtitle = "${FacultyData.Student.name} · ${FacultyData.Student.course}",
+            subtitle = "${FacultyData.Student.name}",
             icon = "👤",
             bgTone = SoftBg,
             onClick = { onNavigateToSubScreen("profile") }

@@ -19,6 +19,8 @@ android {
 
     buildTypes {
         release {
+            // Se conserva la configuración de HEAD para no activar R8
+            // hasta comprobar las reglas de conservación de la aplicación.
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -26,12 +28,21 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     buildFeatures {
         compose = true
+    }
+
+    // Configuración no conflictiva procedente de rutasAutomaticas.
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
     }
 }
 
@@ -48,20 +59,22 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.osmdroid.android)
 
-    // CameraX para el escáner de código QR
+    // CameraX para el escáner de códigos QR.
     implementation("androidx.camera:camera-core:1.3.1")
     implementation("androidx.camera:camera-camera2:1.3.1")
     implementation("androidx.camera:camera-lifecycle:1.3.1")
     implementation("androidx.camera:camera-view:1.3.1")
 
-    // ML Kit Barcode Scanning para leer los códigos QR
+    // ML Kit Barcode Scanning para leer códigos QR.
     implementation("com.google.mlkit:barcode-scanning:17.2.0")
 
-    // ZXing para generar códigos QR
+    // ZXing para generar códigos QR.
+    // Se usa la coordenada explícita de HEAD para no depender de que
+    // exista el alias libs.zxing.core en gradle/libs.versions.toml.
     implementation("com.google.zxing:core:3.5.2")
 
     testImplementation(libs.junit)
-    // org.json real para los tests (el de Android es solo un esqueleto fuera del móvil)
+    // org.json real para los tests (el de Android es solo un esqueleto fuera del móvil).
     testImplementation(libs.org.json)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

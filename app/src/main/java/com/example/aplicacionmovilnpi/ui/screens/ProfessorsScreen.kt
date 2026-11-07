@@ -91,7 +91,7 @@ fun ProfessorsScreen(
             color = Ink
         )
         Text(
-            text = "4º CSI · ${moment.semester}º semestre · dónde está cada profesor ahora",
+            text = "${moment.semester}º semestre · Dónde está cada profesor ahora",
             fontSize = 12.sp,
             color = MutedText,
             modifier = Modifier.padding(top = 2.dp)

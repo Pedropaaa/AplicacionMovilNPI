@@ -1,6 +1,5 @@
 package com.example.aplicacionmovilnpi.ui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +25,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -37,7 +37,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aplicacionmovilnpi.data.FacultyData
-import com.example.aplicacionmovilnpi.qr.RouteQrScreen
 import com.example.aplicacionmovilnpi.ui.screens.AccessibilityScreen
 import com.example.aplicacionmovilnpi.ui.screens.CalendarScreen
 import com.example.aplicacionmovilnpi.ui.screens.GradesScreen
@@ -67,17 +66,16 @@ fun MainScreen(
     onLogout: () -> Unit
 ) {
     var activeTab by rememberSaveable { mutableStateOf(NavTab.HOME) }
+    var mapEntryKey by rememberSaveable { mutableIntStateOf(0) }
     var currentSubScreen by rememberSaveable { mutableStateOf<String?>(null) }
     var showMenu by remember { mutableStateOf(false) }
 
-    // ESTADOS AÑADIDOS PARA EL QR DE LA RUTA
-    var showRouteQr by rememberSaveable { mutableStateOf(false) }
-    var routeTextForQr by rememberSaveable { mutableStateOf("") }
-
-    // POI al que debe guiar el mapa al abrirlo desde otra pantalla (null = mapa sin ruta)
+    // POI al que debe guiar el mapa al abrirlo desde otra pantalla (null = mapa sin ruta).
     var mapDestination by rememberSaveable { mutableStateOf<String?>(null) }
+
     val openMap: (String?) -> Unit = { poiId ->
         mapDestination = poiId
+        mapEntryKey++
         activeTab = NavTab.MAP
         currentSubScreen = null
     }
@@ -102,6 +100,11 @@ fun MainScreen(
             UgrBottomBar(
                 activeTab = activeTab,
                 onTabSelected = { tab ->
+                    // Cada pulsación en Mapa fuerza una nueva comprobación de ubicación.
+                    if (tab == NavTab.MAP) {
+                        mapEntryKey++
+                    }
+
                     activeTab = tab
                     currentSubScreen = null
                     mapDestination = null
@@ -124,24 +127,29 @@ fun MainScreen(
                 currentSubScreen == "accessibility" -> AccessibilityScreen(onBack = { currentSubScreen = null })
 
                 activeTab == NavTab.HOME -> HomeScreen(
-                    onNavigateToSchedule = { activeTab = NavTab.SCHEDULE; currentSubScreen = null },
-                    onNavigateToProfessors = { activeTab = NavTab.PROFESSORS; currentSubScreen = null },
+                    onNavigateToSchedule = {
+                        activeTab = NavTab.SCHEDULE
+                        currentSubScreen = null
+                    },
+                    onNavigateToProfessors = {
+                        activeTab = NavTab.PROFESSORS
+                        currentSubScreen = null
+                    },
                     onNavigateToMap = openMap,
-                    onNavigateToCalendar = { activeTab = NavTab.MORE; currentSubScreen = "calendar" }
+                    onNavigateToCalendar = {
+                        activeTab = NavTab.MORE
+                        currentSubScreen = "calendar"
+                    }
                 )
+
                 activeTab == NavTab.SCHEDULE -> ScheduleScreen(onNavigateToMap = openMap)
                 activeTab == NavTab.PROFESSORS -> ProfessorsScreen(onNavigateToMap = openMap)
-                activeTab == NavTab.MAP -> MapScreen(initialDestPoiId = mapDestination)
+                activeTab == NavTab.MAP -> MapScreen(
+                    initialDestPoiId = mapDestination,
+                    mapEntryKey = mapEntryKey
+                )
                 activeTab == NavTab.MORE -> MoreScreen(
                     onNavigateToSubScreen = { subScreen -> currentSubScreen = subScreen }
-                )
-            }
-
-            // PANTALLA SUPERPUESTA DEL QR AÑADIDA (Se muestra cuando showRouteQr es true)
-            if (showRouteQr) {
-                RouteQrScreen(
-                    routeDetails = routeTextForQr,
-                    onClose = { showRouteQr = false }
                 )
             }
         }
@@ -161,8 +169,7 @@ fun UgrHeader(
         color = Color.White,
         shadowElevation = 2.dp
     ) {
-        // La app es edge-to-edge: dejamos hueco para la barra de estado
-        // y un pequeño margen extra para que la cabecera respire.
+        // Edge-to-edge: evita que la cabecera quede debajo de la barra de estado.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -172,10 +179,14 @@ fun UgrHeader(
                 .padding(horizontal = 20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Brand Logo Mark
             Surface(
                 color = UgrRed,
-                shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp, bottomStart = 12.dp, bottomEnd = 6.dp),
+                shape = RoundedCornerShape(
+                    topStart = 6.dp,
+                    topEnd = 6.dp,
+                    bottomStart = 12.dp,
+                    bottomEnd = 6.dp
+                ),
                 modifier = Modifier.size(38.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -187,15 +198,10 @@ fun UgrHeader(
                     )
                 }
             }
-
             Spacer(modifier = Modifier.width(10.dp))
 
             Column {
-                Text(
-                    text = "ETSIIT · UGR",
-                    fontSize = 10.sp,
-                    color = MutedText
-                )
+                Text(text = "ETSIIT · UGR", fontSize = 10.sp, color = MutedText)
                 Text(
                     text = "UGR CAMPUS",
                     fontSize = 13.sp,
@@ -206,7 +212,6 @@ fun UgrHeader(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // User Avatar Circle
             Box {
                 Surface(
                     color = Color(0xFFEEE4EA),
@@ -232,8 +237,16 @@ fun UgrHeader(
                     DropdownMenuItem(
                         text = {
                             Column {
-                                Text(text = FacultyData.Student.name, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                Text(text = FacultyData.Student.email, fontSize = 10.sp, color = MutedText)
+                                Text(
+                                    text = FacultyData.Student.name,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
+                                )
+                                Text(
+                                    text = FacultyData.Student.email,
+                                    fontSize = 10.sp,
+                                    color = MutedText
+                                )
                             }
                         },
                         onClick = onProfileClick
@@ -244,7 +257,14 @@ fun UgrHeader(
                         onClick = onProfileClick
                     )
                     DropdownMenuItem(
-                        text = { Text(text = "🚪 Cerrar sesión", fontSize = 12.sp, color = UgrRed, fontWeight = FontWeight.Bold) },
+                        text = {
+                            Text(
+                                text = "🚪 Cerrar sesión",
+                                fontSize = 12.sp,
+                                color = UgrRed,
+                                fontWeight = FontWeight.Bold
+                            )
+                        },
                         onClick = onLogoutClick
                     )
                 }

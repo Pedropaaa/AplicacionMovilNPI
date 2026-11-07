@@ -160,7 +160,7 @@ fun rememberCompassAzimuth(active: Boolean): Float? {
         val previous = azimuth ?: run { azimuth = newDeg; return }
         val a = Math.toRadians(previous.toDouble())
         val b = Math.toRadians(newDeg.toDouble())
-        val k = 0.25
+        val k = 0.1
         val s = (1 - k) * sin(a) + k * sin(b)
         val c = (1 - k) * cos(a) + k * cos(b)
         val smoothed = DeadReckoning.normalize(Math.toDegrees(atan2(s, c)).toFloat())

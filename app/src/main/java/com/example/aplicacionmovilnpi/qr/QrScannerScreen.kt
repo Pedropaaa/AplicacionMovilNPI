@@ -154,7 +154,7 @@ private fun processImageProxy(
 
 @Composable
 fun QrLocationScannerScreen(
-    onNodeDetected: (Node) -> Unit,
+    onResultDetected: (QrScanResult) -> Unit,
     onCancel: () -> Unit
 ) {
     val context = LocalContext.current
@@ -165,16 +165,27 @@ fun QrLocationScannerScreen(
             onQrResult = { rawQrContent ->
                 if (!isProcessing) {
                     isProcessing = true
-                    val match = QrLocationResolver.resolveQrCode(rawQrContent)
+                    val result = QrLocationResolver.resolveQrCodeResult(rawQrContent)
 
-                    if (match != null) {
-                        val locationName = match.poi?.nameEs ?: match.node.id
-                        Toast.makeText(
-                            context,
-                            "Ubicación fijada: $locationName (Planta ${match.node.floor})",
-                            Toast.LENGTH_LONG
-                        ).show()
-                        onNodeDetected(match.node)
+                    if (result != null) {
+                        when (result) {
+                            is QrScanResult.Location -> {
+                                val locationName = result.poi?.nameEs ?: result.node.id
+                                Toast.makeText(
+                                    context,
+                                    "Ubicación fijada: $locationName (Planta ${result.node.floor})",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                            is QrScanResult.Route -> {
+                                Toast.makeText(
+                                    context,
+                                    "📍 Ruta cargada por QR: ${result.startPoi.nameEs} ➔ ${result.destPoi.nameEs}",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
+                        onResultDetected(result)
                     } else {
                         Toast.makeText(
                             context,
@@ -198,4 +209,23 @@ fun QrLocationScannerScreen(
             Text("Cancelar escaneo")
         }
     }
+}
+
+@Composable
+@JvmName("QrLocationScannerScreenOnNode")
+fun QrLocationScannerScreen(
+    onNodeDetected: (Node) -> Unit,
+    onCancel: () -> Unit
+) {
+    QrLocationScannerScreen(
+        onResultDetected = { result ->
+            when (result) {
+                is QrScanResult.Location -> onNodeDetected(result.node)
+                is QrScanResult.Route -> {
+                    com.example.aplicacionmovilnpi.navigation.EtsiitData.nodes[result.startPoi.nodeId]?.let { onNodeDetected(it) }
+                }
+            }
+        },
+        onCancel = onCancel
+    )
 }
