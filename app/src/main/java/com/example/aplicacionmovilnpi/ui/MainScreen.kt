@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -156,15 +157,18 @@ fun UgrHeader(
     onLogoutClick: () -> Unit
 ) {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(72.dp),
+        modifier = Modifier.fillMaxWidth(),
         color = Color.White,
         shadowElevation = 2.dp
     ) {
+        // La app es edge-to-edge: dejamos hueco para la barra de estado
+        // y un pequeño margen extra para que la cabecera respire.
         Row(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(top = 8.dp)
+                .height(64.dp)
                 .padding(horizontal = 20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
