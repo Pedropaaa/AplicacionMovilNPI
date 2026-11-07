@@ -51,6 +51,7 @@ import com.example.aplicacionmovilnpi.ui.theme.Ink
 import com.example.aplicacionmovilnpi.ui.theme.MutedText
 import com.example.aplicacionmovilnpi.ui.theme.PageBg
 import com.example.aplicacionmovilnpi.ui.theme.UgrRed
+import androidx.compose.runtime.mutableIntStateOf
 
 enum class NavTab(val id: String, val label: String, val icon: String) {
     HOME("home", "Inicio", "🏠"),
@@ -65,12 +66,16 @@ fun MainScreen(
     onLogout: () -> Unit
 ) {
     var activeTab by rememberSaveable { mutableStateOf(NavTab.HOME) }
+    var mapEntryKey by rememberSaveable {
+        mutableIntStateOf(0)
+    }
     var currentSubScreen by rememberSaveable { mutableStateOf<String?>(null) }
     var showMenu by remember { mutableStateOf(false) }
     // POI al que debe guiar el mapa al abrirlo desde otra pantalla (null = mapa sin ruta)
     var mapDestination by rememberSaveable { mutableStateOf<String?>(null) }
     val openMap: (String?) -> Unit = { poiId ->
         mapDestination = poiId
+        mapEntryKey++
         activeTab = NavTab.MAP
         currentSubScreen = null
     }
@@ -95,6 +100,12 @@ fun MainScreen(
             UgrBottomBar(
                 activeTab = activeTab,
                 onTabSelected = { tab ->
+
+                    // Si pulsa Mapa, volvemos a comprobar el GPS
+                    if (tab == NavTab.MAP) {
+                        mapEntryKey++
+                    }
+
                     activeTab = tab
                     currentSubScreen = null
                     mapDestination = null
@@ -124,7 +135,10 @@ fun MainScreen(
                 )
                 activeTab == NavTab.SCHEDULE -> ScheduleScreen(onNavigateToMap = openMap)
                 activeTab == NavTab.PROFESSORS -> ProfessorsScreen(onNavigateToMap = openMap)
-                activeTab == NavTab.MAP -> MapScreen(initialDestPoiId = mapDestination)
+                activeTab == NavTab.MAP -> MapScreen(
+                    initialDestPoiId = mapDestination,
+                    mapEntryKey = mapEntryKey
+                )
                 activeTab == NavTab.MORE -> MoreScreen(
                     onNavigateToSubScreen = { subScreen -> currentSubScreen = subScreen }
                 )

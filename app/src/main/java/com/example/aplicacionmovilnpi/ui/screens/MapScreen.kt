@@ -91,6 +91,7 @@ import com.example.aplicacionmovilnpi.ui.theme.SoftBg
 import com.example.aplicacionmovilnpi.ui.theme.ToneBlueBg
 import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 import kotlinx.coroutines.launch
+import android.location.Location
 
 fun getFloorName(floor: Int): String = when (floor) {
     4 -> "P4"
@@ -100,6 +101,26 @@ fun getFloorName(floor: Int): String = when (floor) {
     0 -> "PB"
     -1 -> "S1"
     else -> "P$floor"
+}
+
+private const val ETSIIT_LAT = 37.19722
+private const val ETSIIT_LON = -3.62389
+
+// Radio de detección: 250 metros
+private const val ETSIIT_RADIUS = 250f
+
+private fun isNearEtsiit(location: Location): Boolean {
+    val distance = FloatArray(1)
+
+    Location.distanceBetween(
+        location.latitude,
+        location.longitude,
+        ETSIIT_LAT,
+        ETSIIT_LON,
+        distance
+    )
+
+    return distance[0] <= ETSIIT_RADIUS
 }
 
 data class RouteFloorSegment(
@@ -245,12 +266,15 @@ private fun resolveNearestPoi(
 }
 
 @Composable
-fun MapScreen(initialDestPoiId: String? = null) {
+fun MapScreen(
+    initialDestPoiId: String? = null,
+    mapEntryKey: Int = 0
+) {
     val routeManager = remember { RouteManager() }
     val allPois = remember { EtsiitData.pois }
 
     // 1. DECLARACIONES DE ESTADO (Primero)
-    var mapMode by rememberSaveable { mutableStateOf("indoor") }
+    var mapMode by rememberSaveable { mutableStateOf("city") }
     var selectedFloor by rememberSaveable { mutableStateOf("P1") }
 
     // Routing State
@@ -271,6 +295,33 @@ fun MapScreen(initialDestPoiId: String? = null) {
         hasLocationPermission = LocationPermissions.hasLocation(context)
     }
     val gpsLocation = rememberGpsLocation(active = inForeground && hasLocationPermission)
+    var autoModeAppliedForEntry by rememberSaveable {
+        mutableIntStateOf(-1)
+    }
+
+    LaunchedEffect(
+        mapEntryKey,
+        gpsLocation,
+        hasLocationPermission
+    ) {
+        if (!hasLocationPermission) return@LaunchedEffect
+
+        if (autoModeAppliedForEntry == mapEntryKey) {
+            return@LaunchedEffect
+        }
+
+        val location = gpsLocation ?: return@LaunchedEffect
+
+        if (location.accuracy > 100f) return@LaunchedEffect
+
+        mapMode = if (isNearEtsiit(location)) {
+            "indoor"
+        } else {
+            "city"
+        }
+
+        autoModeAppliedForEntry = mapEntryKey
+    }
     val hasBarometer = remember { hasSensor(context, Sensor.TYPE_PRESSURE) }
     val tracker = remember { IndoorTracker(LocationPrefs.mapNorth(context)) }
     var isTracking by rememberSaveable { mutableStateOf(false) }
@@ -471,53 +522,6 @@ fun MapScreen(initialDestPoiId: String? = null) {
             modifier = Modifier.padding(top = 2.dp)
         )
 
-        Spacer(modifier = Modifier.height(18.dp))
-
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = Color.White,
-            shape = RoundedCornerShape(14.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
-        ) {
-            Row(modifier = Modifier.padding(4.dp)) {
-                Surface(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(38.dp)
-                        .clickable { mapMode = "indoor" },
-                    color = if (mapMode == "indoor") UgrRed else Color.Transparent,
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "🏢 Plano Interior (ETSIIT)",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (mapMode == "indoor") Color.White else Ink
-                        )
-                    }
-                }
-
-                Surface(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(38.dp)
-                        .clickable { mapMode = "city" },
-                    color = if (mapMode == "city") UgrRed else Color.Transparent,
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "🗺️ Mapa Ciudad",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (mapMode == "city") Color.White else Ink
-                        )
-                    }
-                }
-            }
-        }
-
         Spacer(modifier = Modifier.height(20.dp))
 
         if (mapMode == "city") {
@@ -544,21 +548,6 @@ fun MapScreen(initialDestPoiId: String? = null) {
                 }
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = "Campus Universitarios UGR",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = Ink
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            SampleData.campuses.forEach { campus ->
-                CampusCard(campus = campus)
-                Spacer(modifier = Modifier.height(12.dp))
-            }
         } else {
             val floorNumber = when (selectedFloor) {
                 "P4" -> 4
@@ -784,7 +773,52 @@ fun MapScreen(initialDestPoiId: String? = null) {
             }
         }
 
-        Spacer(modifier = Modifier.height(30.dp))
+        Spacer(modifier = Modifier.height(18.dp))
+
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = Color.White,
+            shape = RoundedCornerShape(14.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+        ) {
+            Row(modifier = Modifier.padding(4.dp)) {
+                Surface(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(38.dp)
+                        .clickable { mapMode = "indoor" },
+                    color = if (mapMode == "indoor") UgrRed else Color.Transparent,
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "🏢 Plano Interior (ETSIIT)",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (mapMode == "indoor") Color.White else Ink
+                        )
+                    }
+                }
+
+                Surface(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(38.dp)
+                        .clickable { mapMode = "city" },
+                    color = if (mapMode == "city") UgrRed else Color.Transparent,
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "🗺️ Mapa Ciudad",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (mapMode == "city") Color.White else Ink
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
