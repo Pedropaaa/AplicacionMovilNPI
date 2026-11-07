@@ -270,7 +270,6 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -287,7 +286,7 @@ fun HomeScreen(
                     place = PlaceCategory(
                         name = "Comedor",
                         detail = "Más cercano",
-                        icon = "car",
+                        icon = "utensils",
                         tone = "blue"
                     ),
                     onClick = {
@@ -298,45 +297,13 @@ fun HomeScreen(
 
                 PlaceCategoryCard(
                     place = PlaceCategory(
-                        name = "Despachos",
-                        detail = "Profesorado",
-                        icon = "user",
-                        tone = "rose"
-                    ),
-                    onClick = {
-                        onNavigateToMap("ID_REAL_DESPACHOS")
-                    },
-                    modifier = Modifier.weight(1f).fillMaxHeight()
-                )
-            }
-
-            // FILA 2
-            Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                PlaceCategoryCard(
-                    place = PlaceCategory(
                         name = "Biblioteca",
-                        detail = "Ir a biblioteca",
+                        detail = "Más cercana",
                         icon = "book",
                         tone = "rose"
                     ),
                     onClick = {
                         onNavigateToMap("ID_REAL_BIBLIOTECA")
-                    },
-                    modifier = Modifier.weight(1f).fillMaxHeight()
-                )
-
-                PlaceCategoryCard(
-                    place = PlaceCategory(
-                        name = "Cafetería",
-                        detail = "Más cercana",
-                        icon = "coffee",
-                        tone = "blue"
-                    ),
-                    onClick = {
-                        onNavigateToMap("ID_REAL_CAFETERIA")
                     },
                     modifier = Modifier.weight(1f).fillMaxHeight()
                 )
@@ -350,7 +317,7 @@ fun HomeScreen(
                 PlaceCategoryCard(
                     place = PlaceCategory(
                         name = "Aseos",
-                        detail = "Más cercano",
+                        detail = "Más cercanos",
                         icon = "toilet",
                         tone = "blue"
                     ),
@@ -400,8 +367,8 @@ fun PlaceCategoryCard(
         "book" -> "📚"
         "toilet" -> "🚻"
         "water" -> "🚰"
-        "coffee" -> "☕"
         "car" -> "🚗"
+        "utensils" -> "🍽️"
         else -> "☕"
     }
 
