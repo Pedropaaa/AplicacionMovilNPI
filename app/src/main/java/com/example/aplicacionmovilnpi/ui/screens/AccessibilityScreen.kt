@@ -35,12 +35,14 @@ import com.example.aplicacionmovilnpi.ui.theme.MutedText
 import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 
 @Composable
-fun AccessibilityScreen(onBack: () -> Unit) {
+fun AccessibilityScreen(
+    onBack: () -> Unit,
+    defaultAccessibleRoute: Boolean,
+    onDefaultAccessibleRouteChange: (Boolean) -> Unit
+) {
     val isEnglish = LocalIsEnglish.current
     var largeText by remember { mutableStateOf(false) }
     var highContrast by remember { mutableStateOf(false) }
-    var reduceMotion by remember { mutableStateOf(false) }
-    var defaultAccessibleRoute by remember { mutableStateOf(true) }
 
     Column(
         modifier = Modifier
@@ -68,8 +70,12 @@ fun AccessibilityScreen(onBack: () -> Unit) {
             fontWeight = FontWeight.Black,
             color = Ink
         )
+
         Text(
-            text = if (isEnglish) "Adjust visual and physical navigation for UGR" else "Ajusta la navegación visual y física para la UGR",
+            text = if (isEnglish)
+                "Adjust visual and physical navigation for UGR"
+            else
+                "Ajusta la navegación visual y física para la UGR",
             fontSize = 12.sp,
             color = MutedText
         )
@@ -80,41 +86,70 @@ fun AccessibilityScreen(onBack: () -> Unit) {
             modifier = Modifier.fillMaxWidth(),
             color = Color.White,
             shape = RoundedCornerShape(16.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+            border = androidx.compose.foundation.BorderStroke(
+                1.dp,
+                CardBorder
+            )
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
+
+                Text(
+                    text = if (isEnglish) "VISUALIZATION" else "VISUALIZACIÓN",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MutedText
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
                 AccessibilityToggleRow(
                     title = if (isEnglish) "Larger Text" else "Texto más grande",
-                    subtitle = if (isEnglish) "Increase typography font size" else "Aumenta el tamaño de la tipografía",
+                    subtitle = if (isEnglish)
+                        "Increase typography font size"
+                    else
+                        "Aumenta el tamaño de la tipografía",
                     checked = largeText,
                     onCheckedChange = { largeText = it }
                 )
 
-                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 12.dp)
+                )
 
                 AccessibilityToggleRow(
                     title = if (isEnglish) "High Contrast" else "Alto contraste",
-                    subtitle = if (isEnglish) "Improve element readability" else "Mejora la legibilidad de elementos",
+                    subtitle = if (isEnglish)
+                        "Improve element readability"
+                    else
+                        "Mejora la legibilidad de elementos",
                     checked = highContrast,
                     onCheckedChange = { highContrast = it }
                 )
 
-                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-
-                AccessibilityToggleRow(
-                    title = if (isEnglish) "Reduce Motion" else "Reducir movimiento",
-                    subtitle = if (isEnglish) "Disable non-essential animations" else "Desactiva animaciones no esenciales",
-                    checked = reduceMotion,
-                    onCheckedChange = { reduceMotion = it }
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 12.dp)
                 )
 
-                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                Text(
+                    text = if (isEnglish) "NAVIGATION" else "NAVEGACIÓN",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MutedText
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
 
                 AccessibilityToggleRow(
-                    title = if (isEnglish) "Default Accessible Route" else "Ruta accesible por defecto",
-                    subtitle = if (isEnglish) "Prioritize elevators and ramps without stairs" else "Priorizar siempre ascensores y rampas sin escaleras",
+                    title = if (isEnglish)
+                        "Default Accessible Route"
+                    else
+                        "Ruta accesible por defecto",
+                    subtitle = if (isEnglish)
+                        "Prioritize elevators and ramps without stairs"
+                    else
+                        "Prioriza ascensores y rampas sin escaleras",
                     checked = defaultAccessibleRoute,
-                    onCheckedChange = { defaultAccessibleRoute = it }
+                    onCheckedChange = onDefaultAccessibleRouteChange
                 )
             }
         }

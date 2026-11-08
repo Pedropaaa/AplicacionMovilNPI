@@ -70,6 +70,9 @@ fun MainScreen(
     var mapEntryKey by rememberSaveable { mutableIntStateOf(0) }
     var currentSubScreen by rememberSaveable { mutableStateOf<String?>(null) }
     var showMenu by remember { mutableStateOf(false) }
+    var defaultAccessibleRoute by rememberSaveable {
+        mutableStateOf(false)
+    }
 
     // POI al que debe guiar el mapa al abrirlo desde otra pantalla (null = mapa sin ruta).
     var mapDestination by rememberSaveable { mutableStateOf<String?>(null) }
@@ -126,7 +129,14 @@ fun MainScreen(
                 currentSubScreen == "calendar" -> CalendarScreen(onBack = { currentSubScreen = null })
                 currentSubScreen == "messages" -> MessagesScreen(onBack = { currentSubScreen = null })
                 currentSubScreen == "help" -> HelpScreen(onBack = { currentSubScreen = null })
-                currentSubScreen == "accessibility" -> AccessibilityScreen(onBack = { currentSubScreen = null })
+                currentSubScreen == "accessibility" ->
+                    AccessibilityScreen(
+                        onBack = { currentSubScreen = null },
+                        defaultAccessibleRoute = defaultAccessibleRoute,
+                        onDefaultAccessibleRouteChange = {
+                            defaultAccessibleRoute = it
+                        }
+                    )
 
                 activeTab == NavTab.HOME -> HomeScreen(
                     onNavigateToSchedule = {
@@ -148,7 +158,8 @@ fun MainScreen(
                 activeTab == NavTab.PROFESSORS -> ProfessorsScreen(onNavigateToMap = openMap)
                 activeTab == NavTab.MAP -> MapScreen(
                     initialDestPoiId = mapDestination,
-                    mapEntryKey = mapEntryKey
+                    mapEntryKey = mapEntryKey,
+                    defaultAccessibleRoute = defaultAccessibleRoute
                 )
                 activeTab == NavTab.MORE -> MoreScreen(
                     onNavigateToSubScreen = { subScreen -> currentSubScreen = subScreen },

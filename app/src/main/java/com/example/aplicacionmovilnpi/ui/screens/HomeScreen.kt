@@ -377,7 +377,7 @@ fun HomeScreen(
 
                     PlaceCategoryCard(
                         place = PlaceCategory(
-                            name = if (isEnglish) "Water fountains" else "Fuentes",
+                            name = if (isEnglish) "Water fountain" else "Fuente",
                             detail = if (isEnglish) "Nearest" else "Más cercana",
                             icon = "water",
                             tone = "blue"

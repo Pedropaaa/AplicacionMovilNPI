@@ -287,7 +287,8 @@ private fun resolveNearestPoi(
 @Composable
 fun MapScreen(
     initialDestPoiId: String? = null,
-    mapEntryKey: Int = 0
+    mapEntryKey: Int = 0,
+    defaultAccessibleRoute: Boolean = false
 ) {
     val context = LocalContext.current
     val isEnglish = LocalIsEnglish.current
@@ -333,7 +334,9 @@ fun MapScreen(
         )
     }
 
-    var isAccessibleRoute by rememberSaveable { mutableStateOf(false) }
+    var isAccessibleRoute by rememberSaveable(initialDestPoiId, mapEntryKey) {
+        mutableStateOf(defaultAccessibleRoute)
+    }
 
     // Estado para el escaner QR y diálogo de QR de Ruta
     var isScanningQr by rememberSaveable(initialDestPoiId, mapEntryKey) {
