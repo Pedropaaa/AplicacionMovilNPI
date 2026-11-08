@@ -60,5 +60,12 @@ data class PointOfInterest(
     val nameEn: String,
     val category: String,
     val nodeId: String,
-    val description: String = ""
+    val description: String = "",
+    val descriptionEn: String = ""
 )
+
+fun PointOfInterest.getName(isEnglish: Boolean): String =
+    if (isEnglish && nameEn.isNotBlank()) nameEn else nameEs
+
+fun PointOfInterest.getDescription(isEnglish: Boolean): String =
+    if (isEnglish && descriptionEn.isNotBlank()) descriptionEn else description

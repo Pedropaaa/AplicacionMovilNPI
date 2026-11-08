@@ -75,7 +75,7 @@ class ProfessorLocatorTest {
     fun aulas_que_no_estan_en_el_plano_no_tienen_poi() {
         assertEquals("poi_aula210", FacultyData.roomPoiId("2.10"))
         assertEquals("poi_aula311", FacultyData.roomPoiId("3.11"))
-        assertNull(FacultyData.roomPoiId("1.8")) // aún no digitalizada
+        assertNull(FacultyData.roomPoiId("1.9")) // aún no digitalizada
     }
 
     @Test

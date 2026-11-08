@@ -31,6 +31,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aplicacionmovilnpi.data.ClassLesson
+import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
+import com.example.aplicacionmovilnpi.ui.localizedCourseText
+import com.example.aplicacionmovilnpi.ui.localizedDayName
 import com.example.aplicacionmovilnpi.data.FacultyData
 import com.example.aplicacionmovilnpi.data.Moment
 import com.example.aplicacionmovilnpi.data.SampleData
@@ -44,6 +47,7 @@ import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 fun ScheduleScreen(
     onNavigateToMap: (String?) -> Unit
 ) {
+    val isEnglish = LocalIsEnglish.current
     val weekSchedule = remember { SampleData.weekSchedule() }
     // Por defecto, el día de hoy (o el lunes si es fin de semana)
     var selectedDayIndex by remember { mutableIntStateOf(Moment.now().day.let { if (it > 5) 0 else it - 1 }) }
@@ -57,7 +61,7 @@ fun ScheduleScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         Text(
-            text = "Horario semanal",
+            text = if (isEnglish) "Weekly Schedule" else "Horario semanal",
             fontSize = 24.sp,
             fontWeight = FontWeight.Black,
             color = Ink
@@ -86,7 +90,7 @@ fun ScheduleScreen(
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = day.short,
+                            text = if (isEnglish) listOf("M", "T", "W", "T", "F")[index] else day.short,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (selected) Color.White else MutedText
@@ -107,7 +111,7 @@ fun ScheduleScreen(
 
         // Selected Day Banner
         Text(
-            text = "${daySchedule.day}, ${daySchedule.date} de ${daySchedule.month}",
+            text = if (isEnglish) "${localizedDayName(daySchedule.day, true)}, ${daySchedule.date} ${when (daySchedule.month.lowercase()) { "enero" -> "January"; "febrero" -> "February"; "marzo" -> "March"; "abril" -> "April"; "mayo" -> "May"; "junio" -> "June"; "julio" -> "July"; "agosto" -> "August"; "septiembre" -> "September"; "octubre" -> "October"; "noviembre" -> "November"; "diciembre" -> "December"; else -> daySchedule.month }}" else "${daySchedule.day}, ${daySchedule.date} de ${daySchedule.month}",
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
             color = Ink
@@ -117,7 +121,7 @@ fun ScheduleScreen(
 
         if (daySchedule.classes.isEmpty()) {
             Text(
-                text = "No tienes clases este día 🎉",
+                text = if (isEnglish) "No classes today 🎉" else "No tienes clases este día 🎉",
                 fontSize = 12.sp,
                 color = MutedText
             )
@@ -128,7 +132,7 @@ fun ScheduleScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             items(daySchedule.classes) { lesson ->
-                LessonCard(lesson = lesson, onNavigateToMap = onNavigateToMap)
+                LessonCard(lesson = lesson, onNavigateToMap = onNavigateToMap, isEnglish = isEnglish)
             }
         }
     }
@@ -137,7 +141,8 @@ fun ScheduleScreen(
 @Composable
 fun LessonCard(
     lesson: ClassLesson,
-    onNavigateToMap: (String?) -> Unit
+    onNavigateToMap: (String?) -> Unit,
+    isEnglish: Boolean
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -165,7 +170,7 @@ fun LessonCard(
                 }
 
                 Text(
-                    text = "📍 ${lesson.room}",
+                    text = "📍 ${localizedCourseText(lesson.room, LocalIsEnglish.current)}",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = UgrRed
@@ -193,7 +198,11 @@ fun LessonCard(
                 border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
             ) {
                 Text(
-                    text = if (lesson.poiId != null) "Cómo llegar al ${lesson.room} ➔" else "${lesson.room} aún no está en el plano",
+                    text = if (isEnglish) {
+                        if (lesson.poiId != null) "Directions to ${lesson.room} ➔" else "${lesson.room} is not on the map yet"
+                    } else {
+                        if (lesson.poiId != null) "Cómo llegar al ${lesson.room} ➔" else "${lesson.room} aún no está en el plano"
+                    },
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = Ink
