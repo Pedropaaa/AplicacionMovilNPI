@@ -106,6 +106,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 
 fun getFloorName(floor: Int): String = when (floor) {
     4 -> "P4"
@@ -890,6 +892,40 @@ val destinationResolution = remember(
                 userPosition = userPosition,
                 userHeadingMapDeg = userHeadingMapDeg,
 
+                // Calibración de sensores
+                tracker = tracker,
+                azimuthDeg = azimuth,
+                hasBarometer = hasBarometer,
+                isTracking = isTracking,
+
+                showTrackingControl = isRouteOpen && routeSegments.isNotEmpty(),
+                onTrackingChange = { isTracking = it },
+
+                onCalibrateFloor = {
+                    tracker.calibrateFloor(floorNumber)
+                },
+
+                onAlignCompass = {
+                    azimuth?.let { az ->
+                        tracker.alignCompass(az)?.let {
+                            LocationPrefs.setMapNorth(context, it)
+                        }
+                    }
+                },
+
+                // Instrucciones de navegación
+                showNavigationHint = userPosition != null && activeSegment != null,
+
+                arrivalText = activeSegment?.let { segment ->
+                    arrivalText(
+                        segment,
+                        destPoi?.getName(isEnglish)
+                            ?: if (isEnglish) "your destination" else "tu destino",
+                        isEnglish
+                    )
+                } ?: "",
+
+                // Generación de QR
                 showGenerateQrButton =
                     isRouteOpen &&
                             routeSegments.isNotEmpty() &&
@@ -900,21 +936,6 @@ val destinationResolution = remember(
                     showRouteQrDialog = true
                 }
             )
-
-            // Indicaciones de navegación (separadas del plano)
-            if (userPosition != null && activeSegment != null) {
-                Spacer(modifier = Modifier.height(8.dp))
-
-                NavigationHintStrip(
-                    tracker = tracker,
-                    azimuthDeg = azimuth,
-                    arrivalText = arrivalText(
-                        activeSegment,
-                        destPoi?.getName(isEnglish) ?: if (isEnglish) "your destination" else "tu destino",
-                        isEnglish
-                    )
-                )
-            }
 
             if (isRouteOpen && routeSegments.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
@@ -939,16 +960,8 @@ val destinationResolution = remember(
                 hasBarometer = hasBarometer,
                 tracker = tracker,
                 azimuthDeg = azimuth,
-                selectedFloorName = selectedFloor,
-                onCalibrateFloor = { tracker.calibrateFloor(floorNumber) },
                 isRouteOpen = isRouteOpen && routeSegments.isNotEmpty(),
                 isTracking = isTracking,
-                onTrackingChange = { isTracking = it },
-                onAlignCompass = {
-                    azimuth?.let { az ->
-                        tracker.alignCompass(az)?.let { LocationPrefs.setMapNorth(context, it) }
-                    }
-                },
                 onUseEntranceAsStart = if (startPoiId != "poi_entrada") {
                     {
                         startPoiId = "poi_entrada"
@@ -974,8 +987,24 @@ fun FloorPlanCanvasOverlay(
     isLastSegment: Boolean,
     userPosition: MapPoint? = null,
     userHeadingMapDeg: Float? = null,
-    showGenerateQrButton: Boolean = false,
-    onGenerateQrClick: () -> Unit = {}
+
+    // Calibración de sensores
+    tracker: IndoorTracker,
+    azimuthDeg: Float?,
+    hasBarometer: Boolean,
+    isTracking: Boolean,
+    showTrackingControl: Boolean,
+    onTrackingChange: (Boolean) -> Unit,
+    onCalibrateFloor: () -> Unit,
+    onAlignCompass: () -> Unit,
+
+    // Instrucciones
+    showNavigationHint: Boolean,
+    arrivalText: String,
+
+    // QR
+    showGenerateQrButton: Boolean,
+    onGenerateQrClick: () -> Unit
 ) {
     var scale by remember { mutableStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
@@ -1098,17 +1127,20 @@ fun FloorPlanCanvasOverlay(
             }
 
             // Botón para generar el QR, superpuesto en la esquina superior derecha.
+            // ==========================================
+// QR: ESQUINA SUPERIOR DERECHA
+// ==========================================
             if (showGenerateQrButton) {
                 Surface(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(8.dp)
-                        .size(width = 68.dp, height = 42.dp)
+                        .size(width = 48.dp, height = 36.dp)
                         .clickable {
                             onGenerateQrClick()
                         },
                     color = Color.White,
-                    shape = RoundedCornerShape(10.dp),
+                    shape = RoundedCornerShape(9.dp),
                     border = androidx.compose.foundation.BorderStroke(
                         1.dp,
                         UgrRed
@@ -1118,9 +1150,144 @@ fun FloorPlanCanvasOverlay(
                     Box(contentAlignment = Alignment.Center) {
                         Text(
                             text = "▦ QR",
-                            fontSize = 13.sp,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = UgrRed
+                        )
+                    }
+                }
+            }
+
+// ==========================================
+// BRÚJULA Y SEGUIMIENTO: SUPERIOR IZQUIERDA
+// ==========================================
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(8.dp)
+                    .width(240.dp),
+                horizontalAlignment = Alignment.Start,
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+
+                // Calibrador de brújula e interruptor en la misma fila
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+                    // Calibrador de brújula
+                    if (isTracking && azimuthDeg != null) {
+                        Surface(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clickable {
+                                    onAlignCompass()
+                                },
+                            color = Color.White,
+                            shape = RoundedCornerShape(9.dp),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                UgrRed
+                            ),
+                            shadowElevation = 3.dp
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text("🧭", fontSize = 17.sp)
+                            }
+                        }
+                    }
+
+                    // Activar seguimiento de pasos
+                    if (showTrackingControl) {
+                        Surface(
+                            modifier = Modifier.weight(1f),
+                            color = Color.White,
+                            shape = RoundedCornerShape(9.dp),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                CardBorder
+                            ),
+                            shadowElevation = 3.dp
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(
+                                    horizontal = 7.dp,
+                                    vertical = 3.dp
+                                ),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        text = if (LocalIsEnglish.current)
+                                            "Track my steps"
+                                        else
+                                            "Seguir mis pasos",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Ink,
+                                        maxLines = 1
+                                    )
+                                }
+
+                                Switch(
+                                    checked = isTracking,
+                                    onCheckedChange = onTrackingChange,
+                                    enabled = azimuthDeg != null,
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = Color.White,
+                                        checkedTrackColor = UgrRed
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Indicaciones dinámicas de navegación
+                if (showNavigationHint) {
+                    NavigationHintStrip(
+                        tracker = tracker,
+                        azimuthDeg = azimuthDeg,
+                        arrivalText = arrivalText
+                    )
+                }
+            }
+
+// ==========================================
+// BARÓMETRO: ESQUINA INFERIOR IZQUIERDA
+// ==========================================
+            if (hasBarometer) {
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(8.dp)
+                        .height(36.dp)
+                        .clickable {
+                            onCalibrateFloor()
+                        },
+                    color = Color.White,
+                    shape = RoundedCornerShape(9.dp),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        UgrRed
+                    ),
+                    shadowElevation = 3.dp
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("🏢", fontSize = 14.sp)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = selectedFloorName,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Ink
                         )
                     }
                 }
@@ -1728,26 +1895,6 @@ fun PoiRouteSelectorCard(
                     color = UgrRed,
                     modifier = Modifier.padding(top = 6.dp)
                 )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(50))
-                        .clickable { onAccessibleToggle(!isAccessible) },
-                    color = if (isAccessible) ToneBlueBg else Color.White,
-                    shape = RoundedCornerShape(50),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        if (isAccessible) ToneBlueText else CardBorder
-                    )
-                ) {
-
-                }
             }
         }
     }

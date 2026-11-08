@@ -57,12 +57,8 @@ fun LocationStatusCard(
     hasBarometer: Boolean,
     tracker: IndoorTracker,
     azimuthDeg: Float?,
-    selectedFloorName: String,
-    onCalibrateFloor: () -> Unit,
     isRouteOpen: Boolean,
     isTracking: Boolean,
-    onTrackingChange: (Boolean) -> Unit,
-    onAlignCompass: () -> Unit,
     onUseEntranceAsStart: (() -> Unit)?
 ) {
     val isEnglish = LocalIsEnglish.current
@@ -114,7 +110,6 @@ fun LocationStatusCard(
                     if (floor != null) { if (isEnglish) "Estimated floor: ${getFloorName(floor)} ($pressure$altitude)" else "Planta estimada: ${getFloorName(floor)} ($pressure$altitude)" }
                     else if (isEnglish) "Barometer ready ($pressure). Select your floor to calibrate it." else "Barómetro listo ($pressure). Indica en qué planta estás para calibrarlo."
                 )
-                SmallAction(if (isEnglish) "I'm on floor $selectedFloorName" else "Estoy en la planta $selectedFloorName", onCalibrateFloor)
             } else {
                 SensorLine("🏢", if (isEnglish) "This phone has no barometer: change floors with the map buttons." else "Este móvil no tiene barómetro: cambia de planta con los botones del plano.")
             }
@@ -122,28 +117,26 @@ fun LocationStatusCard(
             // --- Brújula y pasos ---
             SensorLine("🧭", azimuthDeg?.let { "${if (isEnglish) "Heading" else "Rumbo"}: ${DeadReckoning.compassLabel(it)}" } ?: if (isEnglish) "Compass unavailable" else "Brújula no disponible")
 
-            if (isRouteOpen) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(text = if (isEnglish) "Track my steps on the map" else "Seguir mis pasos en el plano", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Ink)
-                        Text(
-                            text = if (isEnglish) { if (isTracking) "👣 ${tracker.steps} steps from the start" else "Uses the step counter and compass" } else { if (isTracking) "👣 ${tracker.steps} pasos desde el inicio" else "Usa el podómetro y la brújula" },
-                            fontSize = 11.sp,
-                            color = MutedText
-                        )
+            // Número de pasos realizados
+            if (isTracking) {
+                SensorLine(
+                    "👣",
+                    if (isEnglish) {
+                        "${tracker.steps} steps from the start"
+                    } else {
+                        "${tracker.steps} pasos desde el inicio"
                     }
-                    Switch(
-                        checked = isTracking,
-                        onCheckedChange = onTrackingChange,
-                        enabled = azimuthDeg != null,
-                        colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = UgrRed)
-                    )
-                }
-                if (isTracking) {
-                    SmallAction(if (isEnglish) "🧭 Calibrate compass (face the route direction)" else "🧭 Calibrar brújula (mira hacia donde va la ruta)", onAlignCompass)
-                }
-            } else {
-                SensorLine("👣", if (isEnglish) "Plan a route to track your steps on the map." else "Calcula una ruta para seguir tus pasos en el plano.")
+                )
+            }
+
+            if (!isRouteOpen) {
+                SensorLine(
+                    "👣",
+                    if (isEnglish)
+                        "Plan a route to track your steps on the map."
+                    else
+                        "Calcula una ruta para seguir tus pasos en el plano."
+                )
             }
         }
     }
