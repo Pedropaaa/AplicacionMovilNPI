@@ -123,7 +123,8 @@ fun CityRouteSection(
     onContinueIndoors: () -> Unit,
     initialDestinationId: String? = null,
     initialDestinationReady: Boolean = true,
-    destinationRequestKey: Int = 0
+    destinationRequestKey: Int = 0,
+    showOutdoorFacilitiesUnavailableNotice: Boolean = false
 ) {
     val isEnglish = LocalIsEnglish.current
     val scope = rememberCoroutineScope()
@@ -406,6 +407,50 @@ fun CityRouteSection(
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (!hasLocationPermission) CityLocationPermissionButton(onRequestPermission)
+
+        // Aviso cuando se buscan aseos o fuentes fuera de la ETSIIT.
+        if (showOutdoorFacilitiesUnavailableNotice) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                color = Color(0xFFFFF8E1),
+                shape = RoundedCornerShape(12.dp),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    Color(0xFFFFE0A3)
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Text(
+                        text = "ℹ️",
+                        fontSize = 20.sp
+                    )
+
+                    Spacer(modifier = Modifier.width(10.dp))
+
+                    Column {
+                        Text(
+                            text = "Búsqueda no disponible en esta zona",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Ink
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(
+                            text = "Todavía no tenemos aseos ni fuentes registrados fuera de la ETSIIT. Puedes cambiar al mapa interior para usar esta función.",
+                            fontSize = 11.sp,
+                            color = MutedText
+                        )
+                    }
+                }
+            }
+        }
 
         if (
             initialDestinationId == DEST_COMEDOR_CERCANO &&

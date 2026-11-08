@@ -393,11 +393,10 @@ initialDestPoiId
     // Para el resto de accesos conservamos el comportamiento actual.
     val atEtsiit = when (initialDestPoiId) {
 
-        DEST_COMEDOR_CERCANO -> {
-            GeoUtils.isAtEtsiit(currentPoint)
-        }
-
-        DEST_BIBLIOTECA_CERCANA -> {
+        DEST_COMEDOR_CERCANO,
+        DEST_BIBLIOTECA_CERCANA,
+        DEST_ASEO_CERCANO,
+        DEST_FUENTE_CERCANA -> {
             GeoUtils.isAtEtsiit(currentPoint)
         }
 
@@ -409,6 +408,7 @@ initialDestPoiId
     mapMode = if (atEtsiit) "indoor" else "city"
 
     autoModeAppliedForEntry = mapEntryKey
+
 }
     val hasBarometer = remember { hasSensor(context, Sensor.TYPE_PRESSURE) }
     val tracker = remember { IndoorTracker(LocationPrefs.mapNorth(context)) }
@@ -547,6 +547,11 @@ val destinationResolution = remember(
                         val matchingPoi = allPois.find { it.nodeId == result.node.id }
                         if (matchingPoi != null) {
                             startPoiId = matchingPoi.id
+
+                            if (destPoiId.isNotBlank()) {
+                                isRouteOpen = true
+                                activeSegmentIndex = 0
+                            }
                         }
                         selectedFloor = getFloorName(result.node.floor)
                     }
@@ -607,12 +612,6 @@ val destinationResolution = remember(
 
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
-    var floorSectionTop by remember { mutableIntStateOf(0) }
-    LaunchedEffect(isRouteOpen, routeSegments, floorSectionTop) {
-        if (isRouteOpen && routeSegments.isNotEmpty() && floorSectionTop > 0) {
-            scrollState.animateScrollTo(floorSectionTop)
-        }
-    }
 
     Column(
         modifier = Modifier
@@ -685,11 +684,17 @@ val destinationResolution = remember(
                 }
             },
 
-            // Petición especial del comedor más cercano.
             initialDestinationId = initialDestPoiId.takeIf {
                 it == DEST_COMEDOR_CERCANO ||
                         it == DEST_BIBLIOTECA_CERCANA
             },
+
+            // Aviso cuando se buscan aseos o fuentes fuera de la ETSIIT.
+            showOutdoorFacilitiesUnavailableNotice =
+                (
+                        initialDestPoiId == DEST_ASEO_CERCANO ||
+                                initialDestPoiId == DEST_FUENTE_CERCANA
+                        ) && autoModeAppliedForEntry == mapEntryKey,
 
             // Esperamos a que se haya determinado la ubicación.
             initialDestinationReady =
@@ -719,70 +724,136 @@ val destinationResolution = remember(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            PoiRouteSelectorCard(
-                pois = allPois,
-                startPoi = startPoi,
-                destPoi = destPoi,
+        PoiRouteSelectorCard(
+            pois = allPois,
+            startPoi = startPoi,
+            destPoi = destPoi,
 
-                selectedDestLabel = selectedDestLabel,
-                destinationError = destinationError,
+            selectedDestLabel = selectedDestLabel,
+            destinationError = destinationError,
 
-                onStartPoiChange = { startPoiId = it.id },
-                onDestPoiChange = { destPoiId = it.id },
+            onStartPoiChange = { poi ->
+                startPoiId = poi.id
 
-                // Opciones especiales exclusivamente para el destino.
-                onSpecialDestChange = { destPoiId = it },
-
-                isAccessible = isAccessibleRoute,
-                onAccessibleToggle = { isAccessibleRoute = it },
-
-                onCalculateRoute = {
+                if (destPoiId.isNotBlank()) {
                     isRouteOpen = true
                     activeSegmentIndex = 0
-                },
+                }
+            },
 
-                onScanQrClick = {
-                    isScanningQr = true
-                },
+            onDestPoiChange = { poi ->
+                destPoiId = poi.id
 
-                onGenerateQrClick = { showRouteQrDialog = true },
-                isRouteActive = isRouteOpen && routeSegments.isNotEmpty(),
-                onClearRoute = { isRouteOpen = false }
-            )
+                if (startPoiId.isNotBlank()) {
+                    isRouteOpen = true
+                    activeSegmentIndex = 0
+                }
+            },
+
+            // Opciones especiales exclusivamente para el destino.
+            onSpecialDestChange = { specialId ->
+                destPoiId = specialId
+
+                if (startPoiId.isNotBlank()) {
+                    isRouteOpen = true
+                    activeSegmentIndex = 0
+                }
+            },
+
+            isAccessible = isAccessibleRoute,
+            onAccessibleToggle = { isAccessibleRoute = it },
+
+            onScanQrClick = {
+                isScanningQr = true
+            },
+        )
 
             Spacer(modifier = Modifier.height(10.dp))
 
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Título de accesibilidad
             Text(
-                text = if (isEnglish) "Select Floor" else "Seleccionar Planta",
+                text = if (isEnglish) "Accessible" else "PMR",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (isAccessibleRoute) ToneBlueText else MutedText,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f)
+            )
+
+            // Título de las plantas
+            Text(
+                text = if (isEnglish) "Select Floor:" else "Seleccionar Planta:",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = Ink,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
-                    .onGloballyPositioned {
-                        floorSectionTop = it.positionInParent().y.toInt()
-                    }
+                modifier = Modifier.weight(6f)
             )
+        }
 
-            Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.Bottom
+        ) {
+            // Casilla de accesibilidad (primera posición)
+            Column(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                listOf("P4", "P3", "P2", "P1", "PB", "S1").forEach { floor ->
-                    val selected = floor == selectedFloor
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp)
+                        .clickable {
+                            isAccessibleRoute = !isAccessibleRoute
+                        },
+                    color = if (isAccessibleRoute) ToneBlueBg else Color.White,
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        if (isAccessibleRoute) ToneBlueText else CardBorder
+                    )
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "♿",
+                            fontSize = 19.sp,
+                            color = if (isAccessibleRoute) ToneBlueText else Ink
+                        )
+                    }
+                }
+            }
+
+            // Casillas de las distintas plantas
+            listOf("P4", "P3", "P2", "P1", "PB", "S1").forEach { floor ->
+                val selected = floor == selectedFloor
+
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
                     Surface(
                         modifier = Modifier
-                            .weight(1f)
+                            .fillMaxWidth()
                             .height(44.dp)
                             .clickable {
                                 selectedFloor = floor
+
                                 if (routeSegments.isNotEmpty()) {
-                                    val matchIdx = routeSegments.indexOfFirst { it.floorName == floor }
+                                    val matchIdx = routeSegments.indexOfFirst {
+                                        it.floorName == floor
+                                    }
+
                                     if (matchIdx != -1) {
                                         activeSegmentIndex = matchIdx
                                     }
@@ -790,7 +861,8 @@ val destinationResolution = remember(
                             },
                         color = if (selected) UgrRed else Color.White,
                         shape = RoundedCornerShape(12.dp),
-                        border = if (selected) null else androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+                        border = if (selected) null else
+                            androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(
@@ -803,6 +875,7 @@ val destinationResolution = remember(
                     }
                 }
             }
+        }
 
             Spacer(modifier = Modifier.height(18.dp))
 
@@ -815,7 +888,17 @@ val destinationResolution = remember(
                 isFirstSegment = activeSegmentIndex == 0,
                 isLastSegment = activeSegmentIndex == routeSegments.size - 1,
                 userPosition = userPosition,
-                userHeadingMapDeg = userHeadingMapDeg
+                userHeadingMapDeg = userHeadingMapDeg,
+
+                showGenerateQrButton =
+                    isRouteOpen &&
+                            routeSegments.isNotEmpty() &&
+                            startPoi != null &&
+                            destPoi != null,
+
+                onGenerateQrClick = {
+                    showRouteQrDialog = true
+                }
             )
 
             // Indicaciones de navegación (separadas del plano)
@@ -867,7 +950,14 @@ val destinationResolution = remember(
                     }
                 },
                 onUseEntranceAsStart = if (startPoiId != "poi_entrada") {
-                    { startPoiId = "poi_entrada" }
+                    {
+                        startPoiId = "poi_entrada"
+
+                        if (destPoiId.isNotBlank()) {
+                            isRouteOpen = true
+                            activeSegmentIndex = 0
+                        }
+                    }
                 } else null
             )
         }
@@ -883,7 +973,9 @@ fun FloorPlanCanvasOverlay(
     isFirstSegment: Boolean,
     isLastSegment: Boolean,
     userPosition: MapPoint? = null,
-    userHeadingMapDeg: Float? = null
+    userHeadingMapDeg: Float? = null,
+    showGenerateQrButton: Boolean = false,
+    onGenerateQrClick: () -> Unit = {}
 ) {
     var scale by remember { mutableStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
@@ -1002,6 +1094,35 @@ fun FloorPlanCanvasOverlay(
                     }
 
                     userPosition?.let { drawUserMarker(it, userHeadingMapDeg, scaleX, scaleY) }
+                }
+            }
+
+            // Botón para generar el QR, superpuesto en la esquina superior derecha.
+            if (showGenerateQrButton) {
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .size(width = 68.dp, height = 42.dp)
+                        .clickable {
+                            onGenerateQrClick()
+                        },
+                    color = Color.White,
+                    shape = RoundedCornerShape(10.dp),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        UgrRed
+                    ),
+                    shadowElevation = 3.dp
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "▦ QR",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = UgrRed
+                        )
+                    }
                 }
             }
 
@@ -1446,10 +1567,6 @@ fun PoiRouteSelectorCard(
     onSpecialDestChange: (String) -> Unit,
     isAccessible: Boolean,
     onAccessibleToggle: (Boolean) -> Unit,
-    onCalculateRoute: () -> Unit,
-    onGenerateQrClick: (() -> Unit)? = null,
-    isRouteActive: Boolean = false,
-    onClearRoute: () -> Unit,
     onScanQrClick: () -> Unit
 ) {
     val isEnglish = LocalIsEnglish.current
@@ -1629,55 +1746,7 @@ fun PoiRouteSelectorCard(
                         if (isAccessible) ToneBlueText else CardBorder
                     )
                 ) {
-                    Text(
-                        text = if (isEnglish) { if (isAccessible) "♿ Step-free ✓" else "♿ Step-free" } else { if (isAccessible) "♿ Sin escaleras ✓" else "♿ Sin escaleras" },
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (isAccessible) ToneBlueText else Ink,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                    )
-                }
 
-                Spacer(modifier = Modifier.weight(1f))
-
-                Text(
-                    text = if (isEnglish) "Clear" else "Limpiar",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MutedText,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable { onClearRoute() }
-                        .padding(horizontal = 10.dp, vertical = 8.dp)
-                )
-
-                Spacer(modifier = Modifier.width(4.dp))
-
-                Button(
-                    onClick = onCalculateRoute,
-                    enabled = startPoi != null && destPoi != null,
-                    modifier = Modifier.height(34.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = UgrRed),
-                    shape = RoundedCornerShape(50),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp)
-                ) {
-                    Text(text = if (isEnglish) "Go" else "Ir", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-
-            if (onGenerateQrClick != null && isRouteActive) {
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedButton(
-                    onClick = onGenerateQrClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Text(
-                        text = if (isEnglish) "📱 Generate QR for this route" else "📱 Generar QR de esta ruta",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Ink
-                    )
                 }
             }
         }
