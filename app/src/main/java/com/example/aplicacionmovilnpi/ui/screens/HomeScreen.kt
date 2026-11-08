@@ -306,7 +306,7 @@ fun HomeScreen(
                         tone = "rose"
                     ),
                     onClick = {
-                        onNavigateToMap("__dest_comedor_cercano__")
+                        onNavigateToMap("__dest_biblioteca_cercana__")
                     },
                     modifier = Modifier.weight(1f).fillMaxHeight()
                 )
@@ -332,6 +332,7 @@ fun HomeScreen(
                     ),
                     onClick = {
                         // Acción del escáner
+                        onNavigateToMap("__abrir_escaner_qr__")
                     },
                     modifier = Modifier
                         .weight(1f)

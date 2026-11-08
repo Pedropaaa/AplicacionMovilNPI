@@ -95,6 +95,7 @@ import androidx.compose.ui.draw.clipToBounds
 private const val ORIGIN_GPS = "gps"
 private const val ORIGIN_MAP = "map"
 private const val DEST_COMEDOR_CERCANO = "__dest_comedor_cercano__"
+private const val DEST_BIBLIOTECA_CERCANA = "__dest_biblioteca_cercana__"
 
 private fun GeoPoint.toOsm() = OsmPoint(lat, lon)
 
@@ -126,6 +127,9 @@ fun CityRouteSection(
     val scope = rememberCoroutineScope()
 
     var handledComedorRequestKey by rememberSaveable {
+        mutableStateOf(-1)
+    }
+    var handledBibliotecaRequestKey by rememberSaveable {
         mutableStateOf(-1)
     }
     var originId by rememberSaveable { mutableStateOf(if (hasLocationPermission) ORIGIN_GPS else "sciences") }
@@ -190,6 +194,11 @@ fun CityRouteSection(
             CityPlaces.byId(id)
         }
     }
+    // Todas las bibliotecas universitarias de Granada.
+    val bibliotecaCandidates = remember {
+        CityPlaces.bibliotecas
+    }
+
     val mapOrigin = if (mapOriginLat != null && mapOriginLon != null) GeoPoint(mapOriginLat!!, mapOriginLon!!) else null
     val origin: GeoPoint? = when (originId) {
         ORIGIN_GPS -> gpsPoint
@@ -298,6 +307,100 @@ fun CityRouteSection(
 
         isLoading = false
     }
+    // ======================================================
+// BÚSQUEDA AUTOMÁTICA DE LA BIBLIOTECA MÁS CERCANA
+// ======================================================
+
+    LaunchedEffect(
+        initialDestinationId,
+        initialDestinationReady,
+        destinationRequestKey,
+        hasLocationPermission
+    ) {
+
+        // Solo actuamos cuando se solicita la biblioteca especial.
+        if (initialDestinationId != DEST_BIBLIOTECA_CERCANA) {
+            return@LaunchedEffect
+        }
+
+        // Esperamos a que MapScreen haya determinado el modo de mapa.
+        if (!initialDestinationReady) {
+            return@LaunchedEffect
+        }
+
+        // Evitamos procesar dos veces la misma petición.
+        if (handledBibliotecaRequestKey == destinationRequestKey) {
+            return@LaunchedEffect
+        }
+
+        // Necesitamos permiso GPS.
+        if (!hasLocationPermission) {
+            error = "Necesitamos tu ubicación para encontrar la biblioteca más cercana."
+            return@LaunchedEffect
+        }
+
+        val location = gpsLocation
+
+        if (location == null) {
+            error = "Esperando a obtener tu ubicación GPS..."
+            return@LaunchedEffect
+        }
+
+        // Exigimos una precisión razonable.
+        if (location.accuracy > 100f) {
+            error = "La señal GPS todavía no es suficientemente precisa."
+            return@LaunchedEffect
+        }
+
+        val currentPosition = gpsPoint ?: return@LaunchedEffect
+
+        // Buscamos la biblioteca geográficamente más próxima.
+        val nearestBiblioteca = bibliotecaCandidates.minByOrNull { biblioteca ->
+            GeoUtils.distanceMeters(
+                currentPosition,
+                biblioteca.point
+            )
+        }
+
+        if (nearestBiblioteca == null) {
+            error = "No se han encontrado bibliotecas universitarias."
+            return@LaunchedEffect
+        }
+
+        // Marcamos la petición como procesada.
+        handledBibliotecaRequestKey = destinationRequestKey
+
+        // Establecemos el GPS como origen.
+        originId = ORIGIN_GPS
+        originSearchQuery = "📍 Mi ubicación"
+
+        // Establecemos la biblioteca encontrada como destino.
+        destId = nearestBiblioteca.id
+        destSearchQuery = nearestBiblioteca.name
+
+        isOriginSearchExpanded = false
+        isDestSearchExpanded = false
+
+        error = null
+        isLoading = true
+
+        // Calculamos la ruta peatonal desde el GPS hasta la biblioteca.
+        val result = WalkingRouteService.fetch(
+            from = currentPosition,
+            to = nearestBiblioteca.point
+        )
+
+        result
+            .onSuccess { walkingRoute ->
+                route = walkingRoute
+                showAllSteps = false
+            }
+            .onFailure {
+                error = "No se pudo calcular la ruta a la biblioteca. Comprueba tu conexión a internet."
+            }
+
+        isLoading = false
+    }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (!hasLocationPermission) CityLocationPermissionButton(onRequestPermission)
@@ -308,6 +411,17 @@ fun CityRouteSection(
         ) {
             Text(
                 text = "📍 Comprobando tu ubicación para encontrar el comedor más cercano...",
+                fontSize = 11.sp,
+                color = MutedText,
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
+        }
+        if (
+            initialDestinationId == DEST_BIBLIOTECA_CERCANA &&
+            !initialDestinationReady
+        ) {
+            Text(
+                text = "📚 Comprobando tu ubicación para encontrar la biblioteca más cercana...",
                 fontSize = 11.sp,
                 color = MutedText,
                 modifier = Modifier.padding(horizontal = 20.dp)

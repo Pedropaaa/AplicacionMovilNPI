@@ -98,6 +98,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material.icons.filled.CameraAlt
 import com.example.aplicacionmovilnpi.location.GeoPoint
 import com.example.aplicacionmovilnpi.location.GeoUtils
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 
 fun getFloorName(floor: Int): String = when (floor) {
     4 -> "P4"
@@ -200,6 +204,8 @@ fun parseRouteSegments(route: List<Node>): List<RouteFloorSegment> {
 private const val DEST_ASEO_CERCANO = "__dest_aseo_cercano__"
 private const val DEST_FUENTE_CERCANA = "__dest_fuente_cercana__"
 private const val DEST_COMEDOR_CERCANO = "__dest_comedor_cercano__"
+private const val DEST_BIBLIOTECA_CERCANA = "__dest_biblioteca_cercana__"
+private const val DEST_ABRIR_ESCANER_QR = "__abrir_escaner_qr__"
 
 private data class DestinationResolution(
     val poi: PointOfInterest?,
@@ -283,8 +289,13 @@ fun MapScreen(
     // 1. DECLARACIONES DE ESTADO (Primero)
     val isComedorShortcut = initialDestPoiId == DEST_COMEDOR_CERCANO
 
-    var mapMode by rememberSaveable {
-        mutableStateOf("city")
+    val isQrShortcut =
+        initialDestPoiId == DEST_ABRIR_ESCANER_QR
+
+    var mapMode by rememberSaveable(initialDestPoiId, mapEntryKey) {
+        mutableStateOf(
+            if (isQrShortcut) "indoor" else "city"
+        )
     }
 
     var selectedFloor by rememberSaveable(initialDestPoiId, mapEntryKey) {
@@ -300,21 +311,27 @@ fun MapScreen(
 
     var destPoiId by rememberSaveable(initialDestPoiId, mapEntryKey) {
         mutableStateOf(
-            if (isComedorShortcut) "poi_comedor"
-            else initialDestPoiId ?: ""
+            initialDestPoiId?.takeUnless {
+                it == DEST_ABRIR_ESCANER_QR
+            } ?: ""
         )
     }
 
     var isRouteOpen by rememberSaveable(initialDestPoiId, mapEntryKey) {
         mutableStateOf(
-            initialDestPoiId != null && !isComedorShortcut
+            initialDestPoiId != null &&
+                    initialDestPoiId != DEST_ABRIR_ESCANER_QR
         )
     }
 
     var isAccessibleRoute by rememberSaveable { mutableStateOf(false) }
 
     // Estado para el escaner QR y diálogo de QR de Ruta
-    var isScanningQr by rememberSaveable { mutableStateOf(false) }
+    var isScanningQr by rememberSaveable(initialDestPoiId, mapEntryKey) {
+        mutableStateOf(
+            initialDestPoiId == DEST_ABRIR_ESCANER_QR
+        )
+    }
     var showRouteQrDialog by rememberSaveable { mutableStateOf(false) }
 
     // 2. SENSORES DE LOCALIZACIÓN (Utilizan mapMode declarado arriba)
@@ -340,6 +357,14 @@ initialDestPoiId
 ) {
     if (autoModeAppliedForEntry == mapEntryKey) return@LaunchedEffect
 
+    // Si venimos del acceso directo del escáner QR,
+    // abrimos directamente el mapa interior.
+    if (initialDestPoiId == DEST_ABRIR_ESCANER_QR) {
+        mapMode = "indoor"
+        autoModeAppliedForEntry = mapEntryKey
+        return@LaunchedEffect
+    }
+
     if (!hasLocationPermission) {
         if (permissionRequestedForEntry != mapEntryKey) {
             permissionRequestedForEntry = mapEntryKey
@@ -360,10 +385,19 @@ initialDestPoiId
 
     // Para el comedor utilizamos el radio específico de GeoUtils (120 m).
     // Para el resto de accesos conservamos el comportamiento actual.
-    val atEtsiit = if (initialDestPoiId == DEST_COMEDOR_CERCANO) {
-        GeoUtils.isAtEtsiit(currentPoint)
-    } else {
-        isNearEtsiit(location)
+    val atEtsiit = when (initialDestPoiId) {
+
+        DEST_COMEDOR_CERCANO -> {
+            GeoUtils.isAtEtsiit(currentPoint)
+        }
+
+        DEST_BIBLIOTECA_CERCANA -> {
+            GeoUtils.isAtEtsiit(currentPoint)
+        }
+
+        else -> {
+            isNearEtsiit(location)
+        }
     }
 
     mapMode = if (atEtsiit) "indoor" else "city"
@@ -407,6 +441,12 @@ val destinationResolution = remember(
         DEST_COMEDOR_CERCANO -> {
             DestinationResolution(
                 poi = allPois.find { it.id == "poi_comedor" }
+            )
+        }
+
+        DEST_BIBLIOTECA_CERCANA -> {
+            DestinationResolution(
+                poi = allPois.find { it.id == "poi_biblioteca" }
             )
         }
 
@@ -466,6 +506,10 @@ val destinationResolution = remember(
             destPoi?.let { "🍽️ ${it.nameEs}" }
                 ?: "🍽️ Comedor de la ETSIIT"
 
+        DEST_BIBLIOTECA_CERCANA ->
+            destPoi?.let { "📚 ${it.nameEs}" }
+                ?: "📚 Biblioteca de la ETSIIT"
+
         else -> destPoi?.nameEs ?: "Seleccionar Destino"
     }
 
@@ -478,6 +522,9 @@ val destinationResolution = remember(
 
         destPoiId == DEST_COMEDOR_CERCANO && destPoi == null ->
             "No se ha encontrado el comedor de la ETSIIT."
+
+        destPoiId == DEST_BIBLIOTECA_CERCANA && destPoi == null ->
+            "No se ha encontrado la biblioteca de la ETSIIT."
 
         else -> null
     }
@@ -632,7 +679,8 @@ val destinationResolution = remember(
 
             // Petición especial del comedor más cercano.
             initialDestinationId = initialDestPoiId.takeIf {
-                it == DEST_COMEDOR_CERCANO
+                it == DEST_COMEDOR_CERCANO ||
+                        it == DEST_BIBLIOTECA_CERCANA
             },
 
             // Esperamos a que se haya determinado la ubicación.
