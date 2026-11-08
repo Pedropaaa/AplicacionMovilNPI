@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
 import com.example.aplicacionmovilnpi.ui.theme.CardBorder
 import com.example.aplicacionmovilnpi.ui.theme.Ink
 import com.example.aplicacionmovilnpi.ui.theme.MutedText
@@ -35,6 +36,7 @@ import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 
 @Composable
 fun AccessibilityScreen(onBack: () -> Unit) {
+    val isEnglish = LocalIsEnglish.current
     var largeText by remember { mutableStateOf(false) }
     var highContrast by remember { mutableStateOf(false) }
     var reduceMotion by remember { mutableStateOf(false) }
@@ -50,7 +52,7 @@ fun AccessibilityScreen(onBack: () -> Unit) {
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "⬅ Volver a Más",
+                text = if (isEnglish) "⬅ Back to More" else "⬅ Volver a Más",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 color = UgrRed,
@@ -61,13 +63,13 @@ fun AccessibilityScreen(onBack: () -> Unit) {
         Spacer(modifier = Modifier.height(14.dp))
 
         Text(
-            text = "Accesibilidad",
+            text = if (isEnglish) "Accessibility" else "Accesibilidad",
             fontSize = 24.sp,
             fontWeight = FontWeight.Black,
             color = Ink
         )
         Text(
-            text = "Ajusta la navegación visual y física para la UGR",
+            text = if (isEnglish) "Adjust visual and physical navigation for UGR" else "Ajusta la navegación visual y física para la UGR",
             fontSize = 12.sp,
             color = MutedText
         )
@@ -82,8 +84,8 @@ fun AccessibilityScreen(onBack: () -> Unit) {
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 AccessibilityToggleRow(
-                    title = "Texto más grande",
-                    subtitle = "Aumenta el tamaño de la tipografía",
+                    title = if (isEnglish) "Larger Text" else "Texto más grande",
+                    subtitle = if (isEnglish) "Increase typography font size" else "Aumenta el tamaño de la tipografía",
                     checked = largeText,
                     onCheckedChange = { largeText = it }
                 )
@@ -91,8 +93,8 @@ fun AccessibilityScreen(onBack: () -> Unit) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
                 AccessibilityToggleRow(
-                    title = "Alto contraste",
-                    subtitle = "Mejora la legibilidad de elementos",
+                    title = if (isEnglish) "High Contrast" else "Alto contraste",
+                    subtitle = if (isEnglish) "Improve element readability" else "Mejora la legibilidad de elementos",
                     checked = highContrast,
                     onCheckedChange = { highContrast = it }
                 )
@@ -100,8 +102,8 @@ fun AccessibilityScreen(onBack: () -> Unit) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
                 AccessibilityToggleRow(
-                    title = "Reducir movimiento",
-                    subtitle = "Desactiva animaciones no esenciales",
+                    title = if (isEnglish) "Reduce Motion" else "Reducir movimiento",
+                    subtitle = if (isEnglish) "Disable non-essential animations" else "Desactiva animaciones no esenciales",
                     checked = reduceMotion,
                     onCheckedChange = { reduceMotion = it }
                 )
@@ -109,8 +111,8 @@ fun AccessibilityScreen(onBack: () -> Unit) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
                 AccessibilityToggleRow(
-                    title = "Ruta accesible por defecto",
-                    subtitle = "Priorizar siempre ascensores y rampas sin escaleras",
+                    title = if (isEnglish) "Default Accessible Route" else "Ruta accesible por defecto",
+                    subtitle = if (isEnglish) "Prioritize elevators and ramps without stairs" else "Priorizar siempre ascensores y rampas sin escaleras",
                     checked = defaultAccessibleRoute,
                     onCheckedChange = { defaultAccessibleRoute = it }
                 )

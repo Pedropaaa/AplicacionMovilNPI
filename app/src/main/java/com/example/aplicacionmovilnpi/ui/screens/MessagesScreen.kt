@@ -31,6 +31,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aplicacionmovilnpi.data.MailFolder
+import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
 import com.example.aplicacionmovilnpi.data.MailMessage
 import com.example.aplicacionmovilnpi.data.SampleData
 import com.example.aplicacionmovilnpi.ui.theme.CardBorder
@@ -42,6 +43,7 @@ import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 
 @Composable
 fun MessagesScreen(onBack: () -> Unit) {
+    val isEnglish = LocalIsEnglish.current
     var activeFolder by remember { mutableStateOf(MailFolder.INBOX) }
 
     val filteredMails = SampleData.initialMails.filter { it.folder == activeFolder }
@@ -56,7 +58,7 @@ fun MessagesScreen(onBack: () -> Unit) {
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "⬅ Volver a Más",
+                text = if (isEnglish) "⬅ Back to More" else "⬅ Volver a Más",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 color = UgrRed,
@@ -67,13 +69,13 @@ fun MessagesScreen(onBack: () -> Unit) {
         Spacer(modifier = Modifier.height(14.dp))
 
         Text(
-            text = "Mensajes y Avisos",
+            text = if (isEnglish) "Messages & Notices" else "Mensajes y Avisos",
             fontSize = 24.sp,
             fontWeight = FontWeight.Black,
             color = Ink
         )
         Text(
-            text = "Buzón institucional UGR · lucia@correo.ugr.es",
+            text = if (isEnglish) "UGR inbox · lucia@correo.ugr.es" else "Buzón institucional UGR · lucia@correo.ugr.es",
             fontSize = 12.sp,
             color = MutedText
         )
@@ -98,7 +100,11 @@ fun MessagesScreen(onBack: () -> Unit) {
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(
-                            text = folder.label,
+                            text = when (folder) {
+                                MailFolder.INBOX -> if (isEnglish) "Inbox" else folder.label
+                                MailFolder.SENT -> if (isEnglish) "Sent" else folder.label
+                                MailFolder.ARCHIVED -> if (isEnglish) "Archived" else folder.label
+                            },
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (selected) Color.White else Ink
@@ -111,7 +117,7 @@ fun MessagesScreen(onBack: () -> Unit) {
         Spacer(modifier = Modifier.height(18.dp))
 
         filteredMails.forEach { mail ->
-            MailCard(mail = mail)
+            MailCard(mail = mail, isEnglish = isEnglish)
             Spacer(modifier = Modifier.height(10.dp))
         }
 
@@ -120,7 +126,25 @@ fun MessagesScreen(onBack: () -> Unit) {
 }
 
 @Composable
-fun MailCard(mail: MailMessage) {
+fun MailCard(mail: MailMessage, isEnglish: Boolean) {
+    val englishSubject = when (mail.id) {
+        1L -> "New course material available"
+        2L -> "Enrollment for academic year 2026/2027"
+        3L -> "Your reservation is available"
+        4L -> "Lab 1 instructions published"
+        5L -> "Question about second-semester electives"
+        6L -> "Welcome to academic year 2026/2027"
+        else -> mail.subject
+    }
+    val englishBody = when (mail.id) {
+        1L -> "New material has been published for Nuevos Paradigmas de Interacción.\n\nVisit PRADO to view it."
+        2L -> "Dear student:\n\nYour enrollment change request has been processed. You can view the updated receipt on the electronic office.\n\nRegards,\nETSIIT Office"
+        3L -> "The copy you reserved, ‘Computer Vision: Algorithms and Applications’, is available for pickup at the ETSIIT Library loans desk.\n\nYou have 3 days to collect it."
+        4L -> "The instructions for Lab 1 are now available on the platform. Please review them before the next lab session."
+        5L -> "Hello:\n\nDo you know if Game Programming is offered in the second semester this year?\n\nThank you,\nLucía"
+        6L -> "Welcome to the new academic year. See the academic calendar and schedules on the school website."
+        else -> mail.body
+    }
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = Color.White,
@@ -154,16 +178,16 @@ fun MailCard(mail: MailMessage) {
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = mail.name,
+                        text = if (isEnglish) when (mail.id) { 1L -> "PRADO · Nuevos Paradigmas de Interacción"; 2L, 6L -> "ETSIIT Office"; 3L -> "UGR Library"; 4L -> "PRADO · Visión por Computador"; 5L -> "ETSIIT Student Council"; else -> mail.name } else mail.name,
                         fontSize = 13.sp,
                         fontWeight = if (mail.unread) FontWeight.Black else FontWeight.Bold,
                         color = Ink
                     )
-                    Text(text = mail.time, fontSize = 10.sp, color = MutedText)
+                    Text(text = if (isEnglish) when (mail.time) { "Ayer" -> "Yesterday"; "14 oct." -> "Oct 14"; "13 oct." -> "Oct 13"; "9 sept." -> "Sep 9"; else -> mail.time } else mail.time, fontSize = 10.sp, color = MutedText)
                 }
 
                 Text(
-                    text = mail.subject,
+                    text = if (isEnglish) englishSubject else mail.subject,
                     fontSize = 12.sp,
                     fontWeight = if (mail.unread) FontWeight.Bold else FontWeight.Normal,
                     color = Ink,
@@ -173,7 +197,7 @@ fun MailCard(mail: MailMessage) {
                 )
 
                 Text(
-                    text = mail.body,
+                    text = if (isEnglish) englishBody else mail.body,
                     fontSize = 10.sp,
                     color = MutedText,
                     maxLines = 1,

@@ -65,6 +65,7 @@ import com.example.aplicacionmovilnpi.location.GeoPoint
 import com.example.aplicacionmovilnpi.location.GeoUtils
 import com.example.aplicacionmovilnpi.location.WalkingRoute
 import com.example.aplicacionmovilnpi.location.WalkingRouteService
+import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
 import com.example.aplicacionmovilnpi.ui.theme.CardBorder
 import com.example.aplicacionmovilnpi.ui.theme.GreenStatus
 import com.example.aplicacionmovilnpi.ui.theme.Ink
@@ -124,6 +125,7 @@ fun CityRouteSection(
     initialDestinationReady: Boolean = true,
     destinationRequestKey: Int = 0
 ) {
+    val isEnglish = LocalIsEnglish.current
     val scope = rememberCoroutineScope()
 
     var handledComedorRequestKey by rememberSaveable {
@@ -241,20 +243,20 @@ fun CityRouteSection(
 
         // Sin permiso GPS no podemos saber qué comedor está más cerca.
         if (!hasLocationPermission) {
-            error = "Necesitamos tu ubicación para encontrar el comedor más cercano."
+            error = if (isEnglish) "Location is needed to find the nearest dining hall." else "Necesitamos tu ubicación para encontrar el comedor más cercano."
             return@LaunchedEffect
         }
 
         val location = gpsLocation
 
         if (location == null) {
-            error = "Esperando a obtener tu ubicación GPS..."
+            error = if (isEnglish) "Waiting for your GPS location..." else "Esperando a obtener tu ubicación GPS..."
             return@LaunchedEffect
         }
 
         // Utilizamos el mismo criterio de precisión que MapScreen.
         if (location.accuracy > 100f) {
-            error = "La señal GPS todavía no es suficientemente precisa."
+            error = if (isEnglish) "The GPS signal is not accurate enough yet." else "La señal GPS todavía no es suficientemente precisa."
             return@LaunchedEffect
         }
 
@@ -269,7 +271,7 @@ fun CityRouteSection(
         }
 
         if (nearestComedor == null) {
-            error = "No se han encontrado comedores universitarios."
+            error = if (isEnglish) "No university dining halls were found." else "No se han encontrado comedores universitarios."
             return@LaunchedEffect
         }
 
@@ -302,7 +304,7 @@ fun CityRouteSection(
                 showAllSteps = false
             }
             .onFailure {
-                error = "No se pudo calcular la ruta al comedor. Comprueba tu conexión a internet."
+                error = if (isEnglish) "Could not calculate a route to the dining hall. Check your internet connection." else "No se pudo calcular la ruta al comedor. Comprueba tu conexión a internet."
             }
 
         isLoading = false
@@ -410,7 +412,7 @@ fun CityRouteSection(
             !initialDestinationReady
         ) {
             Text(
-                text = "📍 Comprobando tu ubicación para encontrar el comedor más cercano...",
+                text = if (isEnglish) "📍 Checking your location to find the nearest dining hall..." else "📍 Comprobando tu ubicación para encontrar el comedor más cercano...",
                 fontSize = 11.sp,
                 color = MutedText,
                 modifier = Modifier.padding(horizontal = 20.dp)
@@ -500,7 +502,7 @@ fun CityRouteSection(
                                 Text("🟢", fontSize = 13.sp)
                             },
                             placeholder = {
-                                Text("Seleccionar origen...", fontSize = 12.sp)
+                                Text(if (isEnglish) "Select origin..." else "Seleccionar origen...", fontSize = 12.sp)
                             },
                             shape = RoundedCornerShape(10.dp),
                             colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
@@ -549,7 +551,7 @@ fun CityRouteSection(
                                                     color = Ink
                                                 )
                                                 Text(
-                                                    text = "Campus ${place.campus}",
+                                                    text = "${if (isEnglish) "Campus" else "Campus"} ${place.campus}",
                                                     fontSize = 10.sp,
                                                     color = MutedText
                                                 )
@@ -581,7 +583,7 @@ fun CityRouteSection(
                                 Text("🔴", fontSize = 13.sp)
                             },
                             placeholder = {
-                                Text("¿A dónde vas?", fontSize = 12.sp)
+                                Text(if (isEnglish) "Where are you going?" else "¿A dónde vas?", fontSize = 12.sp)
                             },
                             shape = RoundedCornerShape(10.dp),
                             colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
@@ -646,7 +648,7 @@ fun CityRouteSection(
                                                     color = Ink
                                                 )
                                                 Text(
-                                                    text = "Campus ${place.campus}",
+                                                    text = "${if (isEnglish) "Campus" else "Campus"} ${place.campus}",
                                                     fontSize = 10.sp,
                                                     color = MutedText
                                                 )
@@ -691,7 +693,7 @@ fun CityRouteSection(
                             originSearchQuery = "👆 Punto del mapa"
                             isOriginSearchExpanded = false
                         } else {
-                            error = "Toca el mapa para elegir el punto de origen"
+                            error = if (isEnglish) "Tap the map to choose a starting point" else "Toca el mapa para elegir el punto de origen"
                         }
                     }
                 }
@@ -700,9 +702,9 @@ fun CityRouteSection(
                 if (originId == ORIGIN_GPS && gpsPoint == null) {
                     Text(
                         text = if (hasLocationPermission) {
-                            "Buscando tu ubicación GPS..."
+                            if (isEnglish) "Finding your GPS location..." else "Buscando tu ubicación GPS..."
                         } else {
-                            "Permite la ubicación para usarla como origen"
+                            if (isEnglish) "Allow location access to use it as the origin" else "Permite la ubicación para usarla como origen"
                         },
                         fontSize = 11.sp,
                         color = MutedText
@@ -726,7 +728,7 @@ fun CityRouteSection(
                                     showAllSteps = false
                                 }
                                 .onFailure {
-                                    error = "No se pudo calcular la ruta. ¿Tienes conexión a internet?"
+                                    error = if (isEnglish) "Could not calculate the route. Are you connected to the internet?" else "No se pudo calcular la ruta. ¿Tienes conexión a internet?"
                                 }
 
                             isLoading = false
@@ -743,9 +745,9 @@ fun CityRouteSection(
                 ) {
                     Text(
                         text = if (isLoading) {
-                            "Calculando ruta..."
+                            if (isEnglish) "Calculating route..." else "Calculando ruta..."
                         } else {
-                            "🚶 Calcular ruta a pie"
+                            if (isEnglish) "🚶 Get walking directions" else "🚶 Calcular ruta a pie"
                         },
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
@@ -785,7 +787,7 @@ fun CityRouteSection(
                 isOriginSearchExpanded = false
             },
             onLocateUnavailable = {
-                if (hasLocationPermission) error = "Todavía no hay señal GPS. Activa la ubicación del móvil."
+                if (hasLocationPermission) error = if (isEnglish) "No GPS signal yet. Turn on location services." else "Todavía no hay señal GPS. Activa la ubicación del móvil."
                 else onRequestPermission()
             }
         )
@@ -819,8 +821,8 @@ private fun RouteInstructionsCard(
         border = androidx.compose.foundation.BorderStroke(1.5.dp, UgrRed)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            Text(text = "RUTA A PIE · ${route.summary.uppercase()}", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = UgrRed)
-            Text(text = "Hasta $destinationName", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Ink)
+            Text(text = "${if (LocalIsEnglish.current) "WALKING ROUTE" else "RUTA A PIE"} · ${route.summary.uppercase()}", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = UgrRed)
+            Text(text = "${if (LocalIsEnglish.current) "To" else "Hasta"} $destinationName", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Ink)
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
 
@@ -836,7 +838,7 @@ private fun RouteInstructionsCard(
 
             if (route.instructions.size > 4) {
                 Text(
-                    text = if (showAll) "Ver menos ▲" else "Ver los ${route.instructions.size} pasos ▼",
+                    text = if (LocalIsEnglish.current) { if (showAll) "Show less ▲" else "Show all ${route.instructions.size} steps ▼" } else { if (showAll) "Ver menos ▲" else "Ver los ${route.instructions.size} pasos ▼" },
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = UgrRed,
@@ -855,7 +857,7 @@ private fun RouteInstructionsCard(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = "🏢 Ya estoy en la ETSIIT ➔ Seguir en el plano interior",
+                        text = if (LocalIsEnglish.current) "🏢 I'm at ETSIIT ➔ Continue on the indoor map" else "🏢 Ya estoy en la ETSIIT ➔ Seguir en el plano interior",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center
@@ -899,6 +901,7 @@ private fun OsmMap(
     onLocateUnavailable: () -> Unit
 ) {
     val context = LocalContext.current
+    val isEnglish = LocalIsEnglish.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
 
     // Modo seguimiento: el mapa se mueve con tu posición hasta que lo arrastras con el dedo
@@ -1065,9 +1068,9 @@ private fun OsmMap(
 
                 // 3. MARCADORES ADICIONALES (Punto en mapa o GPS)
                 if (originPlaceId == ORIGIN_MAP) {
-                    origin?.let { map.overlays.add(placeMarker(map, it, "Origen", android.graphics.Color.rgb(0x2E, 0x7D, 0x32))) }
+                    origin?.let { map.overlays.add(placeMarker(map, it, if (isEnglish) "Origin" else "Origen", android.graphics.Color.rgb(0x2E, 0x7D, 0x32))) }
                 }
-                gpsPoint?.let { map.overlays.add(placeMarker(map, it, "Tu ubicación", android.graphics.Color.rgb(0x1E, 0x88, 0xE5))) }
+                gpsPoint?.let { map.overlays.add(placeMarker(map, it, if (isEnglish) "Your location" else "Tu ubicación", android.graphics.Color.rgb(0x1E, 0x88, 0xE5))) }
 
                 map.overlays.add(CopyrightOverlay(map.context))
                 map.invalidate()
@@ -1188,7 +1191,7 @@ private fun CityLocationPermissionButton(onClick: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(10.dp)
     ) {
-        Text(text = "📍 Permitir ubicación para ver dónde estás", fontSize = 12.sp, color = Ink)
+        Text(text = if (LocalIsEnglish.current) "📍 Allow location to see where you are" else "📍 Permitir ubicación para ver dónde estás", fontSize = 12.sp, color = Ink)
     }
 }
 

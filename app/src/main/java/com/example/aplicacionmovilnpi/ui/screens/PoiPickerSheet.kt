@@ -49,7 +49,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.sp
 import com.example.aplicacionmovilnpi.model.PointOfInterest
+import com.example.aplicacionmovilnpi.model.getName
+import com.example.aplicacionmovilnpi.model.getDescription
 import com.example.aplicacionmovilnpi.navigation.EtsiitData
+import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
 import com.example.aplicacionmovilnpi.ui.theme.CardBorder
 import com.example.aplicacionmovilnpi.ui.theme.Ink
 import com.example.aplicacionmovilnpi.ui.theme.MutedText
@@ -59,13 +62,13 @@ import com.example.aplicacionmovilnpi.ui.theme.UgrRedSoft
 import java.text.Normalizer
 
 /** Grupos de categorías que se muestran como filtros en el selector. */
-private enum class PoiFilter(val label: String, val icon: String, val categories: Set<String>?) {
-    ALL("Todo", "✨", null),
-    AULAS("Aulas", "🎓", setOf("AULA")),
-    DESPACHOS("Despachos", "👨‍🏫", setOf("DESPACHO")),
-    SERVICIOS("Servicios", "☕", setOf("SERVICIO", "ZONA_COMUN")),
-    ACCESOS("Accesos", "🚪", setOf("ACCESO", "TRANSITO")),
-    ACCESIBILIDAD("Accesibilidad", "♿", setOf("ACCESIBILIDAD"))
+private enum class PoiFilter(val spanishLabel: String, val englishLabel: String, val icon: String, val categories: Set<String>?) {
+    ALL("Todo", "All", "✨", null),
+    AULAS("Aulas", "Classrooms", "🎓", setOf("AULA")),
+    DESPACHOS("Despachos", "Offices", "👨‍🏫", setOf("DESPACHO")),
+    SERVICIOS("Servicios", "Services", "☕", setOf("SERVICIO", "ZONA_COMUN")),
+    ACCESOS("Accesos", "Entrances", "🚪", setOf("ACCESO", "TRANSITO")),
+    ACCESIBILIDAD("Accesibilidad", "Accessibility", "♿", setOf("ACCESIBILIDAD"))
 }
 
 fun poiCategoryIcon(category: String): String = when (category) {
@@ -79,24 +82,28 @@ fun poiCategoryIcon(category: String): String = when (category) {
     else -> "📍"
 }
 
-fun poiCategoryLabel(category: String): String = when (category) {
-    "AULA" -> "Aula"
-    "DESPACHO" -> "Despacho"
-    "SERVICIO" -> "Servicio"
-    "ZONA_COMUN" -> "Zona común"
-    "ACCESO" -> "Acceso"
-    "TRANSITO" -> "Tránsito"
-    "ACCESIBILIDAD" -> "Accesibilidad"
+fun poiCategoryLabel(category: String, isEnglish: Boolean = false): String = when (category) {
+    "AULA" -> if (isEnglish) "Classroom" else "Aula"
+    "DESPACHO" -> if (isEnglish) "Office" else "Despacho"
+    "SERVICIO" -> if (isEnglish) "Service" else "Servicio"
+    "ZONA_COMUN" -> if (isEnglish) "Common area" else "Zona común"
+    "ACCESO" -> if (isEnglish) "Entrance" else "Acceso"
+    "TRANSITO" -> if (isEnglish) "Walkway" else "Tránsito"
+    "ACCESIBILIDAD" -> if (isEnglish) "Accessibility" else "Accesibilidad"
     else -> category.lowercase().replaceFirstChar { it.uppercase() }
 }
 
 fun poiFloor(poi: PointOfInterest): Int? = EtsiitData.nodes[poi.nodeId]?.floor
 
-private fun floorTitle(floor: Int?): String = when (floor) {
-    null -> "Otras ubicaciones"
-    -1 -> "Planta sótano (S1)"
-    0 -> "Planta baja (PB)"
-    else -> "Planta $floor (P$floor)"
+@Composable
+private fun floorTitle(floor: Int?): String {
+    val isEnglish = LocalIsEnglish.current
+    return when (floor) {
+        null -> if (isEnglish) "Other locations" else "Otras ubicaciones"
+        -1 -> if (isEnglish) "Basement (B1)" else "Planta sótano (S1)"
+        0 -> if (isEnglish) "Ground floor (GF)" else "Planta baja (PB)"
+        else -> if (isEnglish) "Floor $floor (F$floor)" else "Planta $floor (P$floor)"
+    }
 }
 
 /** Quita tildes y pasa a minúsculas para que "cafeteria" encuentre "Cafetería". */
@@ -192,7 +199,7 @@ fun PoiPickerSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp),
-                placeholder = { Text("Buscar aula, despacho, servicio…", fontSize = 13.sp) },
+                placeholder = { Text(if (LocalIsEnglish.current) "Search classroom, office, service…" else "Buscar aula, despacho, servicio…", fontSize = 13.sp) },
                 leadingIcon = { Text("🔍", fontSize = 16.sp) },
                 trailingIcon = if (query.isNotEmpty()) {
                     {
@@ -227,7 +234,7 @@ fun PoiPickerSheet(
             ) {
                 items(PoiFilter.entries) { f ->
                     FilterPill(
-                        text = "${f.icon} ${f.label}",
+                        text = "${f.icon} ${if (LocalIsEnglish.current) f.englishLabel else f.spanishLabel}",
                         selected = filter == f,
                         onClick = { filter = f }
                     )
@@ -242,7 +249,7 @@ fun PoiPickerSheet(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 item {
-                    FilterPill(text = "Todas las plantas", selected = floorFilter == null, small = true) {
+                    FilterPill(text = if (LocalIsEnglish.current) "All floors" else "Todas las plantas", selected = floorFilter == null, small = true) {
                         floorFilter = null
                     }
                 }
@@ -256,7 +263,7 @@ fun PoiPickerSheet(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "${filtered.size} ubicaciones",
+                text = if (LocalIsEnglish.current) "${filtered.size} locations" else "${filtered.size} ubicaciones",
                 fontSize = 11.sp,
                 color = MutedText,
                 modifier = Modifier.padding(horizontal = 20.dp)
@@ -271,7 +278,7 @@ fun PoiPickerSheet(
                 ) {
                     Text("🔎", fontSize = 32.sp)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("No hay ubicaciones que coincidan", fontSize = 13.sp, color = MutedText)
+                    Text(if (LocalIsEnglish.current) "No matching locations" else "No hay ubicaciones que coincidan", fontSize = 13.sp, color = MutedText)
                 }
             } else {
                 LazyColumn(
@@ -339,6 +346,8 @@ private fun PoiPickerRow(
     selected: Boolean,
     onClick: () -> Unit
 ) {
+    val isEnglish = LocalIsEnglish.current
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -363,7 +372,7 @@ private fun PoiPickerRow(
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = poi.nameEs,
+                    text = poi.getName(isEnglish),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = Ink,
@@ -371,7 +380,7 @@ private fun PoiPickerRow(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = poi.description.ifBlank { poiCategoryLabel(poi.category) },
+                    text = poi.getDescription(isEnglish).ifBlank { poiCategoryLabel(poi.category, isEnglish) },
                     fontSize = 11.sp,
                     color = MutedText,
                     maxLines = 1,

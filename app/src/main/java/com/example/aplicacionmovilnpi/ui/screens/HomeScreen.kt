@@ -39,6 +39,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aplicacionmovilnpi.data.FacultyData
+import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
+import com.example.aplicacionmovilnpi.ui.localizedCourseText
+import com.example.aplicacionmovilnpi.ui.localizedDayName
 import com.example.aplicacionmovilnpi.data.Moment
 import com.example.aplicacionmovilnpi.data.PlaceCategory
 import com.example.aplicacionmovilnpi.data.ProfessorLocator
@@ -66,6 +69,7 @@ fun HomeScreen(
     onNavigateToMap: (String?) -> Unit,
     onNavigateToCalendar: () -> Unit
 ) {
+    val isEnglish = LocalIsEnglish.current
     var searchQuery by remember { mutableStateOf("") }
 
     // Próxima clase (o la que está en curso) según el horario real de la alumna
@@ -73,13 +77,13 @@ fun HomeScreen(
     val nextSlot = remember(moment) { SampleData.nextLesson(moment) }
     val nextLesson = nextSlot?.let(SampleData::toLesson)
     val nextLabel = when {
-        nextSlot == null -> "SIN CLASES PROGRAMADAS"
-        nextSlot.day == moment.day && moment.minutes >= nextSlot.startMinutes -> "EN CURSO · HASTA LAS ${nextSlot.end}"
+        nextSlot == null -> if (isEnglish) "NO CLASSES SCHEDULED" else "SIN CLASES PROGRAMADAS"
+        nextSlot.day == moment.day && moment.minutes >= nextSlot.startMinutes -> if (isEnglish) "IN PROGRESS · UNTIL ${nextSlot.end}" else "EN CURSO · HASTA LAS ${nextSlot.end}"
         nextSlot.day == moment.day -> {
             val minutes = nextSlot.startMinutes - moment.minutes
-            "PRÓXIMA CLASE · EN " + if (minutes < 60) "$minutes MIN" else "${minutes / 60} H ${minutes % 60} MIN"
+            (if (isEnglish) "NEXT CLASS · IN " else "PRÓXIMA CLASE · EN ") + if (minutes < 60) "$minutes ${if (isEnglish) "MIN" else "MIN"}" else "${minutes / 60} ${if (isEnglish) "H" else "H"} ${minutes % 60} MIN"
         }
-        else -> "PRÓXIMA CLASE · ${ProfessorLocator.dayName(nextSlot.day).uppercase()}"
+        else -> "${if (isEnglish) "NEXT CLASS · " else "PRÓXIMA CLASE · "}${localizedDayName(ProfessorLocator.dayName(nextSlot.day), isEnglish).uppercase()}"
     }
     // Primera entrega (o examen) a partir de hoy
     val nextEvent = remember {
@@ -88,11 +92,11 @@ fun HomeScreen(
     }
     val nextEventDate = nextEvent?.let { event ->
         val (_, month, day) = event.date.split("-").map { it.toInt() }
-        val months = listOf("ene.", "feb.", "mar.", "abr.", "may.", "jun.", "jul.", "ago.", "sept.", "oct.", "nov.", "dic.")
-        "$day ${months[month - 1]} · ${if (event.type == "Examen") "A las" else "Hasta las"} ${event.time}"
+        val months = if (isEnglish) listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec") else listOf("ene.", "feb.", "mar.", "abr.", "may.", "jun.", "jul.", "ago.", "sept.", "oct.", "nov.", "dic.")
+        "$day ${months[month - 1]} · ${if (isEnglish) if (event.type == "Examen") "At" else "Due" else if (event.type == "Examen") "A las" else "Hasta las"} ${event.time}"
     }
     val nextFloor = nextLesson?.room?.removePrefix("Aula ")?.substringBefore(".")?.let {
-        if (it == "0") "Planta baja" else "Planta $it"
+        if (it == "0") if (isEnglish) "Ground floor" else "Planta baja" else "${if (isEnglish) "Floor" else "Planta"} $it"
     }
 
     val nextClassGradient = remember {
@@ -114,7 +118,7 @@ fun HomeScreen(
 
         // Intro Greeting
         Text(
-            text = "¡Hola, ${FacultyData.Student.firstName}! 👋",
+            text = "${if (isEnglish) "Hello" else "¡Hola"}, ${FacultyData.Student.firstName}! 👋",
             fontSize = 28.sp,
             fontWeight = FontWeight.Black,
             color = Ink
@@ -146,7 +150,7 @@ fun HomeScreen(
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.sp
                         )
-                        if (nextLabel.startsWith("EN CURSO")) {
+                        if (nextLabel.startsWith("EN CURSO") || nextLabel.startsWith("IN PROGRESS")) {
                             Text(text = "🟢 Live", fontSize = 10.sp, color = Color.White)
                         }
                     }
@@ -164,7 +168,7 @@ fun HomeScreen(
                                 verticalArrangement = Arrangement.Center
                             ) {
                                 Text(text = nextLesson?.time ?: "--:--", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                Text(text = "AULA", color = Color(0xFFF5C6D0), fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                                Text(text = if (isEnglish) "ROOM" else "AULA", color = Color(0xFFF5C6D0), fontSize = 8.sp, fontWeight = FontWeight.Bold)
                             }
                         }
 
@@ -172,13 +176,13 @@ fun HomeScreen(
 
                         Column {
                             Text(
-                                text = nextLesson?.name ?: "No tienes clases este semestre",
+                                text = nextLesson?.name ?: if (isEnglish) "No classes this semester" else "No tienes clases este semestre",
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 16.sp
                             )
                             Text(
-                                text = nextLesson?.let { "📍 ${it.room} · $nextFloor · ${it.time} - ${it.end}" } ?: "Consulta tu horario",
+                                text = nextLesson?.let { "📍 ${localizedCourseText(it.room, isEnglish)} · $nextFloor · ${it.time} - ${it.end}" } ?: if (isEnglish) "Check your schedule" else "Consulta tu horario",
                                 color = Color(0xFFF4C9D2),
                                 fontSize = 11.sp,
                                 modifier = Modifier.padding(top = 4.dp)
@@ -201,7 +205,7 @@ fun HomeScreen(
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
-                            text = nextLesson?.let { "Guiarme al ${it.room.lowercase()}  ➔" } ?: "Sin clase a la que guiarte",
+                            text = nextLesson?.let { "${if (isEnglish) "Guide me to" else "Guiarme al"} ${localizedCourseText(it.room, isEnglish).lowercase()}  ➔" } ?: if (isEnglish) "No class to navigate to" else "Sin clase a la que guiarte",
                             fontWeight = FontWeight.Black,
                             fontSize = 13.sp
                         )
@@ -239,19 +243,27 @@ fun HomeScreen(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = if (nextEvent?.type == "Examen") "PRÓXIMO EXAMEN" else "PRÓXIMA ENTREGA",
+                        text = if (isEnglish) { if (nextEvent?.type == "Examen") "UPCOMING EXAM" else "UPCOMING ASSIGNMENT" } else { if (nextEvent?.type == "Examen") "PRÓXIMO EXAMEN" else "PRÓXIMA ENTREGA" },
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
                         color = UgrRed
                     )
                     Text(
-                        text = nextEvent?.title ?: "Nada pendiente",
+                        text = nextEvent?.let { event ->
+                            if (isEnglish) when (event.id) {
+                                1L -> "NPI Lab 1 submission"
+                                2L -> "Lab 1 · Visión por Computador"
+                                3L -> "PL lexical analyzer"
+                                4L -> "Exam · Teoría de la Información y la Codificación"
+                                else -> event.title
+                            } else event.title
+                        } ?: if (isEnglish) "Nothing pending" else "Nada pendiente",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = Ink
                     )
                     Text(
-                        text = nextEventDate ?: "No tienes entregas próximas",
+                        text = nextEventDate ?: if (isEnglish) "No upcoming deadlines" else "No tienes entregas próximas",
                         fontSize = 10.sp,
                         color = MutedText
                     )
@@ -265,7 +277,7 @@ fun HomeScreen(
 
         // Places Quick Categories Horizontal Row
         Text(
-            text = "Explorar la universidad",
+            text = if (isEnglish) "Explore the university" else "Explorar la universidad",
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             color = Ink
@@ -287,8 +299,8 @@ fun HomeScreen(
             ) {
                 PlaceCategoryCard(
                     place = PlaceCategory(
-                        name = "Comedor",
-                        detail = "Más cercano",
+                        name = if (isEnglish) "Dining hall" else "Comedor",
+                        detail = if (isEnglish) "Nearest" else "Más cercano",
                         icon = "utensils",
                         tone = "blue"
                     ),
@@ -300,8 +312,8 @@ fun HomeScreen(
 
                 PlaceCategoryCard(
                     place = PlaceCategory(
-                        name = "Biblioteca",
-                        detail = "Más cercana",
+                        name = if (isEnglish) "Library" else "Biblioteca",
+                        detail = if (isEnglish) "Nearest" else "Más cercana",
                         icon = "book",
                         tone = "rose"
                     ),
@@ -325,8 +337,8 @@ fun HomeScreen(
                 // TARJETA IZQUIERDA: ESCÁNER QR
                 PlaceCategoryCard(
                     place = PlaceCategory(
-                        name = "Escáner QR",
-                        detail = "Escanea un código",
+                        name = if (isEnglish) "QR Scanner" else "Escáner QR",
+                        detail = if (isEnglish) "Scan a code" else "Escanea un código",
                         icon = "qr",
                         tone = "black"
                     ),
@@ -349,8 +361,8 @@ fun HomeScreen(
 
                     PlaceCategoryCard(
                         place = PlaceCategory(
-                            name = "Aseos",
-                            detail = "Más cercanos",
+                            name = if (isEnglish) "Restrooms" else "Aseos",
+                            detail = if (isEnglish) "Nearest" else "Más cercanos",
                             icon = "toilet",
                             tone = "blue"
                         ),
@@ -364,8 +376,8 @@ fun HomeScreen(
 
                     PlaceCategoryCard(
                         place = PlaceCategory(
-                            name = "Fuentes",
-                            detail = "Más cercana",
+                            name = if (isEnglish) "Water fountains" else "Fuentes",
+                            detail = if (isEnglish) "Nearest" else "Más cercana",
                             icon = "water",
                             tone = "blue"
                         ),
@@ -436,7 +448,7 @@ fun PlaceCategoryCard(
                     if (place.icon == "qr") {
                         Icon(
                             imageVector = Icons.Filled.QrCodeScanner,
-                            contentDescription = "Escáner QR",
+                            contentDescription = if (LocalIsEnglish.current) "QR Scanner" else "Escáner QR",
                             tint = Ink,
                             modifier = Modifier.size(28.dp)
                         )
