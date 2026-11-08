@@ -63,6 +63,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.aplicacionmovilnpi.data.CampusItem
+import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
+import com.example.aplicacionmovilnpi.ui.localizedFloorName
+import com.example.aplicacionmovilnpi.model.getName
+import com.example.aplicacionmovilnpi.model.getDescription
 import com.example.aplicacionmovilnpi.data.SampleData
 import com.example.aplicacionmovilnpi.location.IndoorTracker
 import com.example.aplicacionmovilnpi.location.LocationPermissions
@@ -277,6 +281,9 @@ fun MapScreen(
     initialDestPoiId: String? = null,
     mapEntryKey: Int = 0
 ) {
+    val context = LocalContext.current
+    val isEnglish = LocalIsEnglish.current
+
     val routeManager = remember { RouteManager() }
     val allPois = remember { EtsiitData.pois }
 
@@ -318,7 +325,6 @@ fun MapScreen(
     var showRouteQrDialog by rememberSaveable { mutableStateOf(false) }
 
     // 2. SENSORES DE LOCALIZACIÓN (Utilizan mapMode declarado arriba)
-    val context = LocalContext.current
     val inForeground = rememberAppInForeground()
     var hasLocationPermission by remember { mutableStateOf(LocationPermissions.hasLocation(context)) }
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
@@ -455,18 +461,18 @@ val destinationResolution = remember(
     val selectedDestLabel = when (destPoiId) {
 
         DEST_ASEO_CERCANO ->
-            destPoi?.let { "🚻 Aseo más cercano · ${it.nameEs}" }
-                ?: "🚻 Aseo más cercano"
+            destPoi?.let { if (isEnglish) "🚻 Nearest restroom · ${it.getName(true)}" else "🚻 Aseo más cercano · ${it.getName(false)}" }
+                ?: if (isEnglish) "🚻 Nearest Restroom" else "🚻 Aseo más cercano"
 
         DEST_FUENTE_CERCANA ->
-            destPoi?.let { "🚰 Fuente más cercana · ${it.nameEs}" }
-                ?: "🚰 Fuente más cercana"
+            destPoi?.let { if (isEnglish) "🚰 Nearest water fountain · ${it.getName(true)}" else "🚰 Fuente más cercana · ${it.getName(false)}" }
+                ?: if (isEnglish) "🚰 Nearest Water Fountain" else "🚰 Fuente más cercana"
 
         DEST_COMEDOR_CERCANO ->
-            destPoi?.let { "🍽️ ${it.nameEs}" }
-                ?: "🍽️ Comedor de la ETSIIT"
+            destPoi?.let { "🍽️ ${it.getName(isEnglish)}" }
+                ?: if (isEnglish) "🍽️ ETSIIT Dining Hall" else "🍽️ Comedor de la ETSIIT"
 
-        else -> destPoi?.nameEs ?: "Seleccionar Destino"
+        else -> destPoi?.getName(isEnglish) ?: if (isEnglish) "Select Destination" else "Seleccionar Destino"
     }
 
     val destinationError = when {
@@ -576,13 +582,13 @@ val destinationResolution = remember(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = "Mapa y Navegación",
+                    text = if (isEnglish) "Map & Navigation" else "Mapa y Navegación",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Black,
                     color = Ink
                 )
                 Text(
-                    text = "Ubica campus, edificios y aulas de la ETSIIT",
+                    text = if (isEnglish) "Find the campus, buildings and classrooms" else "Ubica campus, edificios y aulas de la ETSIIT",
                     fontSize = 12.sp,
                     color = MutedText,
                     modifier = Modifier.padding(top = 2.dp)
@@ -606,7 +612,7 @@ val destinationResolution = remember(
                         } else {
                             Icons.Filled.Apartment
                         },
-                        contentDescription = "Cambiar tipo de mapa",
+                        contentDescription = if (isEnglish) "Switch map type" else "Cambiar tipo de mapa",
                         tint = Color.White,
                         modifier = Modifier.size(24.dp)
                     )
@@ -697,7 +703,7 @@ val destinationResolution = remember(
             Spacer(modifier = Modifier.height(10.dp))
 
             Text(
-                text = "Seleccionar Planta",
+                text = if (isEnglish) "Select Floor" else "Seleccionar Planta",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = Ink,
@@ -738,7 +744,7 @@ val destinationResolution = remember(
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(
-                                text = floor,
+                                text = localizedFloorName(floor, isEnglish),
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (selected) Color.White else Ink
@@ -771,7 +777,8 @@ val destinationResolution = remember(
                     azimuthDeg = azimuth,
                     arrivalText = arrivalText(
                         activeSegment,
-                        destPoi?.nameEs ?: "tu destino"
+                        destPoi?.getName(isEnglish) ?: if (isEnglish) "your destination" else "tu destino",
+                        isEnglish
                     )
                 )
             }
@@ -781,8 +788,8 @@ val destinationResolution = remember(
                 RouteStepNavigationCard(
                     segments = routeSegments,
                     currentIndex = activeSegmentIndex,
-                    startPoiName = startPoi?.nameEs ?: "Origen",
-                    destPoiName = destPoi?.nameEs ?: "Destino",
+                    startPoiName = startPoi?.getName(isEnglish) ?: if (isEnglish) "Origin" else "Origen",
+                    destPoiName = destPoi?.getName(isEnglish) ?: if (isEnglish) "Destination" else "Destino",
                     onSegmentChange = { activeSegmentIndex = it },
                     onGenerateQrClick = { showRouteQrDialog = true },
                     onClose = { isRouteOpen = false }
@@ -861,7 +868,7 @@ fun FloorPlanCanvasOverlay(
                 if (bitmap != null) {
                     Image(
                         bitmap = bitmap,
-                        contentDescription = "Plano Planta $selectedFloorName",
+                        contentDescription = if (LocalIsEnglish.current) "Floor plan ${localizedFloorName(selectedFloorName, true)}" else "Plano Planta $selectedFloorName",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.FillBounds
                     )
@@ -1018,13 +1025,13 @@ fun ZoomableMapDialog(
                 ) {
                     Column {
                         Text(
-                            text = "Plano de la Planta $selectedFloorName",
+                            text = if (LocalIsEnglish.current) "Floor plan · ${localizedFloorName(selectedFloorName, true)}" else "Plano de la Planta $selectedFloorName",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
                         Text(
-                            text = "Usa pellizco con dos dedos para zoom y arrastra el mapa",
+                            text = if (LocalIsEnglish.current) "Pinch to zoom and drag the map" else "Usa pellizco con dos dedos para zoom y arrastra el mapa",
                             fontSize = 11.sp,
                             color = Color.LightGray
                         )
@@ -1036,7 +1043,7 @@ fun ZoomableMapDialog(
                         shape = RoundedCornerShape(10.dp)
                     ) {
                         Text(
-                            text = "✖ Cerrar",
+                            text = if (LocalIsEnglish.current) "✖ Close" else "✖ Cerrar",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
@@ -1066,7 +1073,7 @@ fun ZoomableMapDialog(
                     if (bitmap != null) {
                         Image(
                             bitmap = bitmap,
-                            contentDescription = "Plano Planta $selectedFloorName",
+                            contentDescription = if (LocalIsEnglish.current) "Floor plan ${localizedFloorName(selectedFloorName, true)}" else "Plano Planta $selectedFloorName",
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.FillBounds
                         )
@@ -1184,6 +1191,7 @@ fun RouteStepNavigationCard(
     onGenerateQrClick: (() -> Unit)? = null,
     onClose: () -> Unit
 ) {
+    val isEnglish = LocalIsEnglish.current
     val currentSegment = segments.getOrNull(currentIndex) ?: return
 
     Surface(
@@ -1201,7 +1209,7 @@ fun RouteStepNavigationCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "PASO ${currentIndex + 1} DE ${segments.size} · PLANTA ${currentSegment.floorName}",
+                        text = if (isEnglish) "STEP ${currentIndex + 1} OF ${segments.size} · FLOOR ${currentSegment.floorName}" else "PASO ${currentIndex + 1} DE ${segments.size} · PLANTA ${currentSegment.floorName}",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         color = UgrRed
@@ -1227,7 +1235,7 @@ fun RouteStepNavigationCard(
             HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
 
             if (currentSegment.transitionNode != null) {
-                val actionName = if (currentSegment.isElevator) "el ascensor 🛗" else "las escaleras 🪜"
+                val actionName = if (isEnglish) { if (currentSegment.isElevator) "the elevator 🛗" else "the stairs 🪜" } else { if (currentSegment.isElevator) "el ascensor 🛗" else "las escaleras 🪜" }
                 val nextFloorName = currentSegment.nextFloorName ?: ""
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1245,13 +1253,13 @@ fun RouteStepNavigationCard(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Dirígete hacia $actionName en Planta ${currentSegment.floorName}",
+                            text = if (isEnglish) "Head to $actionName on floor ${currentSegment.floorName}" else "Dirígete hacia $actionName en Planta ${currentSegment.floorName}",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = Ink
                         )
                         Text(
-                            text = "Marcado en naranja 🟠 en el plano",
+                            text = if (isEnglish) "Marked in orange 🟠 on the map" else "Marcado en naranja 🟠 en el plano",
                             fontSize = 11.sp,
                             color = MutedText
                         )
@@ -1273,7 +1281,7 @@ fun RouteStepNavigationCard(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = "He llegado a $actionName ➔ Ir a Planta $nextFloorName",
+                        text = if (isEnglish) "I've reached $actionName ➔ Go to floor $nextFloorName" else "He llegado a $actionName ➔ Ir a Planta $nextFloorName",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center
@@ -1295,13 +1303,13 @@ fun RouteStepNavigationCard(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Tramo final hacia $destPoiName",
+                            text = if (isEnglish) "Final stretch to $destPoiName" else "Tramo final hacia $destPoiName",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = Ink
                         )
                         Text(
-                            text = "Ruta dibujada en Planta ${currentSegment.floorName} desde el nodo intermedio",
+                            text = if (isEnglish) "Route drawn on floor ${currentSegment.floorName} from the intermediate node" else "Ruta dibujada en Planta ${currentSegment.floorName} desde el nodo intermedio",
                             fontSize = 11.sp,
                             color = MutedText
                         )
@@ -1319,7 +1327,7 @@ fun RouteStepNavigationCard(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = "🏁 ¡Llegada al Destino! Finalizar guía",
+                        text = if (isEnglish) "🏁 Destination reached! Finish guidance" else "🏁 ¡Llegada al Destino! Finalizar guía",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center
@@ -1338,7 +1346,7 @@ fun RouteStepNavigationCard(
                             onClick = { onSegmentChange(currentIndex - 1) },
                             shape = RoundedCornerShape(8.dp)
                         ) {
-                            Text(text = "⬅ Planta ${segments[currentIndex - 1].floorName}", fontSize = 11.sp, color = Ink)
+                            Text(text = if (isEnglish) "⬅ Floor ${segments[currentIndex - 1].floorName}" else "⬅ Planta ${segments[currentIndex - 1].floorName}", fontSize = 11.sp, color = Ink)
                         }
                     } else {
                         Spacer(modifier = Modifier.width(1.dp))
@@ -1349,7 +1357,7 @@ fun RouteStepNavigationCard(
                             onClick = { onSegmentChange(currentIndex + 1) },
                             shape = RoundedCornerShape(8.dp)
                         ) {
-                            Text(text = "Planta ${segments[currentIndex + 1].floorName} ➔", fontSize = 11.sp, color = Ink)
+                            Text(text = "${if (isEnglish) "Floor" else "Planta"} ${segments[currentIndex + 1].floorName} ➔", fontSize = 11.sp, color = Ink)
                         }
                     }
                 }
@@ -1394,6 +1402,7 @@ fun PoiRouteSelectorCard(
     onClearRoute: () -> Unit,
     onScanQrClick: () -> Unit
 ) {
+    val isEnglish = LocalIsEnglish.current
     var pickingStart by remember { mutableStateOf(false) }
     var pickingDest by remember { mutableStateOf(false) }
 
@@ -1446,7 +1455,7 @@ fun PoiRouteSelectorCard(
                         Box(modifier = Modifier.weight(1f)) {
                             PoiSelectorField(
                                 poi = startPoi,
-                                placeholder = "Origen",
+                                placeholder = if (LocalIsEnglish.current) "Origin" else "Origen",
                                 onClick = { pickingStart = true }
                             )
                         }
@@ -1463,7 +1472,7 @@ fun PoiRouteSelectorCard(
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     imageVector = Icons.Filled.CameraAlt,
-                                    contentDescription = "Escanear QR de ubicación",
+                                    contentDescription = if (LocalIsEnglish.current) "Scan a location QR code" else "Escanear QR de ubicación",
                                     tint = Color.White,
                                     modifier = Modifier.size(23.dp)
                                 )
@@ -1482,7 +1491,7 @@ fun PoiRouteSelectorCard(
                             PoiSelectorField(
                                 poi = destPoi,
                                 displayText = selectedDestLabel,
-                                placeholder = "¿A dónde vas?",
+                                placeholder = if (LocalIsEnglish.current) "Where are you going?" else "¿A dónde vas?",
                                 onClick = { pickingDest = true }
                             )
                         }
@@ -1517,7 +1526,7 @@ fun PoiRouteSelectorCard(
             // Se conserva el selector en hoja, que permite buscar POI por texto.
             if (pickingStart) {
                 PoiPickerSheet(
-                    title = "Elige el origen",
+                    title = if (isEnglish) "Choose origin" else "Elige el origen",
                     accent = GreenStatus,
                     pois = pois,
                     selectedPoiId = startPoi?.id,
@@ -1532,7 +1541,7 @@ fun PoiRouteSelectorCard(
 
             if (pickingDest) {
                 PoiPickerSheet(
-                    title = "Elige el destino",
+                    title = if (isEnglish) "Choose destination" else "Elige el destino",
                     accent = UgrRed,
                     pois = pois,
                     selectedPoiId = destPoi?.id,
@@ -1571,7 +1580,7 @@ fun PoiRouteSelectorCard(
                     )
                 ) {
                     Text(
-                        text = if (isAccessible) "♿ Sin escaleras ✓" else "♿ Sin escaleras",
+                        text = if (isEnglish) { if (isAccessible) "♿ Step-free ✓" else "♿ Step-free" } else { if (isAccessible) "♿ Sin escaleras ✓" else "♿ Sin escaleras" },
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = if (isAccessible) ToneBlueText else Ink,
@@ -1582,7 +1591,7 @@ fun PoiRouteSelectorCard(
                 Spacer(modifier = Modifier.weight(1f))
 
                 Text(
-                    text = "Limpiar",
+                    text = if (isEnglish) "Clear" else "Limpiar",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MutedText,
@@ -1602,7 +1611,7 @@ fun PoiRouteSelectorCard(
                     shape = RoundedCornerShape(50),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp)
                 ) {
-                    Text(text = "Ir", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Text(text = if (isEnglish) "Go" else "Ir", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -1614,7 +1623,7 @@ fun PoiRouteSelectorCard(
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Text(
-                        text = "📱 Generar QR de esta ruta",
+                        text = if (isEnglish) "📱 Generate QR for this route" else "📱 Generar QR de esta ruta",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = Ink
@@ -1688,8 +1697,11 @@ private fun PoiSelectorField(
     placeholder: String,
     onClick: () -> Unit
 ) {
+    val context = LocalContext.current
+    val isEnglish = LocalIsEnglish.current
+
     val label = displayText
-        ?: poi?.let { "${poiCategoryIcon(it.category)} ${it.nameEs}" }
+        ?: poi?.let { "${poiCategoryIcon(it.category)} ${it.getName(isEnglish)}" }
         ?: placeholder
 
     Surface(
@@ -1729,6 +1741,9 @@ private fun PoiSelectorField(
 
 @Composable
 fun PoiChip(poi: PointOfInterest, onClick: () -> Unit) {
+    val context = LocalContext.current
+    val isEnglish = LocalIsEnglish.current
+
     Surface(
         modifier = Modifier.clickable { onClick() },
         color = Color.White,
@@ -1741,7 +1756,7 @@ fun PoiChip(poi: PointOfInterest, onClick: () -> Unit) {
         ) {
             Text(text = poiCategoryIcon(poi.category), fontSize = 12.sp)
             Spacer(modifier = Modifier.width(6.dp))
-            Text(text = poi.nameEs, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Ink)
+            Text(text = poi.getName(isEnglish), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Ink)
         }
     }
 }

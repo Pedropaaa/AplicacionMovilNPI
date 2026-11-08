@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.aplicacionmovilnpi.model.PointOfInterest
 import com.example.aplicacionmovilnpi.qr.QrGenerator
+import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
 import com.example.aplicacionmovilnpi.ui.theme.Ink
 import com.example.aplicacionmovilnpi.ui.theme.MutedText
 import com.example.aplicacionmovilnpi.ui.theme.ToneBlueBg
@@ -42,10 +43,11 @@ fun RouteQrDialog(
     isAccessible: Boolean,
     onDismiss: () -> Unit
 ) {
+    val isEnglish = LocalIsEnglish.current
     val startPoiId = startPoi?.id ?: ""
     val destPoiId = destPoi?.id ?: ""
-    val startName = startPoi?.nameEs ?: "Origen"
-    val destName = destPoi?.nameEs ?: "Destino"
+    val startName = startPoi?.let { if (isEnglish && it.nameEn.isNotBlank()) it.nameEn else it.nameEs } ?: if (isEnglish) "Origin" else "Origen"
+    val destName = destPoi?.let { if (isEnglish && it.nameEn.isNotBlank()) it.nameEn else it.nameEs } ?: if (isEnglish) "Destination" else "Destino"
 
     val qrContent = remember(startPoiId, destPoiId, isAccessible) {
         QrGenerator.createRouteQrContent(startPoiId, destPoiId, isAccessible)
@@ -69,7 +71,7 @@ fun RouteQrDialog(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "📱 QR de la Ruta",
+                    text = if (isEnglish) "📱 Route QR Code" else "📱 QR de la Ruta",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Ink
@@ -92,7 +94,7 @@ fun RouteQrDialog(
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        text = if (isAccessible) "♿ Ruta accesible PMR" else "🚶 Ruta Estándar",
+                        text = if (isEnglish) { if (isAccessible) "♿ Accessible Route" else "🚶 Standard Route" } else { if (isAccessible) "♿ Ruta accesible PMR" else "🚶 Ruta Estándar" },
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
                         color = Ink,
@@ -112,12 +114,12 @@ fun RouteQrDialog(
                     if (qrBitmap != null) {
                         Image(
                             bitmap = qrBitmap,
-                            contentDescription = "Código QR de la Ruta",
+                            contentDescription = if (isEnglish) "Route QR code" else "Código QR de la Ruta",
                             modifier = Modifier.fillMaxWidth()
                         )
                     } else {
                         Text(
-                            text = "Error al generar QR",
+                            text = if (isEnglish) "Error generating QR code" else "Error al generar QR",
                             color = Color.Red,
                             fontSize = 12.sp
                         )
@@ -127,7 +129,7 @@ fun RouteQrDialog(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 Text(
-                    text = "Escanea este código con el escáner de la app en otro dispositivo para cargar automáticamente esta ruta.",
+                    text = if (isEnglish) "Scan this code with the app on another device to load this route automatically." else "Escanea este código con el escáner de la app en otro dispositivo para cargar automáticamente esta ruta.",
                     fontSize = 11.sp,
                     color = MutedText,
                     textAlign = TextAlign.Center
@@ -141,7 +143,7 @@ fun RouteQrDialog(
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(text = "Cerrar", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Text(text = if (isEnglish) "Close" else "Cerrar", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }

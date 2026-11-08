@@ -53,17 +53,18 @@ import com.example.aplicacionmovilnpi.ui.theme.MutedText
 import com.example.aplicacionmovilnpi.ui.theme.PageBg
 import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 
-enum class NavTab(val id: String, val label: String, val icon: String) {
-    HOME("home", "Inicio", "🏠"),
-    SCHEDULE("schedule", "Horario", "📅"),
-    PROFESSORS("professors", "Profesorado", "👨‍🏫"),
-    MAP("map", "Mapa", "🗺️"),
-    MORE("more", "Más", "☰")
+enum class NavTab(val id: String, val spanishLabel: String, val englishLabel: String, val icon: String) {
+    HOME("home", "Inicio", "Home", "🏠"),
+    SCHEDULE("schedule", "Horario", "Schedule", "📅"),
+    PROFESSORS("professors", "Profesorado", "Faculty", "👨‍🏫"),
+    MAP("map", "Mapa", "Map", "🗺️"),
+    MORE("more", "Más", "More", "☰")
 }
 
 @Composable
 fun MainScreen(
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onLanguageChange: (Boolean) -> Unit
 ) {
     var activeTab by rememberSaveable { mutableStateOf(NavTab.HOME) }
     var mapEntryKey by rememberSaveable { mutableIntStateOf(0) }
@@ -99,6 +100,7 @@ fun MainScreen(
         bottomBar = {
             UgrBottomBar(
                 activeTab = activeTab,
+                isEnglish = LocalIsEnglish.current,
                 onTabSelected = { tab ->
                     // Cada pulsación en Mapa fuerza una nueva comprobación de ubicación.
                     if (tab == NavTab.MAP) {
@@ -149,7 +151,8 @@ fun MainScreen(
                     mapEntryKey = mapEntryKey
                 )
                 activeTab == NavTab.MORE -> MoreScreen(
-                    onNavigateToSubScreen = { subScreen -> currentSubScreen = subScreen }
+                    onNavigateToSubScreen = { subScreen -> currentSubScreen = subScreen },
+                    onLanguageChange = onLanguageChange
                 )
             }
         }
@@ -253,13 +256,13 @@ fun UgrHeader(
                     )
                     HorizontalDivider()
                     DropdownMenuItem(
-                        text = { Text(text = "👤 Mi Perfil", fontSize = 12.sp) },
+                        text = { Text(text = if (LocalIsEnglish.current) "👤 My Profile" else "👤 Mi Perfil", fontSize = 12.sp) },
                         onClick = onProfileClick
                     )
                     DropdownMenuItem(
                         text = {
                             Text(
-                                text = "🚪 Cerrar sesión",
+                                text = if (LocalIsEnglish.current) "🚪 Log out" else "🚪 Cerrar sesión",
                                 fontSize = 12.sp,
                                 color = UgrRed,
                                 fontWeight = FontWeight.Bold
@@ -276,6 +279,7 @@ fun UgrHeader(
 @Composable
 fun UgrBottomBar(
     activeTab: NavTab,
+    isEnglish: Boolean,
     onTabSelected: (NavTab) -> Unit
 ) {
     NavigationBar(
@@ -290,7 +294,7 @@ fun UgrBottomBar(
                 icon = { Text(text = tab.icon, fontSize = 18.sp) },
                 label = {
                     Text(
-                        text = tab.label,
+                        text = if (isEnglish) tab.englishLabel else tab.spanishLabel,
                         fontSize = 10.sp,
                         maxLines = 1,
                         softWrap = false,

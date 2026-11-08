@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aplicacionmovilnpi.data.FacultyData
 import com.example.aplicacionmovilnpi.data.SampleData
+import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
 import com.example.aplicacionmovilnpi.ui.theme.CardBorder
 import com.example.aplicacionmovilnpi.ui.theme.Ink
 import com.example.aplicacionmovilnpi.ui.theme.MutedText
@@ -41,6 +42,7 @@ import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 
 @Composable
 fun GradesScreen(onBack: () -> Unit) {
+    val isEnglish = LocalIsEnglish.current
     var selectedCourse by remember { mutableStateOf("4º") }
     val gradesList = SampleData.gradesMap[selectedCourse] ?: emptyList()
     val average = remember {
@@ -59,7 +61,7 @@ fun GradesScreen(onBack: () -> Unit) {
         // Back Button Row
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "⬅ Volver a Más",
+                text = if (isEnglish) "⬅ Back to More" else "⬅ Volver a Más",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 color = UgrRed,
@@ -70,7 +72,7 @@ fun GradesScreen(onBack: () -> Unit) {
         Spacer(modifier = Modifier.height(14.dp))
 
         Text(
-            text = "Expediente y Calificaciones",
+            text = if (isEnglish) "Academic Record & Grades" else "Expediente y Calificaciones",
             fontSize = 24.sp,
             fontWeight = FontWeight.Black,
             color = Ink
@@ -90,7 +92,7 @@ fun GradesScreen(onBack: () -> Unit) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
-                    Text(text = "NOTA MEDIA ACUMULADA", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = ToneRoseText)
+                    Text(text = if (isEnglish) "OVERALL GRADE AVERAGE" else "NOTA MEDIA ACUMULADA", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = ToneRoseText)
                     Text(text = "$average / 10", fontSize = 24.sp, fontWeight = FontWeight.Black, color = UgrRed)
                 }
 
@@ -99,7 +101,7 @@ fun GradesScreen(onBack: () -> Unit) {
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Text(
-                        text = "180 ECTS Aprobados",
+                        text = if (isEnglish) "180 ECTS Passed" else "180 ECTS Aprobados",
                         color = Color.White,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
@@ -129,7 +131,7 @@ fun GradesScreen(onBack: () -> Unit) {
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(
-                            text = "Curso $course",
+                            text = "${if (isEnglish) "Year" else "Curso"} ${if (isEnglish) course.removeSuffix("º") else course}",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (selected) Color.White else Ink
@@ -186,7 +188,7 @@ fun GradesScreen(onBack: () -> Unit) {
             colors = ButtonDefaults.buttonColors(containerColor = UgrRed),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Text(text = "📥 Descargar Resguardo en PDF", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            Text(text = if (isEnglish) "📥 Download transcript PDF" else "📥 Descargar Resguardo en PDF", fontSize = 13.sp, fontWeight = FontWeight.Bold)
         }
 
         Spacer(modifier = Modifier.height(30.dp))

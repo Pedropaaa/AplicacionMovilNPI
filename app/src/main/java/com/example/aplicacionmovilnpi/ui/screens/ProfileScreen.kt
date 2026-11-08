@@ -28,6 +28,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aplicacionmovilnpi.data.FacultyData
+import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
+import com.example.aplicacionmovilnpi.ui.localizedCourseText
 import com.example.aplicacionmovilnpi.ui.theme.CardBorder
 import com.example.aplicacionmovilnpi.ui.theme.Ink
 import com.example.aplicacionmovilnpi.ui.theme.MutedText
@@ -37,6 +39,7 @@ import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 
 @Composable
 fun ProfileScreen(onBack: () -> Unit) {
+    val isEnglish = LocalIsEnglish.current
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -47,7 +50,7 @@ fun ProfileScreen(onBack: () -> Unit) {
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "⬅ Volver a Más",
+                text = if (isEnglish) "⬅ Back to More" else "⬅ Volver a Más",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 color = UgrRed,
@@ -58,13 +61,13 @@ fun ProfileScreen(onBack: () -> Unit) {
         Spacer(modifier = Modifier.height(14.dp))
 
         Text(
-            text = "Perfil de Estudiante",
+            text = if (isEnglish) "Student Profile" else "Perfil de Estudiante",
             fontSize = 24.sp,
             fontWeight = FontWeight.Black,
             color = Ink
         )
         Text(
-            text = "Datos académicos y de contacto",
+            text = if (isEnglish) "Academic and contact details" else "Datos académicos y de contacto",
             fontSize = 12.sp,
             color = MutedText
         )
@@ -107,7 +110,7 @@ fun ProfileScreen(onBack: () -> Unit) {
                 )
 
                 Text(
-                    text = FacultyData.Student.degree,
+                    text = localizedCourseText(FacultyData.Student.degree, isEnglish),
                     fontSize = 12.sp,
                     color = MutedText,
                     modifier = Modifier.padding(top = 2.dp)
@@ -119,13 +122,13 @@ fun ProfileScreen(onBack: () -> Unit) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                ProfileDetailRow(label = "Centro", value = "E.T.S. de Ingenierías Informática y de Telecomunicación")
+                ProfileDetailRow(label = if (isEnglish) "School" else "Centro", value = if (isEnglish) "School of Computer and Telecommunication Engineering" else "E.T.S. de Ingenierías Informática y de Telecomunicación")
                 Spacer(modifier = Modifier.height(10.dp))
-                ProfileDetailRow(label = "Asignaturas", value = FacultyData.studentSubjects.joinToString(", "))
+                ProfileDetailRow(label = if (isEnglish) "Subjects" else "Asignaturas", value = FacultyData.studentSubjects.joinToString(", "))
                 Spacer(modifier = Modifier.height(10.dp))
-                ProfileDetailRow(label = "Correo UGR", value = FacultyData.Student.email)
+                ProfileDetailRow(label = if (isEnglish) "UGR email" else "Correo UGR", value = FacultyData.Student.email)
                 Spacer(modifier = Modifier.height(10.dp))
-                ProfileDetailRow(label = "Teléfono", value = "+34 600 000 000")
+                ProfileDetailRow(label = if (isEnglish) "Phone" else "Teléfono", value = "+34 600 000 000")
             }
         }
 
@@ -139,7 +142,7 @@ fun ProfileScreen(onBack: () -> Unit) {
             colors = ButtonDefaults.buttonColors(containerColor = UgrRed),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Text(text = "Guardar cambios", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            Text(text = if (isEnglish) "Save changes" else "Guardar cambios", fontSize = 13.sp, fontWeight = FontWeight.Bold)
         }
 
         Spacer(modifier = Modifier.height(30.dp))
