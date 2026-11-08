@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -422,9 +423,11 @@ fun PlaceCategoryCard(
         else -> "☕"
     }
 
+    // Aseos y fuentes tendrán diseño horizontal.
+    val isHorizontal = place.icon == "toilet" || place.icon == "water"
+
     Surface(
-        modifier = modifier
-            .clickable { onClick() },
+        modifier = modifier.clickable { onClick() },
         color = Color.White,
         shape = RoundedCornerShape(16.dp),
         border = androidx.compose.foundation.BorderStroke(
@@ -432,49 +435,105 @@ fun PlaceCategoryCard(
             CardBorder
         )
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Surface(
-                color = bgColor,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.size(40.dp)
+        if (isHorizontal) {
+
+            // DISEÑO HORIZONTAL: ASEOS Y FUENTES
+            // DISEÑO HORIZONTAL: ASEOS Y FUENTES
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 7.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(7.dp)
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    if (place.icon == "qr") {
-                        Icon(
-                            imageVector = Icons.Filled.QrCodeScanner,
-                            contentDescription = if (LocalIsEnglish.current) "QR Scanner" else "Escáner QR",
-                            tint = Ink,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    } else {
+                Surface(
+                    color = bgColor,
+                    shape = RoundedCornerShape(11.dp),
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
                         Text(
                             text = iconText,
-                            fontSize = 28.sp
+                            fontSize = 25.sp
                         )
                     }
                 }
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = place.name,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Ink,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+
+                    Text(
+                        text = place.detail,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MutedText,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        modifier = Modifier.offset(y = (-4).dp)
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+        } else {
 
-            Text(
-                text = place.name,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = Ink
-            )
+            // DISEÑO VERTICAL: RESTO DE TARJETAS
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Surface(
+                    color = bgColor,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        if (place.icon == "qr") {
+                            Icon(
+                                imageVector = Icons.Filled.QrCodeScanner,
+                                contentDescription = if (LocalIsEnglish.current)
+                                    "QR Scanner"
+                                else
+                                    "Escáner QR",
+                                tint = Ink,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        } else {
+                            Text(
+                                text = iconText,
+                                fontSize = 28.sp
+                            )
+                        }
+                    }
+                }
 
-            Text(
-                text = place.detail,
-                fontSize = 9.sp,
-                color = MutedText
-            )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = place.name,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Ink
+                )
+
+                Text(
+                    text = place.detail,
+                    fontSize = 12.sp,
+                    color = MutedText
+                )
+            }
         }
     }
 }
