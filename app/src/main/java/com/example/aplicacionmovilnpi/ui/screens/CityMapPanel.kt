@@ -142,6 +142,9 @@ fun CityRouteSection(
     requestOriginPicker: Boolean = false,
     onOriginPickerRequestConsumed: () -> Unit = {},
 
+    isMapOriginSelectionActive: Boolean = false,
+    onMapOriginSelected: () -> Unit = {},
+
     requestSwap: Boolean = false,
     onSwapRequestConsumed: () -> Unit = {},
 
@@ -620,43 +623,6 @@ fun CityRouteSection(
                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // OPCIONES RÁPIDAS DE ORIGEN
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    PlaceChip(
-                        "📍 Mi ubicación",
-                        selected = originId == ORIGIN_GPS
-                    ) {
-                        if (hasLocationPermission) {
-                            originId = ORIGIN_GPS
-                            pickingOrigin = false
-                            initialDestinationResolutionPending = false
-                        } else {
-                            onRequestPermission()
-                        }
-                    }
-
-                    PlaceChip(
-                        "👆 Punto del mapa",
-                        selected = originId == ORIGIN_MAP
-                    ) {
-                        if (mapOrigin != null) {
-                            originId = ORIGIN_MAP
-                            pickingOrigin = false
-                            initialDestinationResolutionPending = false
-                        } else {
-                            error = if (isEnglish) {
-                                "Tap the map to choose a starting point"
-                            } else {
-                                "Toca el mapa para elegir el punto de origen"
-                            }
-                        }
-                    }
-                }
-
                 // ESTADO DEL GPS
                 if (originId == ORIGIN_GPS && gpsPoint == null) {
                     Text(
@@ -694,6 +660,22 @@ fun CityRouteSection(
                     initialDestinationResolutionPending = false
                     originId = place.id
                     pickingOrigin = false
+                },
+                isMyLocationSelected = originId == ORIGIN_GPS,
+
+                onSelectMyLocation = if (destId != ORIGIN_GPS) {
+                    {
+                        if (hasLocationPermission) {
+                            initialDestinationResolutionPending = false
+                            originId = ORIGIN_GPS
+                            pickingOrigin = false
+                            error = null
+                        } else {
+                            onRequestPermission()
+                        }
+                    }
+                } else {
+                    null
                 },
                 onDismiss = {
                     pickingOrigin = false
@@ -743,11 +725,19 @@ fun CityRouteSection(
                 }
             },
             onMapTap = { point ->
-                initialDestinationResolutionPending = false
-                mapOriginLat = point.lat
-                mapOriginLon = point.lon
-                originId = ORIGIN_MAP
-                pickingOrigin = false
+                if (isMapOriginSelectionActive) {
+                    initialDestinationResolutionPending = false
+
+                    mapOriginLat = point.lat
+                    mapOriginLon = point.lon
+                    originId = ORIGIN_MAP
+
+                    pickingOrigin = false
+                    error = null
+
+                    // Desactivamos el botón después de seleccionar el punto.
+                    onMapOriginSelected()
+                }
             },
             onLocateUnavailable = {
                 if (hasLocationPermission) error = if (isEnglish) "No GPS signal yet. Turn on location services." else "Todavía no hay señal GPS. Activa la ubicación del móvil."
@@ -826,7 +816,9 @@ private fun CityPlacePickerSheet(
     selectedPlaceId: String?,
     excludedPlaceId: String?,
     onSelect: (CityPlace) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    isMyLocationSelected: Boolean = false,
+    onSelectMyLocation: (() -> Unit)? = null
 ) {
     val isEnglish = LocalIsEnglish.current
 
@@ -1044,7 +1036,7 @@ private fun CityPlacePickerSheet(
             Spacer(modifier = Modifier.height(4.dp))
 
             // RESULTADOS
-            if (filteredPlaces.isEmpty()) {
+            if (filteredPlaces.isEmpty() && onSelectMyLocation == null) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1081,6 +1073,65 @@ private fun CityPlacePickerSheet(
                         bottom = 32.dp
                     )
                 ) {
+
+                    // OPCIÓN ESPECIAL: MI UBICACIÓN
+                    if (onSelectMyLocation != null) {
+                        item(key = "my_location_option") {
+                            Column {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            onSelectMyLocation()
+                                        }
+                                        .padding(
+                                            horizontal = 4.dp,
+                                            vertical = 12.dp
+                                        ),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "📍",
+                                        fontSize = 21.sp
+                                    )
+
+                                    Spacer(modifier = Modifier.width(12.dp))
+
+                                    Column(
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(
+                                            text = if (isEnglish) "My location" else "Mi ubicación",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = Ink
+                                        )
+
+                                        Text(
+                                            text = if (isEnglish) "GPS location" else "Ubicación GPS",
+                                            fontSize = 10.sp,
+                                            color = MutedText
+                                        )
+                                    }
+
+                                    if (isMyLocationSelected) {
+                                        Text(
+                                            text = "✓",
+                                            color = GreenStatus,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 17.sp
+                                        )
+                                    }
+                                }
+
+                                HorizontalDivider(
+                                    color = CardBorder.copy(alpha = 0.5f)
+                                )
+                            }
+                        }
+                    }
+
+                    // UBICACIONES AGRUPADAS POR CAMPUS
                     groupedPlaces.forEach { (campus, campusPlaces) ->
 
                         stickyHeader(key = "campus_$campus") {

@@ -635,6 +635,10 @@ val destinationResolution = remember(
         mutableStateOf(false)
     }
 
+    var isCityMapOriginSelectionActive by rememberSaveable {
+        mutableStateOf(false)
+    }
+
     var requestCitySwap by rememberSaveable {
         mutableStateOf(false)
     }
@@ -751,6 +755,13 @@ val destinationResolution = remember(
                 requestCityOriginPicker = true
             },
 
+            isCityMapOriginSelectionActive = isCityMapOriginSelectionActive,
+
+            onCityMapOriginClick = {
+                isCityMapOriginSelectionActive =
+                    !isCityMapOriginSelectionActive
+            },
+
             onCityDestinationClick = {
                 requestCityDestinationPicker = true
             },
@@ -800,6 +811,12 @@ val destinationResolution = remember(
 
             onOriginPickerRequestConsumed = {
                 requestCityOriginPicker = false
+            },
+
+            isMapOriginSelectionActive = isCityMapOriginSelectionActive,
+
+            onMapOriginSelected = {
+                isCityMapOriginSelectionActive = false
             },
 
             requestDestinationPicker = requestCityDestinationPicker,
@@ -1822,8 +1839,10 @@ fun PoiRouteSelectorCard(
     isCityMode: Boolean = false,
     cityOriginDisplayText: String? = null,
     cityDestinationDisplayText: String? = null,
+    isCityMapOriginSelectionActive: Boolean = false,
     onCityOriginClick: () -> Unit = {},
     onCityDestinationClick: () -> Unit = {},
+    onCityMapOriginClick: () -> Unit = {},
     onCitySwapClick: () -> Unit = {}
 ) {
     val isEnglish = LocalIsEnglish.current
@@ -1892,9 +1911,38 @@ fun PoiRouteSelectorCard(
                             )
                         }
 
-                        if (!isCityMode) {
-                            Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
 
+                        if (isCityMode) {
+                            // Botón de punto del mapa en el exterior.
+                            // Botón de selección del punto de origen en el mapa exterior.
+                            Surface(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clickable {
+                                        onCityMapOriginClick()
+                                    },
+                                color = if (isCityMapOriginSelectionActive) {
+                                    UgrRed
+                                } else {
+                                    Color.White
+                                },
+                                shape = RoundedCornerShape(11.dp),
+                                border = if (isCityMapOriginSelectionActive) {
+                                    null
+                                } else {
+                                    androidx.compose.foundation.BorderStroke(1.dp, UgrRed)
+                                }
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = "👆",
+                                        fontSize = 20.sp
+                                    )
+                                }
+                            }
+                        } else {
+                            // Lector QR original del mapa interior.
                             Surface(
                                 modifier = Modifier
                                     .size(40.dp)
@@ -1905,7 +1953,11 @@ fun PoiRouteSelectorCard(
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
                                         imageVector = Icons.Filled.CameraAlt,
-                                        contentDescription = if (LocalIsEnglish.current) "Scan a location QR code" else "Escanear QR de ubicación",
+                                        contentDescription = if (isEnglish) {
+                                            "Scan a location QR code"
+                                        } else {
+                                            "Escanear QR de ubicación"
+                                        },
                                         tint = Color.White,
                                         modifier = Modifier.size(23.dp)
                                     )
