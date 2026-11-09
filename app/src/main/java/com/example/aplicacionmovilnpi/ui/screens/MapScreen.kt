@@ -615,6 +615,30 @@ val destinationResolution = remember(
     val userPosition = tracker.position.takeIf { isTracking && isRouteOpen && activeSegment?.floorName == selectedFloor }
     val userHeadingMapDeg = azimuth?.let { it - tracker.mapNorthDeg }
 
+    // Textos que muestra el buscador común cuando estamos en el mapa exterior.
+    var cityOriginDisplayText by rememberSaveable(mapEntryKey) {
+        mutableStateOf(
+            if (isEnglish) "My location" else "Mi ubicación"
+        )
+    }
+
+    var cityDestinationDisplayText by rememberSaveable(mapEntryKey) {
+        mutableStateOf("")
+    }
+
+    // Peticiones para abrir los selectores exteriores.
+    var requestCityOriginPicker by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    var requestCityDestinationPicker by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    var requestCitySwap by rememberSaveable {
+        mutableStateOf(false)
+    }
+
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
 
@@ -673,6 +697,69 @@ val destinationResolution = remember(
             }
         }
 
+        Spacer(modifier = Modifier.height(10.dp))
+
+        PoiRouteSelectorCard(
+            pois = allPois,
+            startPoi = startPoi,
+            destPoi = destPoi,
+
+            selectedDestLabel = selectedDestLabel,
+            destinationError = destinationError,
+
+            onStartPoiChange = { poi ->
+                startPoiId = poi.id
+
+                if (destPoiId.isNotBlank()) {
+                    isRouteOpen = true
+                    activeSegmentIndex = 0
+                }
+            },
+
+            onDestPoiChange = { poi ->
+                destPoiId = poi.id
+
+                if (startPoiId.isNotBlank()) {
+                    isRouteOpen = true
+                    activeSegmentIndex = 0
+                }
+            },
+
+            onSpecialDestChange = { specialId ->
+                destPoiId = specialId
+
+                if (startPoiId.isNotBlank()) {
+                    isRouteOpen = true
+                    activeSegmentIndex = 0
+                }
+            },
+
+            isAccessible = isAccessibleRoute,
+            onAccessibleToggle = { isAccessibleRoute = it },
+
+            onScanQrClick = {
+                isScanningQr = true
+            },
+
+            // Funcionamiento del buscador común.
+            isCityMode = mapMode == "city",
+
+            cityOriginDisplayText = cityOriginDisplayText,
+            cityDestinationDisplayText = cityDestinationDisplayText,
+
+            onCityOriginClick = {
+                requestCityOriginPicker = true
+            },
+
+            onCityDestinationClick = {
+                requestCityDestinationPicker = true
+            },
+
+            onCitySwapClick = {
+                requestCitySwap = true
+            }
+        )
+
     if (mapMode == "city") {
         CityRouteSection(
             gpsLocation = gpsLocation,
@@ -707,7 +794,46 @@ val destinationResolution = remember(
                         !hasLocationPermission,
 
             // Identificador único de cada entrada al mapa.
-            destinationRequestKey = mapEntryKey
+            destinationRequestKey = mapEntryKey,
+
+            requestOriginPicker = requestCityOriginPicker,
+
+            onOriginPickerRequestConsumed = {
+                requestCityOriginPicker = false
+            },
+
+            requestDestinationPicker = requestCityDestinationPicker,
+
+            onDestinationPickerRequestConsumed = {
+                requestCityDestinationPicker = false
+            },
+
+            requestSwap = requestCitySwap,
+
+            onSwapRequestConsumed = {
+                requestCitySwap = false
+            },
+
+            onCitySelectorLabelsChange = {
+                    originTitle,
+                    originSubtitle,
+                    destinationTitle,
+                    destinationSubtitle ->
+
+                cityOriginDisplayText =
+                    if (originSubtitle.isNullOrBlank()) {
+                        originTitle
+                    } else {
+                        "$originTitle · $originSubtitle"
+                    }
+
+                cityDestinationDisplayText =
+                    if (destinationSubtitle.isNullOrBlank()) {
+                        destinationTitle
+                    } else {
+                        "$destinationTitle · $destinationSubtitle"
+                    }
+            }
         )
     } else {
             val floorNumber = when (selectedFloor) {
@@ -726,52 +852,6 @@ val destinationResolution = remember(
                     BitmapFactory.decodeStream(inputStream)?.asImageBitmap()
                 }.getOrNull()
             }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-        PoiRouteSelectorCard(
-            pois = allPois,
-            startPoi = startPoi,
-            destPoi = destPoi,
-
-            selectedDestLabel = selectedDestLabel,
-            destinationError = destinationError,
-
-            onStartPoiChange = { poi ->
-                startPoiId = poi.id
-
-                if (destPoiId.isNotBlank()) {
-                    isRouteOpen = true
-                    activeSegmentIndex = 0
-                }
-            },
-
-            onDestPoiChange = { poi ->
-                destPoiId = poi.id
-
-                if (startPoiId.isNotBlank()) {
-                    isRouteOpen = true
-                    activeSegmentIndex = 0
-                }
-            },
-
-            // Opciones especiales exclusivamente para el destino.
-            onSpecialDestChange = { specialId ->
-                destPoiId = specialId
-
-                if (startPoiId.isNotBlank()) {
-                    isRouteOpen = true
-                    activeSegmentIndex = 0
-                }
-            },
-
-            isAccessible = isAccessibleRoute,
-            onAccessibleToggle = { isAccessibleRoute = it },
-
-            onScanQrClick = {
-                isScanningQr = true
-            },
-        )
 
             Spacer(modifier = Modifier.height(10.dp))
 
@@ -1737,7 +1817,14 @@ fun PoiRouteSelectorCard(
     onSpecialDestChange: (String) -> Unit,
     isAccessible: Boolean,
     onAccessibleToggle: (Boolean) -> Unit,
-    onScanQrClick: () -> Unit
+    onScanQrClick: () -> Unit,
+    // Funcionamiento del buscador común.
+    isCityMode: Boolean = false,
+    cityOriginDisplayText: String? = null,
+    cityDestinationDisplayText: String? = null,
+    onCityOriginClick: () -> Unit = {},
+    onCityDestinationClick: () -> Unit = {},
+    onCitySwapClick: () -> Unit = {}
 ) {
     val isEnglish = LocalIsEnglish.current
     var pickingStart by remember { mutableStateOf(false) }
@@ -1791,28 +1878,38 @@ fun PoiRouteSelectorCard(
                     ) {
                         Box(modifier = Modifier.weight(1f)) {
                             PoiSelectorField(
-                                poi = startPoi,
+                                poi = if (isCityMode) null else startPoi,
+                                displayText = if (isCityMode) cityOriginDisplayText else null,
+                                isSelected = isCityMode,
                                 placeholder = if (LocalIsEnglish.current) "Origin" else "Origen",
-                                onClick = { pickingStart = true }
+                                onClick = {
+                                    if (isCityMode) {
+                                        onCityOriginClick()
+                                    } else {
+                                        pickingStart = true
+                                    }
+                                }
                             )
                         }
 
-                        Spacer(modifier = Modifier.width(6.dp))
+                        if (!isCityMode) {
+                            Spacer(modifier = Modifier.width(6.dp))
 
-                        Surface(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clickable { onScanQrClick() },
-                            color = UgrRed,
-                            shape = RoundedCornerShape(11.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Filled.CameraAlt,
-                                    contentDescription = if (LocalIsEnglish.current) "Scan a location QR code" else "Escanear QR de ubicación",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(23.dp)
-                                )
+                            Surface(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clickable { onScanQrClick() },
+                                color = UgrRed,
+                                shape = RoundedCornerShape(11.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Filled.CameraAlt,
+                                        contentDescription = if (LocalIsEnglish.current) "Scan a location QR code" else "Escanear QR de ubicación",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(23.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -1826,11 +1923,35 @@ fun PoiRouteSelectorCard(
                     ) {
                         Box(modifier = Modifier.weight(1f)) {
                             PoiSelectorField(
-                                poi = destPoi,
-                                displayText = selectedDestLabel,
-                                placeholder = if (LocalIsEnglish.current) "Where are you going?" else "¿A dónde vas?",
-                                onClick = { pickingDest = true }
+                                poi = if (isCityMode) null else destPoi,
+                                displayText = if (isCityMode) {
+                                    cityDestinationDisplayText?.takeIf { it != "ETSIIT" && it.isNotBlank() }
+                                } else {
+                                    selectedDestLabel
+                                },
+                                isSelected = if (isCityMode) {
+                                    !cityDestinationDisplayText.isNullOrBlank() &&
+                                            cityDestinationDisplayText != "Seleccionar Destino" &&
+                                            cityDestinationDisplayText != "Select Destination" &&
+                                            cityDestinationDisplayText != "ETSIIT"
+                                } else {
+                                    destPoi != null
+                                },
+                                placeholder = if (isEnglish) "Select Destination" else "Seleccionar Destino",
+                                onClick = {
+                                    if (isCityMode) {
+                                        onCityDestinationClick()
+                                    } else {
+                                        pickingDest = true
+                                    }
+                                }
                             )
+                        }
+
+                        val canSwap = if (isCityMode) {
+                            !cityDestinationDisplayText.isNullOrBlank()
+                        } else {
+                            startPoi != null && destPoi != null
                         }
 
                         Spacer(modifier = Modifier.width(6.dp))
@@ -1839,10 +1960,14 @@ fun PoiRouteSelectorCard(
                             modifier = Modifier
                                 .size(34.dp)
                                 .clip(RoundedCornerShape(50))
-                                .clickable(enabled = startPoi != null && destPoi != null) {
-                                    if (startPoi != null && destPoi != null) {
-                                        onStartPoiChange(destPoi)
-                                        onDestPoiChange(startPoi)
+                                .clickable(enabled = canSwap) {
+                                    if (isCityMode) {
+                                        onCitySwapClick()
+                                    } else {
+                                        if (startPoi != null && destPoi != null) {
+                                            onStartPoiChange(destPoi)
+                                            onDestPoiChange(startPoi)
+                                        }
                                     }
                                 },
                             contentAlignment = Alignment.Center
@@ -1861,7 +1986,7 @@ fun PoiRouteSelectorCard(
             }
 
             // Se conserva el selector en hoja, que permite buscar POI por texto.
-            if (pickingStart) {
+            if (!isCityMode && pickingStart) {
                 PoiPickerSheet(
                     title = if (isEnglish) "Choose origin" else "Elige el origen",
                     accent = GreenStatus,
@@ -1876,7 +2001,7 @@ fun PoiRouteSelectorCard(
                 )
             }
 
-            if (pickingDest) {
+            if (!isCityMode && pickingDest) {
                 PoiPickerSheet(
                     title = if (isEnglish) "Choose destination" else "Elige el destino",
                     accent = UgrRed,
@@ -1964,7 +2089,8 @@ private fun PoiSelectorField(
     poi: PointOfInterest?,
     displayText: String? = null,
     placeholder: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    isSelected: Boolean = poi != null
 ) {
     val context = LocalContext.current
     val isEnglish = LocalIsEnglish.current
@@ -1988,8 +2114,8 @@ private fun PoiSelectorField(
             Text(
                 text = label,
                 fontSize = 13.sp,
-                fontWeight = if (poi != null || displayText != null) FontWeight.SemiBold else FontWeight.Normal,
-                color = if (poi != null || displayText != null) Ink else MutedText,
+                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                color = if (isSelected) Ink else MutedText,
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f)
