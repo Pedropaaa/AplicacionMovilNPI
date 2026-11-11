@@ -235,16 +235,8 @@ private fun PointOfInterest.isAseo(): Boolean {
     ).any { text.contains(it) }
 }
 
-private fun PointOfInterest.isFuente(): Boolean {
-    val text = normalizePoiText("$nameEs $category")
-
-    return listOf(
-        "fuente", "fontana", "water fountain"
-    ).any { text.contains(it) }
-}
-
 /**
- * Busca el POI alcanzable cuya ruta tiene menos nodos.
+ * Busca el POI alcanzable cuya ruta acumulada tiene el menor coste.
  */
 private fun resolveNearestPoi(
     startPoiId: String,
@@ -273,7 +265,12 @@ private fun resolveNearestPoi(
     }
 
     val nearest = possibleRoutes.minByOrNull { (_, route) ->
-        route.size
+        route.zipWithNext().sumOf { (from, to) ->
+            EtsiitData.edges.firstOrNull { edge ->
+                (edge.from == from.id && edge.to == to.id) ||
+                    (edge.from == to.id && edge.to == from.id)
+            }?.weight?.toDouble() ?: Double.POSITIVE_INFINITY
+        }
     }
 
     return nearest?.let { (poi, route) ->
@@ -441,9 +438,19 @@ val destinationResolution = remember(
         }
 
         DEST_FUENTE_CERCANA -> {
+            val nearestFacilityNodeIds = setOf(
+                "n_banos_p0",
+                "n_banos_p1",
+                "n_banos_p2",
+                "n_banos_p3",
+                "n_escaleras_principal_p1",
+                "n_escaleras_principal_p2",
+                "n_escaleras_principal_p3",
+                "n_escaleras_principal_p4"
+            )
             resolveNearestPoi(
                 startPoiId = startPoiId,
-                candidates = allPois.filter { it.isFuente() },
+                candidates = allPois.filter { it.nodeId in nearestFacilityNodeIds },
                 routeManager = routeManager,
                 isAccessibleRoute = isAccessibleRoute
             )
