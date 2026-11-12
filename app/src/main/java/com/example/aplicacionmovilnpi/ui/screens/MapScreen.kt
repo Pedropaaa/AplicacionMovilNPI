@@ -33,6 +33,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.rounded.SwapVert
+import androidx.compose.material.icons.rounded.TouchApp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -1979,9 +1981,11 @@ fun PoiRouteSelectorCard(
                                 }
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = "👆",
-                                        fontSize = 20.sp
+                                    Icon(
+                                        imageVector = Icons.Rounded.TouchApp,
+                                        contentDescription = null,
+                                        tint = if (isCityMapOriginSelectionActive) Color.White else UgrRed,
+                                        modifier = Modifier.size(22.dp)
                                     )
                                 }
                             }
@@ -2068,11 +2072,11 @@ fun PoiRouteSelectorCard(
                                 },
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = "⇅",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MutedText
+                            Icon(
+                                imageVector = Icons.Rounded.SwapVert,
+                                contentDescription = null,
+                                tint = if (canSwap) UgrRed else MutedText,
+                                modifier = Modifier.size(22.dp)
                             )
                         }
                     }

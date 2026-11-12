@@ -27,9 +27,20 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.rounded.Apartment
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Clear
+import androidx.compose.material.icons.rounded.MyLocation
+import androidx.compose.material.icons.rounded.Place
+import androidx.compose.material.icons.rounded.Restaurant
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -767,16 +778,16 @@ private enum class CityPlaceKind {
 }
 
 private enum class CityPlaceFilter(
-    val icon: String,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
     val spanishLabel: String,
     val englishLabel: String,
     val kind: CityPlaceKind?
 ) {
-    ALL("📍", "Todos", "All", null),
-    FACULTIES("🏛️", "Facultades", "Faculties", CityPlaceKind.FACULTY),
-    LIBRARIES("📚", "Bibliotecas", "Libraries", CityPlaceKind.LIBRARY),
-    DINING("🍽️", "Comedores", "Dining halls", CityPlaceKind.DINING),
-    OTHER("📌", "Otros", "Other", CityPlaceKind.OTHER)
+    ALL(Icons.Rounded.Star, "Todos", "All", null),
+    FACULTIES(Icons.Rounded.Apartment, "Facultades", "Faculties", CityPlaceKind.FACULTY),
+    LIBRARIES(Icons.AutoMirrored.Rounded.MenuBook, "Bibliotecas", "Libraries", CityPlaceKind.LIBRARY),
+    DINING(Icons.Rounded.Restaurant, "Comedores", "Dining halls", CityPlaceKind.DINING),
+    OTHER(Icons.Rounded.Place, "Otros", "Other", CityPlaceKind.OTHER)
 }
 
 private fun cityPlaceKind(place: CityPlace): CityPlaceKind {
@@ -937,16 +948,23 @@ private fun CityPlacePickerSheet(
                     )
                 },
                 leadingIcon = {
-                    Text("🔍", fontSize = 16.sp)
+                    Icon(
+                        imageVector = Icons.Rounded.Search,
+                        contentDescription = null,
+                        tint = MutedText,
+                        modifier = Modifier.size(20.dp)
+                    )
                 },
                 trailingIcon = if (query.isNotEmpty()) {
                     {
-                        Text(
-                            text = "✕",
-                            color = MutedText,
+                        Icon(
+                            imageVector = Icons.Rounded.Clear,
+                            contentDescription = "Limpiar",
+                            tint = MutedText,
                             modifier = Modifier
                                 .clickable { query = "" }
                                 .padding(8.dp)
+                                .size(18.dp)
                         )
                     }
                 } else {
@@ -975,13 +993,8 @@ private fun CityPlacePickerSheet(
             ) {
                 items(CityPlaceFilter.entries) { item ->
                     CityPlaceFilterPill(
-                        text = "${item.icon} ${
-                            if (isEnglish) {
-                                item.englishLabel
-                            } else {
-                                item.spanishLabel
-                            }
-                        }",
+                        text = if (isEnglish) item.englishLabel else item.spanishLabel,
+                        icon = item.icon,
                         selected = filter == item,
                         accent = accent
                     ) {
@@ -1092,9 +1105,11 @@ private fun CityPlacePickerSheet(
                                         ),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        text = "📍",
-                                        fontSize = 21.sp
+                                    Icon(
+                                        imageVector = Icons.Rounded.MyLocation,
+                                        contentDescription = null,
+                                        tint = UgrRed,
+                                        modifier = Modifier.size(22.dp)
                                     )
 
                                     Spacer(modifier = Modifier.width(12.dp))
@@ -1117,11 +1132,11 @@ private fun CityPlacePickerSheet(
                                     }
 
                                     if (isMyLocationSelected) {
-                                        Text(
-                                            text = "✓",
-                                            color = GreenStatus,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 17.sp
+                                        Icon(
+                                            imageVector = Icons.Rounded.Check,
+                                            contentDescription = null,
+                                            tint = GreenStatus,
+                                            modifier = Modifier.size(20.dp)
                                         )
                                     }
                                 }
@@ -1201,11 +1216,11 @@ private fun CityPlacePickerSheet(
                                 }
 
                                 if (place.id == selectedPlaceId) {
-                                    Text(
-                                        text = "✓",
-                                        color = accent,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 17.sp
+                                    Icon(
+                                        imageVector = Icons.Rounded.Check,
+                                        contentDescription = null,
+                                        tint = accent,
+                                        modifier = Modifier.size(20.dp)
                                     )
                                 }
                             }
@@ -1224,6 +1239,7 @@ private fun CityPlacePickerSheet(
 @Composable
 private fun CityPlaceFilterPill(
     text: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
     selected: Boolean,
     accent: Color,
     small: Boolean = false,
@@ -1247,20 +1263,33 @@ private fun CityPlaceFilterPill(
             )
             .clickable(onClick = onClick)
     ) {
-        Text(
-            text = text,
-            fontSize = if (small) 10.sp else 11.sp,
-            fontWeight = if (selected) {
-                FontWeight.SemiBold
-            } else {
-                FontWeight.Normal
-            },
-            color = if (selected) accent else Ink,
+        Row(
             modifier = Modifier.padding(
                 horizontal = 12.dp,
                 vertical = if (small) 7.dp else 9.dp
+            ),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = if (selected) accent else Ink,
+                    modifier = Modifier.size(15.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+            }
+            Text(
+                text = text,
+                fontSize = if (small) 10.sp else 11.sp,
+                fontWeight = if (selected) {
+                    FontWeight.SemiBold
+                } else {
+                    FontWeight.Normal
+                },
+                color = if (selected) accent else Ink
             )
-        )
+        }
     }
 }
 
@@ -1538,7 +1567,12 @@ private fun OsmMap(
             shadowElevation = 4.dp
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Text(text = "📍", fontSize = 20.sp)
+                Icon(
+                    imageVector = Icons.Rounded.MyLocation,
+                    contentDescription = null,
+                    tint = if (following.value) Color.White else Ink,
+                    modifier = Modifier.size(22.dp)
+                )
             }
         }
 
@@ -1633,7 +1667,20 @@ private fun CityLocationPermissionButton(onClick: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(10.dp)
     ) {
-        Text(text = if (LocalIsEnglish.current) "📍 Allow location to see where you are" else "📍 Permitir ubicación para ver dónde estás", fontSize = 12.sp, color = Ink)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Rounded.MyLocation,
+                contentDescription = null,
+                tint = Ink,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = if (LocalIsEnglish.current) "Allow location to see where you are" else "Permitir ubicación para ver dónde estás",
+                fontSize = 12.sp,
+                color = Ink
+            )
+        }
     }
 }
 

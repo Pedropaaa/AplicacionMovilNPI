@@ -308,15 +308,14 @@ fun HomeScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
+            modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-
             // FILA 1
             Row(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(105.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 PlaceCategoryCard(
@@ -329,7 +328,9 @@ fun HomeScreen(
                     onClick = {
                         onNavigateToMap("__dest_comedor_cercano__")
                     },
-                    modifier = Modifier.weight(1f).fillMaxHeight()
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
                 )
 
                 PlaceCategoryCard(
@@ -342,20 +343,19 @@ fun HomeScreen(
                     onClick = {
                         onNavigateToMap("__dest_biblioteca_cercana__")
                     },
-                    modifier = Modifier.weight(1f).fillMaxHeight()
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
                 )
             }
 
-            // FILA 3
-
-// FILA 3
+            // FILA 2
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f),
+                    .height(115.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-
                 // TARJETA IZQUIERDA: ESCÁNER QR
                 PlaceCategoryCard(
                     place = PlaceCategory(
@@ -365,7 +365,6 @@ fun HomeScreen(
                         tone = "black"
                     ),
                     onClick = {
-                        // Acción del escáner
                         onNavigateToMap("__abrir_escaner_qr__")
                     },
                     modifier = Modifier
@@ -380,7 +379,6 @@ fun HomeScreen(
                         .fillMaxHeight(),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-
                     PlaceCategoryCard(
                         place = PlaceCategory(
                             name = if (isEnglish) "Restrooms" else "Aseos",
