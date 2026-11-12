@@ -10,7 +10,7 @@ android {
     defaultConfig {
         applicationId = "com.example.aplicacionmovilnpi"
         minSdk = 24
-        targetSdk = 37
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -19,8 +19,6 @@ android {
 
     buildTypes {
         release {
-            // Se conserva la configuración de HEAD para no activar R8
-            // hasta comprobar las reglas de conservación de la aplicación.
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -38,10 +36,9 @@ android {
         compose = true
     }
 
-    // Configuración no conflictiva procedente de rutasAutomaticas.
     packaging {
         jniLibs {
-            useLegacyPackaging = false
+            useLegacyPackaging = true
         }
     }
 }
