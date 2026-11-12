@@ -1364,9 +1364,9 @@ fun FloorPlanCanvasOverlay(
                 }
             }
 
-// ==========================================
-// BARÓMETRO: ESQUINA INFERIOR IZQUIERDA
-// ==========================================
+            // ==========================================
+            // BARÓMETRO: ESQUINA INFERIOR IZQUIERDA
+            // ==========================================
             if (hasBarometer) {
                 Surface(
                     modifier = Modifier

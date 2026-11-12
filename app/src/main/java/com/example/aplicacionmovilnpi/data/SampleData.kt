@@ -4,13 +4,6 @@ import java.util.Calendar
 
 object SampleData {
 
-    val places = listOf(
-        PlaceCategory("Aulas", "Todas las plantas", "building", "rose"),
-        PlaceCategory("Despachos", "Profesorado", "person", "purple"),
-        PlaceCategory("Biblioteca", "Planta 1", "book", "blue"),
-        PlaceCategory("Cafetería", "Planta baja", "coffee", "orange")
-    )
-
     private val subjectNames = mapOf(
         "NPI" to "Nuevos Paradigmas de Interacción",
         "PL" to "Procesadores de Lenguajes",
@@ -74,32 +67,6 @@ object SampleData {
     }
 
     val professors: List<Professor> get() = FacultyData.professors
-
-    val floorRooms = mapOf(
-        "P2" to listOf("Despachos 2.01–2.20", "Sala de juntas", "Laboratorio 5", "Laboratorio 6", "Seminario 2"),
-        "P1" to listOf("Aulas B-10–B-13", "Biblioteca", "Sala de estudio", "Laboratorio 2", "Aula B-08"),
-        "PB" to listOf("Aulas 0.1–0.4", "Secretaría", "Conserjería", "Cafetería", "Biblioteca"),
-        "S1" to listOf("Laboratorios S1.1–S1.4", "Taquillas", "Almacén", "Reprografía", "Aparcamiento de bicis")
-    )
-
-    val pointsOfInterest = listOf(
-        PointOfInterest("Biblioteca", "book", "Planta 1", "Biblioteca"),
-        PointOfInterest("Cafetería", "coffee", "Planta baja", "Cafetería"),
-        PointOfInterest("Secretaría", "services", "Planta baja", "Secretaría"),
-        PointOfInterest("Conserjería", "person", "Entrada", "Conserjería"),
-        PointOfInterest("Baños cercanos", "location", "A 24 m", "Baños más cercanos"),
-        PointOfInterest("Sala de estudio", "book", "Planta 1", "Sala de estudio"),
-        PointOfInterest("Reprografía", "services", "Sótano 1", "Reprografía")
-    )
-
-    fun getRouteSteps(accessible: Boolean, destination: String): List<RouteStep> = listOf(
-        RouteStep("↑", "Continúa recto por el pasillo", "32 m"),
-        RouteStep("←", "Gira a la izquierda en el pasillo principal", "18 m"),
-        if (accessible) RouteStep("⇅", "Toma el ascensor hasta la planta 1", "1 planta")
-        else RouteStep("⇅", "Sube por las escaleras a la planta 1", "1 planta"),
-        RouteStep("→", "Gira a la derecha al salir", if (accessible) "64 m" else "24 m"),
-        RouteStep("✓", "Has llegado: $destination", "")
-    )
 
     // Fechas de ejemplo: no son las fechas oficiales de entregas ni de exámenes.
     val initialEvents = listOf(
