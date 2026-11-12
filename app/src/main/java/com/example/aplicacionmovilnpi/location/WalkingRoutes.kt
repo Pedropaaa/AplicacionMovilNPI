@@ -77,11 +77,25 @@ object CityPlaces {
         CityPlace("triunfo", "Complejo Administrativo Triunfo", "Otros", GeoPoint(37.184400, -3.601000)),
         CityPlace("clm", "Centro de Lenguas Modernas (CLM)", "Otros", GeoPoint(37.173874, -3.592735)),
         CityPlace("carmen_victoria", "Carmen de la Victoria", "Otros", GeoPoint(37.178848, -3.587932)),
-        CityPlace("corrala_santiago", "Corrala de Santiago", "Otros", GeoPoint(37.173434, -3.594793))
+        CityPlace("corrala_santiago", "Corrala de Santiago", "Otros", GeoPoint(37.173434, -3.594793)),
+
+        // ==========================================
+        // BIBLIOTECAS
+        // ==========================================
+        CityPlace("biblioteca_etsiit", "Biblioteca de la ETSIIT", "Aynadamar", GeoPoint(37.197076, -3.624243)),
+        CityPlace("biblioteca_ciencias", "Biblioteca de Ciencias", "Fuentenueva", GeoPoint(37.182470, -3.608300)),
+        CityPlace("biblioteca_cartuja", "Biblioteca del Campus de Cartuja", "Cartuja", GeoPoint(37.190240, -3.598218)),
+        CityPlace("biblioteca_derecho", "Biblioteca de Derecho", "Centro", GeoPoint(37.178877, -3.601552)),
+        CityPlace("biblioteca_pts", "Biblioteca del PTS", "PTS", GeoPoint(37.147775, -3.606778)),
+        CityPlace("biblioteca_hospital_real", "Biblioteca Universitaria (Hospital Real)", "Centro", GeoPoint(37.184323, -3.599723))
     )
 
     /** Referencia directa al destino por defecto. */
     val etsiit: CityPlace = all.first { it.id == "etsiit" }
+
+    /** Lista de bibliotecas universitarias. */
+    val bibliotecas: List<CityPlace>
+        get() = all.filter { it.id.startsWith("biblioteca_") }
 
     /** Índice en memoria para consultas instantáneas O(1) por ID. */
     private val mapById: Map<String, CityPlace> by lazy {
