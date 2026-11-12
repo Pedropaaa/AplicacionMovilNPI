@@ -33,6 +33,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.SwapVert
 import androidx.compose.material.icons.rounded.TouchApp
 import androidx.compose.runtime.Composable
@@ -2010,7 +2011,7 @@ fun PoiRouteSelectorCard(
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
-                                        imageVector = Icons.Filled.CameraAlt,
+                                        imageVector = Icons.Rounded.QrCodeScanner,
                                         contentDescription = if (isEnglish) {
                                             "Scan a location QR code"
                                         } else {
