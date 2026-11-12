@@ -160,7 +160,6 @@ fun CityRouteSection(
     ) -> Unit = { _, _, _, _ -> }
 ) {
     val isEnglish = LocalIsEnglish.current
-    val scope = rememberCoroutineScope()
 
     var handledComedorRequestKey by rememberSaveable {
         mutableStateOf(-1)
@@ -610,38 +609,41 @@ fun CityRouteSection(
             )
         }
 
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp),
-            color = Color.White,
-            shape = RoundedCornerShape(16.dp),
-            shadowElevation = 2.dp,
-            border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
-        ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // ESTADO DEL GPS
-                if (originId == ORIGIN_GPS && gpsPoint == null) {
-                    Text(
-                        text = if (hasLocationPermission) {
-                            if (isEnglish) "Finding your GPS location..." else "Buscando tu ubicación GPS..."
-                        } else {
-                            if (isEnglish) "Allow location access to use it as the origin" else "Permite la ubicación para usarla como origen"
-                        },
-                        fontSize = 11.sp,
-                        color = MutedText
-                    )
-                }
+        val showGpsStatus = originId == ORIGIN_GPS && gpsPoint == null
 
-                error?.let {
-                    Text(
-                        text = it,
-                        fontSize = 11.sp,
-                        color = UgrRed
-                    )
+        if (showGpsStatus || error != null) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                color = Color.White,
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 2.dp,
+                border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (showGpsStatus) {
+                        Text(
+                            text = if (hasLocationPermission) {
+                                if (isEnglish) "Finding your GPS location..." else "Buscando tu ubicación GPS..."
+                            } else {
+                                if (isEnglish) "Allow location access to use it as the origin" else "Permite la ubicación para usarla como origen"
+                            },
+                            fontSize = 11.sp,
+                            color = MutedText
+                        )
+                    }
+
+                    error?.let {
+                        Text(
+                            text = it,
+                            fontSize = 11.sp,
+                            color = UgrRed
+                        )
+                    }
                 }
             }
         }
@@ -1263,77 +1265,6 @@ private fun CityPlaceFilterPill(
 }
 
 @Composable
-private fun CityPlaceSelectorField(
-    title: String,
-    subtitle: String?,
-    placeholder: String,
-    icon: String,
-    onClick: () -> Unit
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        color = SoftBg,
-        shape = RoundedCornerShape(14.dp),
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            CardBorder
-        )
-    ) {
-        Row(
-            modifier = Modifier.padding(
-                horizontal = 12.dp,
-                vertical = 10.dp
-            ),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = icon,
-                fontSize = 15.sp
-            )
-
-            Spacer(modifier = Modifier.width(10.dp))
-
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = title.ifBlank { placeholder },
-                    fontSize = 13.sp,
-                    fontWeight = if (title.isBlank()) {
-                        FontWeight.Normal
-                    } else {
-                        FontWeight.SemiBold
-                    },
-                    color = if (title.isBlank()) MutedText else Ink,
-                    maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                )
-
-                if (!subtitle.isNullOrBlank()) {
-                    Text(
-                        text = subtitle,
-                        fontSize = 10.sp,
-                        color = MutedText,
-                        maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(6.dp))
-
-            Text(
-                text = "⌄",
-                fontSize = 20.sp,
-                color = MutedText
-            )
-        }
-    }
-}
-
-@Composable
 private fun RouteInstructionsCard(
     route: WalkingRoute,
     destinationName: String,
@@ -1394,24 +1325,6 @@ private fun RouteInstructionsCard(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun PlaceChip(text: String, selected: Boolean, onClick: () -> Unit) {
-    Surface(
-        modifier = Modifier.clickable { onClick() },
-        color = if (selected) UgrRed else Color.White,
-        shape = RoundedCornerShape(12.dp),
-        border = if (selected) null else androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
-    ) {
-        Text(
-            text = text,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            color = if (selected) Color.White else Ink,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-        )
     }
 }
 

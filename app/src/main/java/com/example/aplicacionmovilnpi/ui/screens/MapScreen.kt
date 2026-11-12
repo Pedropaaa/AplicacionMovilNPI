@@ -782,6 +782,8 @@ val destinationResolution = remember(
         )
 
     if (mapMode == "city") {
+        Spacer(modifier = Modifier.height(14.dp))
+
         CityRouteSection(
             gpsLocation = gpsLocation,
             hasLocationPermission = hasLocationPermission,
