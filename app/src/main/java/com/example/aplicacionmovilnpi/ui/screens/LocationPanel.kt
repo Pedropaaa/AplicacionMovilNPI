@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -127,7 +128,7 @@ fun LocationStatusCard(
     }
 }
 
-/** Indicación de giro y distancia, para mostrar justo debajo del plano mientras se sigue la ruta. */
+/** Indicación de giro y distancia sobre el plano mientras se sigue la ruta. */
 @Composable
 fun NavigationHintStrip(tracker: IndoorTracker, azimuthDeg: Float?, arrivalText: String) {
     val isEnglish = LocalIsEnglish.current
@@ -141,14 +142,29 @@ fun NavigationHintStrip(tracker: IndoorTracker, azimuthDeg: Float?, arrivalText:
     }
 
     Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = if (progress.hasArrived) GreenStatus.copy(alpha = 0.12f) else Color.White,
-        shape = RoundedCornerShape(10.dp)
+        modifier = Modifier.height(36.dp),
+        color = Color.White,
+        shape = RoundedCornerShape(9.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            width = 1.dp,
+            color = if (progress.hasArrived) GreenStatus else CardBorder
+        ),
+        shadowElevation = 3.dp
     ) {
-        Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(text = icon, fontSize = 16.sp)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(text = text, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Ink)
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(text = icon, fontSize = 14.sp)
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = text,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (progress.hasArrived) GreenStatus else Ink,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
         }
     }
 }

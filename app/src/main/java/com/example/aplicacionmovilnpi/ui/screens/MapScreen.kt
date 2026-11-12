@@ -508,7 +508,6 @@ val destinationResolution = remember(
     val destPoi = destinationResolution.poi
 
     val selectedDestLabel = when (destPoiId) {
-
         DEST_ASEO_CERCANO ->
             destPoi?.let { if (isEnglish) "🚻 Nearest restroom · ${it.getName(true)}" else "🚻 Aseo más cercano · ${it.getName(false)}" }
                 ?: if (isEnglish) "🚻 Nearest Restroom" else "🚻 Aseo más cercano"
@@ -522,8 +521,8 @@ val destinationResolution = remember(
                 ?: if (isEnglish) "🍽️ ETSIIT Dining Hall" else "🍽️ Comedor de la ETSIIT"
 
         DEST_BIBLIOTECA_CERCANA ->
-            destPoi?.let { "📚 ${it.nameEs}" }
-                ?: "📚 Biblioteca de la ETSIIT"
+            destPoi?.let { "📚 ${it.getName(isEnglish)}" }
+                ?: if (isEnglish) "📚 ETSIIT Library" else "📚 Biblioteca de la ETSIIT"
 
         else ->
             destPoi?.getName(isEnglish)
@@ -707,12 +706,20 @@ val destinationResolution = remember(
 
         Spacer(modifier = Modifier.height(10.dp))
 
+        val isSpecialDest = destPoiId in setOf(
+            DEST_ASEO_CERCANO,
+            DEST_FUENTE_CERCANA,
+            DEST_COMEDOR_CERCANO,
+            DEST_BIBLIOTECA_CERCANA
+        )
+
         PoiRouteSelectorCard(
             pois = allPois,
             startPoi = startPoi,
             destPoi = destPoi,
 
             selectedDestLabel = selectedDestLabel,
+            isSpecialDest = isSpecialDest,
             destinationError = destinationError,
 
             onStartPoiChange = { poi ->
@@ -749,7 +756,6 @@ val destinationResolution = remember(
                 isScanningQr = true
             },
 
-            // Funcionamiento del buscador común.
             isCityMode = mapMode == "city",
 
             cityOriginDisplayText = cityOriginDisplayText,
@@ -1105,7 +1111,6 @@ fun FloorPlanCanvasOverlay(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(350.dp)
-                //.clip(RoundedCornerShape(14.dp))
                 .background(Color.White)
         ) {
             Box(
@@ -1215,84 +1220,82 @@ fun FloorPlanCanvasOverlay(
             }
 
             // ==========================================
-            // QR: ESQUINA SUPERIOR IZQUIERDA
+            // FRANJA SUPERIOR:
+            // - Izquierda: Indicaciones de pasos (ancho flexible)
+            // - Derecha: Botón QR
             // ==========================================
-            if (showGenerateQrButton) {
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(8.dp)
-                        .height(36.dp)
-                        .clickable {
-                            onGenerateQrClick()
-                        },
-                    color = Color.White,
-                    shape = RoundedCornerShape(9.dp),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        UgrRed
-                    ),
-                    shadowElevation = 3.dp
-                ) {
-                    Box(
-                        modifier = Modifier.padding(horizontal = 10.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "▦ QR",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = UgrRed
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                Box(modifier = Modifier.weight(1f)) {
+                    if (showNavigationHint) {
+                        NavigationHintStrip(
+                            tracker = tracker,
+                            azimuthDeg = azimuthDeg,
+                            arrivalText = arrivalText
                         )
+                    }
+                }
+
+                if (showGenerateQrButton) {
+                    Surface(
+                        modifier = Modifier
+                            .height(36.dp)
+                            .clickable {
+                                onGenerateQrClick()
+                            },
+                        color = Color.White,
+                        shape = RoundedCornerShape(9.dp),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            UgrRed
+                        ),
+                        shadowElevation = 3.dp
+                    ) {
+                        Box(
+                            modifier = Modifier.padding(horizontal = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "▦ QR",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = UgrRed
+                            )
+                        }
                     }
                 }
             }
 
             // ==========================================
-            // BRÚJULA Y SEGUIMIENTO: SUPERIOR DERECHA
+            // FRANJA INFERIOR:
+            // - Izquierda: Activar sensores + Calibrar sensores
+            // - Derecha: Controles de zoom
             // ==========================================
-            Column(
+            Row(
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(8.dp)
-                    .width(220.dp),
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.End),
+                    modifier = Modifier.weight(1f, fill = false),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-
-                    // Calibrador de brújula
-                    if (isTracking && azimuthDeg != null) {
-                        Surface(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clickable {
-                                    onAlignCompass()
-                                },
-                            color = Color.White,
-                            shape = RoundedCornerShape(9.dp),
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                UgrRed
-                            ),
-                            shadowElevation = 3.dp
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text("🧭", fontSize = 17.sp)
-                            }
-                        }
-                    }
-
-                    // Activar seguimiento de pasos
+                    // Interruptor de sensores (oculta el texto cuando está activo)
                     if (showTrackingControl) {
                         Surface(
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.height(40.dp),
                             color = Color.White,
-                            shape = RoundedCornerShape(9.dp),
+                            shape = RoundedCornerShape(10.dp),
                             border = androidx.compose.foundation.BorderStroke(
                                 1.dp,
                                 CardBorder
@@ -1301,23 +1304,23 @@ fun FloorPlanCanvasOverlay(
                         ) {
                             Row(
                                 modifier = Modifier.padding(
-                                    horizontal = 7.dp,
-                                    vertical = 3.dp
+                                    start = if (isTracking) 6.dp else 8.dp,
+                                    end = 6.dp
                                 ),
-                                verticalAlignment = Alignment.CenterVertically
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Column(
-                                    modifier = Modifier.weight(1f)
-                                ) {
+                                if (!isTracking) {
                                     Text(
                                         text = if (LocalIsEnglish.current)
-                                            "Track steps"
+                                            "Enable sensors"
                                         else
-                                            "Seguir pasos",
+                                            "Activar sensores",
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Ink,
-                                        maxLines = 1
+                                        maxLines = 1,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                     )
                                 }
 
@@ -1333,59 +1336,77 @@ fun FloorPlanCanvasOverlay(
                             }
                         }
                     }
+
+                    // Botón de calibrar brújula con texto
+                    if (isTracking && azimuthDeg != null) {
+                        Surface(
+                            modifier = Modifier
+                                .height(40.dp)
+                                .clickable {
+                                    onAlignCompass()
+                                },
+                            color = Color.White,
+                            shape = RoundedCornerShape(10.dp),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                UgrRed
+                            ),
+                            shadowElevation = 3.dp
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text("🧭", fontSize = 15.sp)
+                                Text(
+                                    text = if (LocalIsEnglish.current)
+                                        "Calibrate sensors"
+                                    else
+                                        "Calibrar sensores",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = UgrRed,
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
                 }
 
-                // Indicaciones dinámicas de navegación
-                if (showNavigationHint) {
-                    NavigationHintStrip(
-                        tracker = tracker,
-                        azimuthDeg = azimuthDeg,
-                        arrivalText = arrivalText
-                    )
-                }
-            }
+                Spacer(modifier = Modifier.width(6.dp))
 
-<<<<<<< HEAD
-            // ==========================================
-            // BARÓMETRO: ESQUINA INFERIOR IZQUIERDA
-            // ==========================================
-            if (hasBarometer) {
+                // Controles de zoom
                 Surface(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(8.dp)
-                        .height(36.dp)
-                        .clickable {
-                            onCalibrateFloor()
-                        },
-                    color = Color.White,
-                    shape = RoundedCornerShape(9.dp),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        UgrRed
-                    ),
+                    color = Color.White.copy(alpha = 0.92f),
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
                     shadowElevation = 3.dp
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 10.dp),
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("🏢", fontSize = 14.sp)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = selectedFloorName,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Ink
-                        )
+                        ZoomIconButton("➕") { scale = (scale + 0.5f).coerceAtMost(5f) }
+                        ZoomIconButton("➖") {
+                            scale = (scale - 0.5f).coerceAtLeast(1f)
+                            if (scale == 1f) offset = Offset.Zero
+                        }
+                        ZoomIconButton("⟲") {
+                            scale = 1f
+                            offset = Offset.Zero
+                        }
+                        ZoomIconButton("⤢") { isFullScreenOpen = true }
                     }
                 }
             }
 
-            Row(
-=======
+            // ==========================================
+            // INFERIOR DERECHA: Controles de zoom
+            // ==========================================
             Surface(
->>>>>>> origin/ajustes-ultima-hora
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(8.dp),
@@ -1849,6 +1870,7 @@ fun PoiRouteSelectorCard(
     startPoi: PointOfInterest?,
     destPoi: PointOfInterest?,
     selectedDestLabel: String,
+    isSpecialDest: Boolean = false,
     destinationError: String?,
     onStartPoiChange: (PointOfInterest) -> Unit,
     onDestPoiChange: (PointOfInterest) -> Unit,
@@ -1856,7 +1878,6 @@ fun PoiRouteSelectorCard(
     isAccessible: Boolean,
     onAccessibleToggle: (Boolean) -> Unit,
     onScanQrClick: () -> Unit,
-    // Funcionamiento del buscador común.
     isCityMode: Boolean = false,
     cityOriginDisplayText: String? = null,
     cityDestinationDisplayText: String? = null,
@@ -1881,7 +1902,6 @@ fun PoiRouteSelectorCard(
     ) {
         Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Raíl visual de origen y destino.
                 Column(
                     modifier = Modifier.width(18.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -1910,7 +1930,6 @@ fun PoiRouteSelectorCard(
                 Spacer(modifier = Modifier.width(6.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
-
                     // FILA 1: Origen + Cámara QR
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -1920,8 +1939,12 @@ fun PoiRouteSelectorCard(
                             PoiSelectorField(
                                 poi = if (isCityMode) null else startPoi,
                                 displayText = if (isCityMode) cityOriginDisplayText else null,
-                                isSelected = isCityMode,
-                                placeholder = if (LocalIsEnglish.current) "Origin" else "Origen",
+                                isSelected = if (isCityMode) {
+                                    !cityOriginDisplayText.isNullOrBlank()
+                                } else {
+                                    startPoi != null
+                                },
+                                placeholder = if (isEnglish) "Origin" else "Origen",
                                 onClick = {
                                     if (isCityMode) {
                                         onCityOriginClick()
@@ -1935,8 +1958,6 @@ fun PoiRouteSelectorCard(
                         Spacer(modifier = Modifier.width(6.dp))
 
                         if (isCityMode) {
-                            // Botón de punto del mapa en el exterior.
-                            // Botón de selección del punto de origen en el mapa exterior.
                             Surface(
                                 modifier = Modifier
                                     .size(40.dp)
@@ -1963,7 +1984,6 @@ fun PoiRouteSelectorCard(
                                 }
                             }
                         } else {
-                            // Lector QR original del mapa interior.
                             Surface(
                                 modifier = Modifier
                                     .size(40.dp)
@@ -2010,6 +2030,7 @@ fun PoiRouteSelectorCard(
                                 } else {
                                     destPoi != null
                                 },
+                                showCategoryIcon = !isSpecialDest,
                                 placeholder = if (isEnglish) "Select Destination" else "Seleccionar Destino",
                                 onClick = {
                                     if (isCityMode) {
@@ -2058,7 +2079,6 @@ fun PoiRouteSelectorCard(
                 Spacer(modifier = Modifier.width(6.dp))
             }
 
-            // Se conserva el selector en hoja, que permite buscar POI por texto.
             if (!isCityMode && pickingStart) {
                 PoiPickerSheet(
                     title = if (isEnglish) "Choose origin" else "Elige el origen",
@@ -2163,13 +2183,13 @@ private fun PoiSelectorField(
     displayText: String? = null,
     placeholder: String,
     onClick: () -> Unit,
-    isSelected: Boolean = poi != null
+    isSelected: Boolean = poi != null,
+    showCategoryIcon: Boolean = true
 ) {
-    val context = LocalContext.current
     val isEnglish = LocalIsEnglish.current
 
     val label = displayText
-        ?: poi?.let { "${poiCategoryIcon(it.category)} ${it.getName(isEnglish)}" }
+        ?: poi?.getName(isEnglish)
         ?: placeholder
 
     Surface(
@@ -2184,6 +2204,16 @@ private fun PoiSelectorField(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if (poi != null && showCategoryIcon) {
+                Icon(
+                    imageVector = poiCategoryIcon(poi.category),
+                    contentDescription = null,
+                    tint = Ink,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+            }
+
             Text(
                 text = label,
                 fontSize = 13.sp,
