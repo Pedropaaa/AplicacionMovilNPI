@@ -9,14 +9,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.DirectionsWalk
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Explore
+import androidx.compose.material.icons.rounded.Place
+import androidx.compose.material.icons.rounded.Sensors
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -26,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -47,7 +54,7 @@ private val UserBlue = Color(0xFF1E88E5)
 fun Location.toGeoPoint() = GeoPoint(latitude, longitude)
 
 /**
- * Tarjeta con lo que dicen los sensores: GPS (distancia a la ETSIIT), barómetro (planta),
+ * Tarjeta con lo que dicen los sensores: GPS (distancia a la ETSIIT),
  * brújula y pasos. Desde aquí se dan los permisos, se calibra y se activa el seguimiento.
  */
 @Composable
@@ -69,12 +76,29 @@ fun LocationStatusCard(
         border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
     ) {
         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(text = if (isEnglish) "📡 Your Location" else "📡 Tu ubicación", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Ink)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Rounded.Sensors,
+                    contentDescription = null,
+                    tint = UgrRed,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = if (isEnglish) "Your Location" else "Tu ubicación",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Ink
+                )
+            }
 
             // --- GPS ---
             when {
                 !hasLocationPermission -> {
-                    SensorLine("📍", if (isEnglish) "Turn on location to see your distance from ETSIIT and count your steps." else "Activa la ubicación para saber a qué distancia estás de la ETSIIT y contar tus pasos.")
+                    SensorLine(
+                        icon = Icons.Rounded.Place,
+                        text = if (isEnglish) "Turn on location to see your distance from ETSIIT and count your steps." else "Activa la ubicación para saber a qué distancia estás de la ETSIIT y contar tus pasos."
+                    )
                     Button(
                         onClick = onRequestPermission,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 40.dp),
@@ -84,30 +108,42 @@ fun LocationStatusCard(
                         Text(text = if (isEnglish) "Allow location" else "Permitir ubicación", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }
-                gpsLocation == null -> SensorLine("📍", if (isEnglish) "Waiting for GPS… (turn on device location)" else "Buscando señal GPS… (activa la ubicación del móvil)")
+                gpsLocation == null -> SensorLine(
+                    icon = Icons.Rounded.Place,
+                    text = if (isEnglish) "Waiting for GPS… (turn on device location)" else "Buscando señal GPS… (activa la ubicación del móvil)"
+                )
                 else -> {
                     val here = gpsLocation.toGeoPoint()
                     val accuracy = "±${gpsLocation.accuracy.roundToInt()} m"
                     if (GeoUtils.isAtEtsiit(here)) {
-                        SensorLine("📍", if (isEnglish) "You are at ETSIIT ($accuracy). Indoors, the step counter and map help guide you." else "Estás en la ETSIIT ($accuracy). Dentro del edificio te guían el plano y los pasos.")
+                        SensorLine(
+                            icon = Icons.Rounded.Place,
+                            text = if (isEnglish) "You are at ETSIIT ($accuracy). Indoors, the step counter and map help guide you." else "Estás en la ETSIIT ($accuracy). Dentro del edificio te guían el plano y los pasos."
+                        )
                         if (onUseEntranceAsStart != null) {
                             SmallAction(if (isEnglish) "Start the route at the main entrance" else "Empezar la ruta en la entrada principal", onUseEntranceAsStart)
                         }
                     } else {
                         val distance = GeoUtils.formatDistance(GeoUtils.distanceMeters(here, GeoUtils.ETSIIT))
-                        SensorLine("📍", if (isEnglish) "$distance from ETSIIT ($accuracy)" else "Estás a $distance de la ETSIIT ($accuracy)")
+                        SensorLine(
+                            icon = Icons.Rounded.Place,
+                            text = if (isEnglish) "$distance from ETSIIT ($accuracy)" else "Estás a $distance de la ETSIIT ($accuracy)"
+                        )
                     }
                 }
             }
 
             // --- Brújula y pasos ---
-            SensorLine("🧭", azimuthDeg?.let { "${if (isEnglish) "Heading" else "Rumbo"}: ${DeadReckoning.compassLabel(it)}" } ?: if (isEnglish) "Compass unavailable" else "Brújula no disponible")
+            SensorLine(
+                icon = Icons.Rounded.Explore,
+                text = azimuthDeg?.let { "${if (isEnglish) "Heading" else "Rumbo"}: ${DeadReckoning.compassLabel(it)}" } ?: if (isEnglish) "Compass unavailable" else "Brújula no disponible"
+            )
 
             // Número de pasos realizados
             if (isTracking) {
                 SensorLine(
-                    "👣",
-                    if (isEnglish) {
+                    icon = Icons.AutoMirrored.Rounded.DirectionsWalk,
+                    text = if (isEnglish) {
                         "${tracker.steps} steps from the start"
                     } else {
                         "${tracker.steps} pasos desde el inicio"
@@ -117,8 +153,8 @@ fun LocationStatusCard(
 
             if (!isRouteOpen) {
                 SensorLine(
-                    "👣",
-                    if (isEnglish)
+                    icon = Icons.AutoMirrored.Rounded.DirectionsWalk,
+                    text = if (isEnglish)
                         "Plan a route to track your steps on the map."
                     else
                         "Calcula una ruta para seguir tus pasos en el plano."
@@ -136,9 +172,9 @@ fun NavigationHintStrip(tracker: IndoorTracker, azimuthDeg: Float?, arrivalText:
     val target = tracker.targetAzimuth()
 
     val (icon, text) = when {
-        progress.hasArrived -> "✅" to arrivalText
-        azimuthDeg == null || target == null -> "👣" to if (isEnglish) "${progress.metersToEnd.roundToInt()} m remaining" else "Faltan ${progress.metersToEnd.roundToInt()} m"
-        else -> "🧭" to "${DeadReckoning.turnInstruction(azimuthDeg, target)} · ${if (isEnglish) "${progress.metersToEnd.roundToInt()} m remaining" else "faltan ${progress.metersToEnd.roundToInt()} m"}"
+        progress.hasArrived -> Icons.Rounded.CheckCircle to arrivalText
+        azimuthDeg == null || target == null -> Icons.AutoMirrored.Rounded.DirectionsWalk to if (isEnglish) "${progress.metersToEnd.roundToInt()} m remaining" else "Faltan ${progress.metersToEnd.roundToInt()} m"
+        else -> Icons.Rounded.Explore to "${DeadReckoning.turnInstruction(azimuthDeg, target)} · ${if (isEnglish) "${progress.metersToEnd.roundToInt()} m remaining" else "faltan ${progress.metersToEnd.roundToInt()} m"}"
     }
 
     Surface(
@@ -155,7 +191,12 @@ fun NavigationHintStrip(tracker: IndoorTracker, azimuthDeg: Float?, arrivalText:
             modifier = Modifier.padding(horizontal = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = icon, fontSize = 14.sp)
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (progress.hasArrived) GreenStatus else Ink,
+                modifier = Modifier.size(16.dp)
+            )
             Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text = text,
@@ -170,9 +211,14 @@ fun NavigationHintStrip(tracker: IndoorTracker, azimuthDeg: Float?, arrivalText:
 }
 
 @Composable
-private fun SensorLine(icon: String, text: String) {
+private fun SensorLine(icon: ImageVector, text: String) {
     Row(verticalAlignment = Alignment.Top) {
-        Text(text = icon, fontSize = 13.sp)
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = Ink,
+            modifier = Modifier.size(16.dp).padding(top = 2.dp)
+        )
         Spacer(modifier = Modifier.width(8.dp))
         Text(text = text, fontSize = 12.sp, color = Ink)
     }
@@ -210,13 +256,3 @@ fun DrawScope.drawUserMarker(position: MapPoint, headingMapDeg: Float?, scaleX: 
     drawCircle(color = Color.White, radius = 8.dp.toPx(), center = center)
     drawCircle(color = UserBlue, radius = 6.dp.toPx(), center = center)
 }
-
-/** Texto de llegada al final de un tramo: escaleras/ascensor o destino final. */
-fun arrivalText(segment: RouteFloorSegment, destName: String, isEnglish: Boolean = false): String =
-    if (segment.nextFloorName != null) {
-        val via = if (isEnglish) { if (segment.isElevator) "at the elevator" else "at the stairs" } else { if (segment.isElevator) "al ascensor" else "a las escaleras" }
-        if (isEnglish) "You've arrived $via: go to floor ${segment.nextFloorName}"
-        else "Has llegado $via: ve a la planta ${segment.nextFloorName}"
-    } else {
-        if (isEnglish) "You've arrived at $destName" else "Has llegado a $destName"
-    }

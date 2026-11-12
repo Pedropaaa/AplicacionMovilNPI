@@ -33,6 +33,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.automirrored.rounded.Accessible
 import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.SwapVert
 import androidx.compose.material.icons.rounded.TouchApp
@@ -207,6 +209,20 @@ fun parseRouteSegments(route: List<Node>): List<RouteFloorSegment> {
     }
 
     return segments
+}
+
+private fun arrivalText(segment: RouteFloorSegment, destName: String, isEnglish: Boolean): String {
+    return if (segment.transitionNode != null) {
+        val action = if (segment.isElevator) {
+            if (isEnglish) "the elevator" else "el ascensor"
+        } else {
+            if (isEnglish) "the stairs" else "las escaleras"
+        }
+        val nextFloor = segment.nextFloorName ?: ""
+        if (isEnglish) "Head to $action ➔ Floor $nextFloor" else "Dirígete a $action ➔ Planta $nextFloor"
+    } else {
+        if (isEnglish) "Arrived at $destName" else "Llegada a $destName"
+    }
 }
 
 private const val DEST_ASEO_CERCANO = "__dest_aseo_cercano__"
@@ -952,10 +968,11 @@ initialDestPoiId
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "♿",
-                            fontSize = 18.sp,
-                            color = if (isAccessibleRoute) ToneBlueText else Ink
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Rounded.Accessible,
+                            contentDescription = if (isEnglish) "Accessible route" else "Ruta accesible",
+                            tint = if (isAccessibleRoute) ToneBlueText else Ink,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
