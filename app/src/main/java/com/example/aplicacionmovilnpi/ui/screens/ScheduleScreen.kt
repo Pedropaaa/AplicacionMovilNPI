@@ -16,6 +16,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Map
+import androidx.compose.material.icons.rounded.Place
+import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -160,21 +165,41 @@ fun LessonCard(
                     color = SoftBg,
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text(
-                        text = "🕒 ${lesson.time} - ${lesson.end}",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Ink,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Schedule,
+                            contentDescription = null,
+                            tint = Ink,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "${lesson.time} - ${lesson.end}",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Ink
+                        )
+                    }
                 }
 
-                Text(
-                    text = "📍 ${localizedCourseText(lesson.room, LocalIsEnglish.current)}",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = UgrRed
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Rounded.Place,
+                        contentDescription = null,
+                        tint = UgrRed,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = localizedCourseText(lesson.room, LocalIsEnglish.current),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = UgrRed
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -197,16 +222,25 @@ fun LessonCard(
                 shape = RoundedCornerShape(10.dp),
                 border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
             ) {
-                Text(
-                    text = if (isEnglish) {
-                        if (lesson.poiId != null) "Directions to ${lesson.room} ➔" else "${lesson.room} is not on the map yet"
-                    } else {
-                        if (lesson.poiId != null) "Cómo llegar al ${lesson.room} ➔" else "${lesson.room} aún no está en el plano"
-                    },
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Ink
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Rounded.Map,
+                        contentDescription = null,
+                        tint = if (lesson.poiId != null) UgrRed else MutedText,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (isEnglish) {
+                            if (lesson.poiId != null) "Directions to ${lesson.room}" else "${lesson.room} is not on the map yet"
+                        } else {
+                            if (lesson.poiId != null) "Cómo llegar al ${lesson.room}" else "${lesson.room} aún no está en el plano"
+                        },
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Ink
+                    )
+                }
             }
         }
     }

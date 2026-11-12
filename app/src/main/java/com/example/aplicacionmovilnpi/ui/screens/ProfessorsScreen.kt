@@ -18,6 +18,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Email
+import androidx.compose.material.icons.rounded.Map
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -108,7 +113,14 @@ fun ProfessorsScreen(
             value = searchQuery,
             onValueChange = { searchQuery = it },
             placeholder = { Text(text = if (isEnglish) "Search professor, subject or office..." else "Buscar profesor, asignatura o despacho...", fontSize = 12.sp, color = MutedText) },
-            leadingIcon = { Text(text = "🔍", fontSize = 16.sp) },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Rounded.Search,
+                    contentDescription = null,
+                    tint = MutedText,
+                    modifier = Modifier.size(20.dp)
+                )
+            },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(14.dp),
             colors = OutlinedTextFieldDefaults.colors(
@@ -334,7 +346,21 @@ fun ProfessorCard(
                     shape = RoundedCornerShape(10.dp),
                     border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
                 ) {
-                    Text(text = if (isEnglish) "✉️ Send email" else "✉️ Enviar correo", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Ink)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Rounded.Email,
+                            contentDescription = null,
+                            tint = Ink,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (isEnglish) "Send email" else "Enviar correo",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Ink
+                        )
+                    }
                 }
 
                 OutlinedButton(
@@ -346,13 +372,22 @@ fun ProfessorCard(
                     shape = RoundedCornerShape(10.dp),
                     border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
                 ) {
-                    Text(
-                        text = routeTarget?.let { "🗺️ ${it.first}" } ?: if (isEnglish) "No map location" else "Sin ubicación en el plano",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (routeTarget != null) UgrRed else MutedText,
-                        maxLines = 1
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Rounded.Map,
+                            contentDescription = null,
+                            tint = if (routeTarget != null) UgrRed else MutedText,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = routeTarget?.let { it.first } ?: if (isEnglish) "No map location" else "Sin ubicación en el plano",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (routeTarget != null) UgrRed else MutedText,
+                            maxLines = 1
+                        )
+                    }
                 }
             }
         }

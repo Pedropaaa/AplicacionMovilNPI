@@ -21,6 +21,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.Apartment
+import androidx.compose.material.icons.rounded.DirectionsCar
+import androidx.compose.material.icons.rounded.LocalCafe
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.PushPin
+import androidx.compose.material.icons.rounded.QrCodeScanner
+import androidx.compose.material.icons.rounded.Restaurant
+import androidx.compose.material.icons.rounded.WaterDrop
+import androidx.compose.material.icons.rounded.Wc
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedTextField
@@ -236,7 +247,12 @@ fun HomeScreen(
                     modifier = Modifier.size(44.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Text(text = "📌", fontSize = 20.sp)
+                        Icon(
+                            imageVector = Icons.Rounded.PushPin,
+                            contentDescription = null,
+                            tint = ToneRoseText,
+                            modifier = Modifier.size(22.dp)
+                        )
                     }
                 }
 
@@ -270,7 +286,12 @@ fun HomeScreen(
                     )
                 }
 
-                Text(text = "➔", fontSize = 14.sp, color = MutedText)
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MutedText,
+                    modifier = Modifier.size(20.dp)
+                )
             }
         }
 
@@ -409,42 +430,37 @@ fun PlaceCategoryCard(
         "rose" -> ToneRoseBg to ToneRoseText
         "purple" -> TonePurpleBg to TonePurpleText
         "blue" -> ToneBlueBg to ToneBlueText
+        "black" -> Color(0xFFF2F4F7) to Ink
         else -> ToneOrangeBg to ToneOrangeText
     }
 
-    val iconText = when (place.icon) {
-        "building" -> "🏢"
-        "person" -> "👤"
-        "book" -> "📚"
-        "toilet" -> "🚻"
-        "water" -> "🚰"
-        "car" -> "🚗"
-        "utensils" -> "🍽️"
-        else -> "☕"
+    val vectorIcon = when (place.icon) {
+        "building" -> Icons.Rounded.Apartment
+        "person" -> Icons.Rounded.Person
+        "book" -> Icons.AutoMirrored.Rounded.MenuBook
+        "toilet" -> Icons.Rounded.Wc
+        "water" -> Icons.Rounded.WaterDrop
+        "car" -> Icons.Rounded.DirectionsCar
+        "utensils" -> Icons.Rounded.Restaurant
+        "qr" -> Icons.Rounded.QrCodeScanner
+        else -> Icons.Rounded.LocalCafe
     }
 
-    // Aseos y fuentes tendrán diseño horizontal.
     val isHorizontal = place.icon == "toilet" || place.icon == "water"
 
     Surface(
         modifier = modifier.clickable { onClick() },
         color = Color.White,
         shape = RoundedCornerShape(16.dp),
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            CardBorder
-        )
+        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
     ) {
         if (isHorizontal) {
-
-            // DISEÑO HORIZONTAL: ASEOS Y FUENTES
-            // DISEÑO HORIZONTAL: ASEOS Y FUENTES
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 7.dp, vertical = 6.dp),
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(7.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Surface(
                     color = bgColor,
@@ -452,9 +468,11 @@ fun PlaceCategoryCard(
                     modifier = Modifier.size(36.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = iconText,
-                            fontSize = 25.sp
+                        Icon(
+                            imageVector = vectorIcon,
+                            contentDescription = place.name,
+                            tint = textColor,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
@@ -474,19 +492,15 @@ fun PlaceCategoryCard(
 
                     Text(
                         text = place.detail,
-                        fontSize = 11.sp,
+                        fontSize = 10.sp,
                         fontWeight = FontWeight.Medium,
                         color = MutedText,
                         maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                        modifier = Modifier.offset(y = (-4).dp)
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
                 }
             }
-
         } else {
-
-            // DISEÑO VERTICAL: RESTO DE TARJETAS
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -497,25 +511,15 @@ fun PlaceCategoryCard(
                 Surface(
                     color = bgColor,
                     shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(42.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        if (place.icon == "qr") {
-                            Icon(
-                                imageVector = Icons.Filled.QrCodeScanner,
-                                contentDescription = if (LocalIsEnglish.current)
-                                    "QR Scanner"
-                                else
-                                    "Escáner QR",
-                                tint = Ink,
-                                modifier = Modifier.size(28.dp)
-                            )
-                        } else {
-                            Text(
-                                text = iconText,
-                                fontSize = 28.sp
-                            )
-                        }
+                        Icon(
+                            imageVector = vectorIcon,
+                            contentDescription = place.name,
+                            tint = textColor,
+                            modifier = Modifier.size(22.dp)
+                        )
                     }
                 }
 
@@ -523,15 +527,16 @@ fun PlaceCategoryCard(
 
                 Text(
                     text = place.name,
-                    fontSize = 14.sp,
+                    fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = Ink
                 )
 
                 Text(
                     text = place.detail,
-                    fontSize = 12.sp,
-                    color = MutedText
+                    fontSize = 10.sp,
+                    color = MutedText,
+                    modifier = Modifier.padding(top = 2.dp)
                 )
             }
         }

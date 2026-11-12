@@ -10,13 +10,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Logout
+import androidx.compose.material.icons.rounded.CalendarToday
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Map
+import androidx.compose.material.icons.rounded.Menu
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.School
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -33,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -53,26 +62,29 @@ import com.example.aplicacionmovilnpi.ui.theme.MutedText
 import com.example.aplicacionmovilnpi.ui.theme.PageBg
 import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 
-enum class NavTab(val id: String, val spanishLabel: String, val englishLabel: String, val icon: String) {
-    HOME("home", "Inicio", "Home", "🏠"),
-    SCHEDULE("schedule", "Horario", "Schedule", "📅"),
-    PROFESSORS("professors", "Profesorado", "Faculty", "👨‍🏫"),
-    MAP("map", "Mapa", "Map", "🗺️"),
-    MORE("more", "Más", "More", "☰")
+enum class NavTab(val id: String, val spanishLabel: String, val englishLabel: String, val icon: ImageVector) {
+    HOME("home", "Inicio", "Home", Icons.Rounded.Home),
+    SCHEDULE("schedule", "Horario", "Schedule", Icons.Rounded.CalendarToday),
+    PROFESSORS("professors", "Profesorado", "Faculty", Icons.Rounded.School),
+    MAP("map", "Mapa", "Map", Icons.Rounded.Map),
+    MORE("more", "Más", "More", Icons.Rounded.Menu)
 }
 
 @Composable
 fun MainScreen(
     onLogout: () -> Unit,
-    onLanguageChange: (Boolean) -> Unit
+    onLanguageChange: (Boolean) -> Unit,
+    isLargeText: Boolean = false,
+    onLargeTextChange: (Boolean) -> Unit = {},
+    isHighContrast: Boolean = false,
+    onHighContrastChange: (Boolean) -> Unit = {},
+    defaultAccessibleRoute: Boolean = false,
+    onDefaultAccessibleRouteChange: (Boolean) -> Unit = {}
 ) {
     var activeTab by rememberSaveable { mutableStateOf(NavTab.HOME) }
     var mapEntryKey by rememberSaveable { mutableIntStateOf(0) }
     var currentSubScreen by rememberSaveable { mutableStateOf<String?>(null) }
     var showMenu by remember { mutableStateOf(false) }
-    var defaultAccessibleRoute by rememberSaveable {
-        mutableStateOf(false)
-    }
 
     // POI al que debe guiar el mapa al abrirlo desde otra pantalla (null = mapa sin ruta).
     var mapDestination by rememberSaveable { mutableStateOf<String?>(null) }
@@ -132,10 +144,12 @@ fun MainScreen(
                 currentSubScreen == "accessibility" ->
                     AccessibilityScreen(
                         onBack = { currentSubScreen = null },
+                        isLargeText = isLargeText,
+                        onLargeTextChange = onLargeTextChange,
+                        isHighContrast = isHighContrast,
+                        onHighContrastChange = onHighContrastChange,
                         defaultAccessibleRoute = defaultAccessibleRoute,
-                        onDefaultAccessibleRouteChange = {
-                            defaultAccessibleRoute = it
-                        }
+                        onDefaultAccessibleRouteChange = onDefaultAccessibleRouteChange
                     )
 
                 activeTab == NavTab.HOME -> HomeScreen(
@@ -161,6 +175,7 @@ fun MainScreen(
                     mapEntryKey = mapEntryKey,
                     defaultAccessibleRoute = defaultAccessibleRoute
                 )
+
                 activeTab == NavTab.MORE -> MoreScreen(
                     onNavigateToSubScreen = { subScreen -> currentSubScreen = subScreen },
                     onLanguageChange = onLanguageChange
@@ -179,28 +194,22 @@ fun UgrHeader(
     onLogoutClick: () -> Unit
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(72.dp),
         color = Color.White,
         shadowElevation = 2.dp
     ) {
-        // Edge-to-edge: evita que la cabecera quede debajo de la barra de estado.
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(top = 8.dp)
-                .height(64.dp)
+                .fillMaxSize()
                 .padding(horizontal = 20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Brand Logo Mark
             Surface(
                 color = UgrRed,
-                shape = RoundedCornerShape(
-                    topStart = 6.dp,
-                    topEnd = 6.dp,
-                    bottomStart = 12.dp,
-                    bottomEnd = 6.dp
-                ),
+                shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp, bottomStart = 12.dp, bottomEnd = 6.dp),
                 modifier = Modifier.size(38.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -212,10 +221,15 @@ fun UgrHeader(
                     )
                 }
             }
+
             Spacer(modifier = Modifier.width(10.dp))
 
             Column {
-                Text(text = "ETSIIT · UGR", fontSize = 10.sp, color = MutedText)
+                Text(
+                    text = "ETSIIT · UGR",
+                    fontSize = 10.sp,
+                    color = MutedText
+                )
                 Text(
                     text = "UGR CAMPUS",
                     fontSize = 13.sp,
@@ -267,13 +281,28 @@ fun UgrHeader(
                     )
                     HorizontalDivider()
                     DropdownMenuItem(
-                        text = { Text(text = if (LocalIsEnglish.current) "👤 My Profile" else "👤 Mi Perfil", fontSize = 12.sp) },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Rounded.Person,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        },
+                        text = { Text(text = if (LocalIsEnglish.current) "My Profile" else "Mi Perfil", fontSize = 12.sp) },
                         onClick = onProfileClick
                     )
                     DropdownMenuItem(
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Rounded.Logout,
+                                contentDescription = null,
+                                tint = UgrRed,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        },
                         text = {
                             Text(
-                                text = if (LocalIsEnglish.current) "🚪 Log out" else "🚪 Cerrar sesión",
+                                text = if (LocalIsEnglish.current) "Log out" else "Cerrar sesión",
                                 fontSize = 12.sp,
                                 color = UgrRed,
                                 fontWeight = FontWeight.Bold
@@ -302,7 +331,13 @@ fun UgrBottomBar(
             NavigationBarItem(
                 selected = selected,
                 onClick = { onTabSelected(tab) },
-                icon = { Text(text = tab.icon, fontSize = 18.sp) },
+                icon = {
+                    Icon(
+                        imageVector = tab.icon,
+                        contentDescription = if (isEnglish) tab.englishLabel else tab.spanishLabel,
+                        modifier = Modifier.size(22.dp)
+                    )
+                },
                 label = {
                     Text(
                         text = if (isEnglish) tab.englishLabel else tab.spanishLabel,

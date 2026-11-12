@@ -5,6 +5,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import com.example.aplicacionmovilnpi.ui.LocalHighContrast
 
 private val UgrColorScheme = lightColorScheme(
     primary = UgrRed,
@@ -22,13 +23,31 @@ private val UgrColorScheme = lightColorScheme(
     outline = CardBorder
 )
 
+private val HighContrastColorScheme = lightColorScheme(
+    primary = Color(0xFF900000),
+    onPrimary = Color.White,
+    primaryContainer = Color.Black,
+    onPrimaryContainer = Color.White,
+    secondary = Color.Black,
+    onSecondary = Color.White,
+    background = Color.White,
+    onBackground = Color.Black,
+    surface = Color.White,
+    onSurface = Color.Black,
+    surfaceVariant = Color(0xFFF0F0F0),
+    onSurfaceVariant = Color.Black,
+    outline = Color.Black
+)
+
 @Composable
 fun AplicacionMovilNPITheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    highContrast: Boolean = LocalHighContrast.current,
     content: @Composable () -> Unit
 ) {
+    val colors = if (highContrast) HighContrastColorScheme else UgrColorScheme
     MaterialTheme(
-        colorScheme = UgrColorScheme,
+        colorScheme = colors,
         typography = Typography,
         content = content
     )

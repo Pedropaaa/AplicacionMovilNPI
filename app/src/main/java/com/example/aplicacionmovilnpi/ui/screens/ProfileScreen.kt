@@ -15,8 +15,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -130,19 +128,6 @@ fun ProfileScreen(onBack: () -> Unit) {
                 Spacer(modifier = Modifier.height(10.dp))
                 ProfileDetailRow(label = if (isEnglish) "Phone" else "Teléfono", value = "+34 600 000 000")
             }
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Button(
-            onClick = onBack,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(46.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = UgrRed),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Text(text = if (isEnglish) "Save changes" else "Guardar cambios", fontSize = 13.sp, fontWeight = FontWeight.Bold)
         }
 
         Spacer(modifier = Modifier.height(30.dp))

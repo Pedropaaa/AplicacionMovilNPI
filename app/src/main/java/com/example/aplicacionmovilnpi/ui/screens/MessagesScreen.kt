@@ -16,6 +16,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Inbox
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -116,9 +119,43 @@ fun MessagesScreen(onBack: () -> Unit) {
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        filteredMails.forEach { mail ->
-            MailCard(mail = mail, isEnglish = isEnglish)
-            Spacer(modifier = Modifier.height(10.dp))
+        if (filteredMails.isEmpty()) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color.White,
+                shape = RoundedCornerShape(14.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+            ) {
+                Column(
+                    modifier = Modifier.padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Inbox,
+                        contentDescription = null,
+                        modifier = Modifier.size(42.dp),
+                        tint = MutedText
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = if (isEnglish) "No messages" else "Sin mensajes",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Ink
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = if (isEnglish) "Your inbox is currently empty." else "No tienes mensajes ni avisos en esta carpeta.",
+                        fontSize = 12.sp,
+                        color = MutedText
+                    )
+                }
+            }
+        } else {
+            filteredMails.forEach { mail ->
+                MailCard(mail = mail, isEnglish = isEnglish)
+                Spacer(modifier = Modifier.height(10.dp))
+            }
         }
 
         Spacer(modifier = Modifier.height(30.dp))

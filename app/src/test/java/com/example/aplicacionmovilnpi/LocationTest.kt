@@ -1,7 +1,6 @@
 package com.example.aplicacionmovilnpi
 
 import com.example.aplicacionmovilnpi.location.DeadReckoning
-import com.example.aplicacionmovilnpi.location.FloorEstimator
 import com.example.aplicacionmovilnpi.location.GeoPoint
 import com.example.aplicacionmovilnpi.location.GeoUtils
 import com.example.aplicacionmovilnpi.location.IndoorTracker
@@ -10,7 +9,6 @@ import com.example.aplicacionmovilnpi.location.StepDetector
 import com.example.aplicacionmovilnpi.model.Node
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -35,59 +33,6 @@ class LocationTest {
     fun formatoDeDistancia() {
         assertEquals("850 m", GeoUtils.formatDistance(847.0))
         assertEquals("1,2 km", GeoUtils.formatDistance(1210.0))
-    }
-
-    // --- Barómetro ---
-
-    private var clockMs = 0L
-
-    /** Simula [seconds] segundos de lecturas a 10 Hz con la presión fija en [hPa]. */
-    private fun FloorEstimator.feed(hPa: Float, seconds: Int = 6): Int? {
-        var floor: Int? = null
-        repeat(seconds * 10) { clockMs += 100; floor = onPressure(hPa, clockMs) }
-        return floor
-    }
-
-    @Test
-    fun sinCalibrarNoHayPlanta() {
-        assertNull(FloorEstimator().feed(1013f))
-    }
-
-    @Test
-    fun subirUnaPlantaBajaLaPresionYSubeLaPlanta() {
-        val estimator = FloorEstimator()
-        estimator.calibrate(0) // antes de la primera lectura: se aplica al llegar
-        assertEquals(0, estimator.feed(1013.00f))
-        // 4 m más arriba ≈ 0,48 hPa menos
-        assertEquals(1, estimator.feed(1012.52f))
-        assertEquals(2, estimator.feed(1012.04f))
-        assertEquals(0, estimator.feed(1013.00f))
-    }
-
-    @Test
-    fun elRuidoPequenoNoCambiaDePlanta() {
-        val estimator = FloorEstimator()
-        estimator.feed(950f)
-        estimator.calibrate(3)
-        // Medio metro de variación: sigue en la 3
-        assertEquals(3, estimator.feed(949.95f))
-        assertEquals(3, estimator.feed(950.05f))
-    }
-
-    @Test
-    fun conLecturasEspaciadasTambienConverge() {
-        // Barómetros que solo informan cuando cambia el valor: una lectura cada varios segundos
-        val estimator = FloorEstimator()
-        estimator.onPressure(1013f, 0)
-        estimator.calibrate(0)
-        estimator.onPressure(1012.52f, 5_000)
-        assertEquals(1, estimator.onPressure(1012.52f, 10_000))
-    }
-
-    @Test
-    fun alturaEntreDosPresiones() {
-        val meters = FloorEstimator.altitudeDifference(1013.25f, 1012.05f)
-        assertEquals(10f, meters, 0.5f)
     }
 
     // --- Podómetro ---

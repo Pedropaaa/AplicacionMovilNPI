@@ -7,22 +7,16 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.example.aplicacionmovilnpi.model.Node
-import kotlin.math.abs
 
 /**
- * Junta los sensores de interior para el plano: planta estimada por el barómetro y posición
- * por pasos + brújula sobre el tramo de ruta que se está siguiendo.
+ * Junta los sensores de interior para el plano: posición por pasos + brújula
+ * sobre el tramo de ruta que se está siguiendo.
  * Las propiedades son estado de Compose, así que la UI se actualiza sola al cambiar.
  */
 class IndoorTracker(initialMapNorthDeg: Float = DeadReckoning.DEFAULT_MAP_NORTH_DEG) {
 
-    private val floorEstimator = FloorEstimator()
     private var path: List<MapPoint> = emptyList()
 
-    var pressureHpa by mutableStateOf<Float?>(null)
-        private set
-    var relativeAltitudeM by mutableStateOf<Float?>(null)
-        private set
     var estimatedFloor by mutableStateOf<Int?>(null)
         private set
     var steps by mutableIntStateOf(0)
@@ -34,21 +28,9 @@ class IndoorTracker(initialMapNorthDeg: Float = DeadReckoning.DEFAULT_MAP_NORTH_
 
     val position: MapPoint? get() = progress?.position
 
-    fun onPressure(hPa: Float, timestampMs: Long) {
-        estimatedFloor = floorEstimator.onPressure(hPa, timestampMs)
-        val smoothed = floorEstimator.smoothedPressure
-        // Redondeamos para no recomponer la pantalla con cada variación mínima del sensor
-        if (smoothed != null && abs(smoothed - (pressureHpa ?: 0f)) >= 0.01f) {
-            pressureHpa = smoothed
-            relativeAltitudeM = floorEstimator.relativeAltitudeMeters
-        }
-    }
-
     /** La persona confirma (o la ruta asume) que está en [floor]. */
     fun calibrateFloor(floor: Int) {
-        floorEstimator.calibrate(floor)
-        estimatedFloor = floorEstimator.currentFloor ?: floor
-        relativeAltitudeM = floorEstimator.relativeAltitudeMeters
+        estimatedFloor = floor
     }
 
     /** Empieza a seguir un tramo de ruta desde su primer nodo. */

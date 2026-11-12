@@ -22,35 +22,51 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Accessible
+import androidx.compose.material.icons.automirrored.rounded.DirectionsWalk
+import androidx.compose.material.icons.rounded.Apartment
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Clear
+import androidx.compose.material.icons.rounded.DoorFront
+import androidx.compose.material.icons.rounded.LocalCafe
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Place
+import androidx.compose.material.icons.rounded.School
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Velocity
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aplicacionmovilnpi.model.PointOfInterest
-import com.example.aplicacionmovilnpi.model.getName
 import com.example.aplicacionmovilnpi.model.getDescription
+import com.example.aplicacionmovilnpi.model.getName
 import com.example.aplicacionmovilnpi.navigation.EtsiitData
 import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
 import com.example.aplicacionmovilnpi.ui.theme.CardBorder
@@ -62,24 +78,24 @@ import com.example.aplicacionmovilnpi.ui.theme.UgrRedSoft
 import java.text.Normalizer
 
 /** Grupos de categorías que se muestran como filtros en el selector. */
-private enum class PoiFilter(val spanishLabel: String, val englishLabel: String, val icon: String, val categories: Set<String>?) {
-    ALL("Todo", "All", "✨", null),
-    AULAS("Aulas", "Classrooms", "🎓", setOf("AULA")),
-    DESPACHOS("Despachos", "Offices", "👨‍🏫", setOf("DESPACHO")),
-    SERVICIOS("Servicios", "Services", "☕", setOf("SERVICIO", "ZONA_COMUN")),
-    ACCESOS("Accesos", "Entrances", "🚪", setOf("ACCESO", "TRANSITO")),
-    ACCESIBILIDAD("Accesibilidad", "Accessibility", "♿", setOf("ACCESIBILIDAD"))
+private enum class PoiFilter(val spanishLabel: String, val englishLabel: String, val icon: ImageVector, val categories: Set<String>?) {
+    ALL("Todo", "All", Icons.Rounded.Star, null),
+    AULAS("Aulas", "Classrooms", Icons.Rounded.School, setOf("AULA")),
+    DESPACHOS("Despachos", "Offices", Icons.Rounded.Person, setOf("DESPACHO")),
+    SERVICIOS("Servicios", "Services", Icons.Rounded.LocalCafe, setOf("SERVICIO", "ZONA_COMUN")),
+    ACCESOS("Accesos", "Entrances", Icons.Rounded.DoorFront, setOf("ACCESO", "TRANSITO")),
+    ACCESIBILIDAD("Accesibilidad", "Accessibility", Icons.AutoMirrored.Rounded.Accessible, setOf("ACCESIBILIDAD"))
 }
 
-fun poiCategoryIcon(category: String): String = when (category) {
-    "AULA" -> "🎓"
-    "DESPACHO" -> "👨‍🏫"
-    "SERVICIO" -> "☕"
-    "ZONA_COMUN" -> "🏛️"
-    "ACCESO" -> "🚪"
-    "TRANSITO" -> "🚶"
-    "ACCESIBILIDAD" -> "♿"
-    else -> "📍"
+fun poiCategoryIcon(category: String): ImageVector = when (category) {
+    "AULA" -> Icons.Rounded.School
+    "DESPACHO" -> Icons.Rounded.Person
+    "SERVICIO" -> Icons.Rounded.LocalCafe
+    "ZONA_COMUN" -> Icons.Rounded.Apartment
+    "ACCESO" -> Icons.Rounded.DoorFront
+    "TRANSITO" -> Icons.AutoMirrored.Rounded.DirectionsWalk
+    "ACCESIBILIDAD" -> Icons.AutoMirrored.Rounded.Accessible
+    else -> Icons.Rounded.Place
 }
 
 fun poiCategoryLabel(category: String, isEnglish: Boolean = false): String = when (category) {
@@ -120,73 +136,112 @@ private fun String.normalized(): String =
 @Composable
 fun PoiPickerSheet(
     title: String,
-    accent: Color,
-    pois: List<PointOfInterest>,
+    allPois: List<PointOfInterest> = emptyList(),
+    pois: List<PointOfInterest> = allPois,
+    accent: Color = UgrRed,
     selectedPoiId: String?,
-    excludedPoiId: String?,
+    excludedPoiId: String? = null,
     onSelect: (PointOfInterest) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val effectivePois = remember(allPois, pois, excludedPoiId) {
+        val baseList = if (pois.isNotEmpty()) pois else allPois
+        if (excludedPoiId != null) baseList.filter { it.id != excludedPoiId } else baseList
+    }
+
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var query by rememberSaveable { mutableStateOf("") }
-    var filter by rememberSaveable { mutableStateOf(PoiFilter.ALL) }
-    var floorFilter by rememberSaveable { mutableStateOf<Int?>(null) }
 
-    val floorsByPoi = remember(pois) { pois.associate { it.id to poiFloor(it) } }
-    val availableFloors = remember(floorsByPoi) {
-        floorsByPoi.values.filterNotNull().distinct().sorted()
+    var query by remember { mutableStateOf("") }
+    var filter by remember { mutableStateOf(PoiFilter.ALL) }
+    var floorFilter by remember { mutableStateOf<Int?>(null) }
+
+    val availableFloors = remember(effectivePois) {
+        effectivePois.mapNotNull { poiFloor(it) }.distinct().sorted()
     }
 
-    val normalizedQuery = query.trim().normalized()
-    val allowedCategories = filter.categories
-    val filtered = pois.filter { poi ->
-        poi.id != excludedPoiId &&
-            (allowedCategories == null || poi.category in allowedCategories) &&
-            (floorFilter == null || floorsByPoi[poi.id] == floorFilter) &&
-            (normalizedQuery.isEmpty() ||
-                poi.nameEs.normalized().contains(normalizedQuery) ||
-                poi.nameEn.normalized().contains(normalizedQuery) ||
-                poi.description.normalized().contains(normalizedQuery))
+    val filtered = remember(query, filter, floorFilter, effectivePois) {
+        val qNorm = query.trim().normalized()
+        val categories = filter.categories
+        effectivePois.filter { poi ->
+            val matchesCategory = categories == null || categories.contains(poi.category)
+            val matchesFloor = floorFilter == null || poiFloor(poi) == floorFilter
+            val matchesText = qNorm.isEmpty() ||
+                    poi.nameEs.normalized().contains(qNorm) ||
+                    poi.nameEn.normalized().contains(qNorm) ||
+                    poi.description.normalized().contains(qNorm) ||
+                    poi.descriptionEn.normalized().contains(qNorm) ||
+                    poi.id.normalized().contains(qNorm)
+            matchesCategory && matchesFloor && matchesText
+        }
     }
-    val grouped = filtered
-        .groupBy { floorsByPoi[it.id] }
-        .toSortedMap(compareBy(nullsLast()) { it })
-        .mapValues { (_, list) -> list.sortedBy { it.nameEs.normalized() } }
 
-    // Al llegar al final de la lista, el scroll sobrante hacia arriba se pasaba a la
-    // hoja, que intentaba estirarse y rebotaba (efecto "tintineo"). Lo consumimos aquí.
-    // El sobrante hacia abajo sí llega a la hoja, para poder cerrarla deslizando.
-    val blockUpwardOverscrollToSheet = remember {
+    val grouped = remember(filtered) {
+        filtered.groupBy { poiFloor(it) }
+            .entries
+            .sortedBy { (floor, _) -> floor ?: 99 }
+            .associate { it.key to it.value }
+    }
+
+    val isExpanded by remember {
+        derivedStateOf { sheetState.currentValue == SheetValue.Expanded }
+    }
+
+    val blockUpwardOverscrollToSheet = remember(isExpanded) {
         object : NestedScrollConnection {
-            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset =
-                if (available.y < 0f) available else Offset.Zero
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (isExpanded && available.y > 0f) {
+                    return Offset(0f, available.y)
+                }
+                return Offset.Zero
+            }
 
-            override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity =
-                if (available.y < 0f) available else Velocity.Zero
+            override fun onPostScroll(
+                consumed: Offset,
+                available: Offset,
+                source: NestedScrollSource
+            ): Offset {
+                if (isExpanded && available.y > 0f) {
+                    return Offset(0f, available.y)
+                }
+                return Offset.Zero
+            }
+
+            override suspend fun onPreFling(available: Velocity): Velocity {
+                if (isExpanded && available.y > 0f) {
+                    return Velocity(0f, available.y)
+                }
+                return Velocity.Zero
+            }
         }
     }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
+        dragHandle = {
+            Surface(
+                modifier = Modifier
+                    .padding(top = 10.dp, bottom = 6.dp)
+                    .width(36.dp)
+                    .height(4.dp),
+                color = MutedText.copy(alpha = 0.4f),
+                shape = CircleShape
+            ) {}
+        },
         containerColor = Color.White
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.92f)
+                .fillMaxHeight(0.85f)
         ) {
-            // Cabecera
+            // Título
             Row(
-                modifier = Modifier.padding(horizontal = 20.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .background(accent, CircleShape)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
                 Text(text = title, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Ink)
             }
 
@@ -200,16 +255,24 @@ fun PoiPickerSheet(
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp),
                 placeholder = { Text(if (LocalIsEnglish.current) "Search classroom, office, service…" else "Buscar aula, despacho, servicio…", fontSize = 13.sp) },
-                leadingIcon = { Text("🔍", fontSize = 16.sp) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Rounded.Search,
+                        contentDescription = null,
+                        tint = MutedText,
+                        modifier = Modifier.size(20.dp)
+                    )
+                },
                 trailingIcon = if (query.isNotEmpty()) {
                     {
-                        Text(
-                            text = "✕",
-                            fontSize = 16.sp,
-                            color = MutedText,
+                        Icon(
+                            imageVector = Icons.Rounded.Clear,
+                            contentDescription = "Limpiar",
+                            tint = MutedText,
                             modifier = Modifier
                                 .clickable { query = "" }
                                 .padding(8.dp)
+                                .size(18.dp)
                         )
                     }
                 } else null,
@@ -234,7 +297,8 @@ fun PoiPickerSheet(
             ) {
                 items(PoiFilter.entries) { f ->
                     FilterPill(
-                        text = "${f.icon} ${if (LocalIsEnglish.current) f.englishLabel else f.spanishLabel}",
+                        text = if (LocalIsEnglish.current) f.englishLabel else f.spanishLabel,
+                        icon = f.icon,
                         selected = filter == f,
                         onClick = { filter = f }
                     )
@@ -249,12 +313,20 @@ fun PoiPickerSheet(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 item {
-                    FilterPill(text = if (LocalIsEnglish.current) "All floors" else "Todas las plantas", selected = floorFilter == null, small = true) {
+                    FilterPill(
+                        text = if (LocalIsEnglish.current) "All floors" else "Todas las plantas",
+                        selected = floorFilter == null,
+                        small = true
+                    ) {
                         floorFilter = null
                     }
                 }
                 items(availableFloors) { floor ->
-                    FilterPill(text = getFloorName(floor), selected = floorFilter == floor, small = true) {
+                    FilterPill(
+                        text = getFloorName(floor),
+                        selected = floorFilter == floor,
+                        small = true
+                    ) {
                         floorFilter = if (floorFilter == floor) null else floor
                     }
                 }
@@ -276,7 +348,12 @@ fun PoiPickerSheet(
                         .padding(top = 48.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("🔎", fontSize = 32.sp)
+                    Icon(
+                        imageVector = Icons.Rounded.Search,
+                        contentDescription = null,
+                        tint = MutedText,
+                        modifier = Modifier.size(36.dp)
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(if (LocalIsEnglish.current) "No matching locations" else "No hay ubicaciones que coincidan", fontSize = 13.sp, color = MutedText)
                 }
@@ -317,6 +394,7 @@ fun PoiPickerSheet(
 @Composable
 private fun FilterPill(
     text: String,
+    icon: ImageVector? = null,
     selected: Boolean,
     small: Boolean = false,
     onClick: () -> Unit
@@ -327,16 +405,29 @@ private fun FilterPill(
         shape = RoundedCornerShape(50),
         border = if (selected) null else BorderStroke(1.dp, CardBorder)
     ) {
-        Text(
-            text = text,
-            fontSize = if (small) 11.sp else 12.sp,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-            color = if (selected) Color.White else Ink,
+        Row(
             modifier = Modifier.padding(
                 horizontal = if (small) 12.dp else 14.dp,
                 vertical = if (small) 6.dp else 8.dp
+            ),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = if (selected) Color.White else Ink,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+            }
+            Text(
+                text = text,
+                fontSize = if (small) 11.sp else 12.sp,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                color = if (selected) Color.White else Ink
             )
-        )
+        }
     }
 }
 
@@ -367,7 +458,12 @@ private fun PoiPickerRow(
                     .background(SoftBg, RoundedCornerShape(10.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = poiCategoryIcon(poi.category), fontSize = 18.sp)
+                Icon(
+                    imageVector = poiCategoryIcon(poi.category),
+                    contentDescription = null,
+                    tint = Ink,
+                    modifier = Modifier.size(20.dp)
+                )
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -389,7 +485,12 @@ private fun PoiPickerRow(
             }
             if (selected) {
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(text = "✓", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = UgrRed)
+                Icon(
+                    imageVector = Icons.Rounded.Check,
+                    contentDescription = null,
+                    tint = UgrRed,
+                    modifier = Modifier.size(18.dp)
+                )
             }
         }
     }

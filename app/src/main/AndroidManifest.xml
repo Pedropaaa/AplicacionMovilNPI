@@ -20,7 +20,6 @@
     <!-- Ningún sensor es obligatorio: la app funciona sin ellos, con la planta y el origen elegidos a mano -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
-    <uses-feature android:name="android.hardware.sensor.barometer" android:required="false" />
     <uses-feature android:name="android.hardware.sensor.compass" android:required="false" />
     <uses-feature android:name="android.hardware.sensor.stepdetector" android:required="false" />
     <uses-feature android:name="android.hardware.sensor.proximity" android:required="false" />

@@ -133,12 +133,6 @@ private fun SensorEffect(
     }
 }
 
-/** Lecturas del barómetro: presión en hPa e instante en ms. No hace nada si el móvil no tiene barómetro. */
-@Composable
-fun PressureEffect(active: Boolean, onPressure: (hPa: Float, timestampMs: Long) -> Unit) {
-    SensorEffect(active, listOf(Sensor.TYPE_PRESSURE)) { onPressure(it.values[0], it.timestamp / 1_000_000) }
-}
-
 /**
  * Brújula: azimut en grados (0 = norte, 90 = este) con el móvil en vertical.
  * Usa el vector de rotación si existe; si no, acelerómetro + magnetómetro.

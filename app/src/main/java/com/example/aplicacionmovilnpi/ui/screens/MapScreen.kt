@@ -72,7 +72,6 @@ import com.example.aplicacionmovilnpi.location.IndoorTracker
 import com.example.aplicacionmovilnpi.location.LocationPermissions
 import com.example.aplicacionmovilnpi.location.LocationPrefs
 import com.example.aplicacionmovilnpi.location.MapPoint
-import com.example.aplicacionmovilnpi.location.PressureEffect
 import com.example.aplicacionmovilnpi.location.StepEffect
 import com.example.aplicacionmovilnpi.location.hasSensor
 import com.example.aplicacionmovilnpi.location.rememberAppInForeground
@@ -412,11 +411,9 @@ initialDestPoiId
     autoModeAppliedForEntry = mapEntryKey
 
 }
-    val hasBarometer = remember { hasSensor(context, Sensor.TYPE_PRESSURE) }
     val tracker = remember { IndoorTracker(LocationPrefs.mapNorth(context)) }
     var isTracking by rememberSaveable { mutableStateOf(false) }
     val indoorSensorsActive = inForeground && mapMode == "indoor"
-    PressureEffect(active = indoorSensorsActive) { hPa, timestampMs -> tracker.onPressure(hPa, timestampMs) }
     val azimuth = rememberCompassAzimuth(active = indoorSensorsActive)
 
 // Si es un destino especial, buscamos el POI real más cercano.
@@ -908,75 +905,62 @@ val destinationResolution = remember(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        Row(
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.Bottom
+            color = SoftBg,
+            shape = RoundedCornerShape(16.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
         ) {
-            // Casilla de accesibilidad (primera posición)
-            Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.CenterHorizontally
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                // Casilla de accesibilidad
                 Surface(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(44.dp)
-                        .clickable {
-                            isAccessibleRoute = !isAccessibleRoute
-                        },
-                    color = if (isAccessibleRoute) ToneBlueBg else Color.White,
-                    shape = RoundedCornerShape(12.dp),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        if (isAccessibleRoute) ToneBlueText else CardBorder
-                    )
+                        .weight(1f)
+                        .height(40.dp)
+                        .clickable { isAccessibleRoute = !isAccessibleRoute },
+                    color = if (isAccessibleRoute) ToneBlueBg else Color.Transparent,
+                    shape = RoundedCornerShape(10.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(
                             text = "♿",
-                            fontSize = 19.sp,
+                            fontSize = 18.sp,
                             color = if (isAccessibleRoute) ToneBlueText else Ink
                         )
                     }
                 }
-            }
 
-            // Casillas de las distintas plantas
-            listOf("P4", "P3", "P2", "P1", "PB", "S1").forEach { floor ->
-                val selected = floor == selectedFloor
-
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
+                // Plantas
+                listOf("P4", "P3", "P2", "P1", "PB", "S1").forEach { floor ->
+                    val selected = floor == selectedFloor
                     Surface(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(44.dp)
+                            .weight(1f)
+                            .height(40.dp)
                             .clickable {
                                 selectedFloor = floor
-
                                 if (routeSegments.isNotEmpty()) {
-                                    val matchIdx = routeSegments.indexOfFirst {
-                                        it.floorName == floor
-                                    }
-
+                                    val matchIdx = routeSegments.indexOfFirst { it.floorName == floor }
                                     if (matchIdx != -1) {
                                         activeSegmentIndex = matchIdx
                                     }
                                 }
                             },
-                        color = if (selected) UgrRed else Color.White,
-                        shape = RoundedCornerShape(12.dp),
-                        border = if (selected) null else
-                            androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+                        color = if (selected) UgrRed else Color.Transparent,
+                        shape = RoundedCornerShape(10.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(
                                 text = localizedFloorName(floor, isEnglish),
-                                fontSize = 13.sp,
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (selected) Color.White else Ink
                             )
@@ -1002,7 +986,6 @@ val destinationResolution = remember(
                 // Calibración de sensores
                 tracker = tracker,
                 azimuthDeg = azimuth,
-                hasBarometer = hasBarometer,
                 isTracking = isTracking,
 
                 showTrackingControl = isRouteOpen && routeSegments.isNotEmpty(),
@@ -1064,7 +1047,6 @@ val destinationResolution = remember(
                 hasLocationPermission = hasLocationPermission,
                 onRequestPermission = { permissionLauncher.launch(LocationPermissions.all) },
                 gpsLocation = gpsLocation,
-                hasBarometer = hasBarometer,
                 tracker = tracker,
                 azimuthDeg = azimuth,
                 isRouteOpen = isRouteOpen && routeSegments.isNotEmpty(),
@@ -1098,7 +1080,6 @@ fun FloorPlanCanvasOverlay(
     // Calibración de sensores
     tracker: IndoorTracker,
     azimuthDeg: Float?,
-    hasBarometer: Boolean,
     isTracking: Boolean,
     showTrackingControl: Boolean,
     onTrackingChange: (Boolean) -> Unit,
@@ -1233,16 +1214,15 @@ fun FloorPlanCanvasOverlay(
                 }
             }
 
-            // Botón para generar el QR, superpuesto en la esquina superior derecha.
             // ==========================================
-// QR: ESQUINA SUPERIOR DERECHA
-// ==========================================
+            // QR: ESQUINA SUPERIOR IZQUIERDA
+            // ==========================================
             if (showGenerateQrButton) {
                 Surface(
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
+                        .align(Alignment.TopStart)
                         .padding(8.dp)
-                        .size(width = 48.dp, height = 36.dp)
+                        .height(36.dp)
                         .clickable {
                             onGenerateQrClick()
                         },
@@ -1254,7 +1234,10 @@ fun FloorPlanCanvasOverlay(
                     ),
                     shadowElevation = 3.dp
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier.padding(horizontal = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Text(
                             text = "▦ QR",
                             fontSize = 12.sp,
@@ -1265,22 +1248,20 @@ fun FloorPlanCanvasOverlay(
                 }
             }
 
-// ==========================================
-// BRÚJULA Y SEGUIMIENTO: SUPERIOR IZQUIERDA
-// ==========================================
+            // ==========================================
+            // BRÚJULA Y SEGUIMIENTO: SUPERIOR DERECHA
+            // ==========================================
             Column(
                 modifier = Modifier
-                    .align(Alignment.TopStart)
+                    .align(Alignment.TopEnd)
                     .padding(8.dp)
-                    .width(240.dp),
-                horizontalAlignment = Alignment.Start,
+                    .width(220.dp),
+                horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-
-                // Calibrador de brújula e interruptor en la misma fila
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.End),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
 
@@ -1330,9 +1311,9 @@ fun FloorPlanCanvasOverlay(
                                 ) {
                                     Text(
                                         text = if (LocalIsEnglish.current)
-                                            "Track my steps"
+                                            "Track steps"
                                         else
-                                            "Seguir mis pasos",
+                                            "Seguir pasos",
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Ink,
@@ -1364,6 +1345,7 @@ fun FloorPlanCanvasOverlay(
                 }
             }
 
+<<<<<<< HEAD
             // ==========================================
             // BARÓMETRO: ESQUINA INFERIOR IZQUIERDA
             // ==========================================
@@ -1401,21 +1383,33 @@ fun FloorPlanCanvasOverlay(
             }
 
             Row(
+=======
+            Surface(
+>>>>>>> origin/ajustes-ultima-hora
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                color = Color.White.copy(alpha = 0.92f),
+                shape = RoundedCornerShape(12.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
+                shadowElevation = 3.dp
             ) {
-                ZoomButton("➕") { scale = (scale + 0.5f).coerceAtMost(5f) }
-                ZoomButton("➖") {
-                    scale = (scale - 0.5f).coerceAtLeast(1f)
-                    if (scale == 1f) offset = Offset.Zero
+                Row(
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    ZoomIconButton("➕") { scale = (scale + 0.5f).coerceAtMost(5f) }
+                    ZoomIconButton("➖") {
+                        scale = (scale - 0.5f).coerceAtLeast(1f)
+                        if (scale == 1f) offset = Offset.Zero
+                    }
+                    ZoomIconButton("⟲") {
+                        scale = 1f
+                        offset = Offset.Zero
+                    }
+                    ZoomIconButton("⤢") { isFullScreenOpen = true }
                 }
-                ZoomButton("↺") {
-                    scale = 1f
-                    offset = Offset.Zero
-                }
-                ZoomButton("🔍 Pantalla Completa") { isFullScreenOpen = true }
             }
         }
     }
@@ -1622,6 +1616,26 @@ fun ZoomableMapDialog(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun ZoomIconButton(icon: String, onClick: () -> Unit) {
+    Surface(
+        modifier = Modifier
+            .size(32.dp)
+            .clickable { onClick() },
+        color = Color.Transparent,
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(
+                text = icon,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = Ink
+            )
         }
     }
 }
@@ -2208,7 +2222,12 @@ fun PoiChip(poi: PointOfInterest, onClick: () -> Unit) {
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = poiCategoryIcon(poi.category), fontSize = 12.sp)
+            Icon(
+                imageVector = poiCategoryIcon(poi.category),
+                contentDescription = null,
+                tint = Ink,
+                modifier = Modifier.size(14.dp)
+            )
             Spacer(modifier = Modifier.width(6.dp))
             Text(text = poi.getName(isEnglish), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Ink)
         }

@@ -108,74 +108,7 @@ object SampleData {
         )
     )
 
-    val initialMails = listOf(
-        MailMessage(
-            id = 1L,
-            folder = MailFolder.INBOX,
-            outgoing = false,
-            name = "PRADO · Nuevos Paradigmas de Interacción",
-            email = "prado@ugr.es",
-            subject = "Nuevo material disponible",
-            body = "Se ha publicado nuevo material en la asignatura Nuevos Paradigmas de Interacción.\n\nAccede a PRADO para consultarlo.",
-            time = "10:24",
-            unread = true
-        ),
-        MailMessage(
-            id = 2L,
-            folder = MailFolder.INBOX,
-            outgoing = false,
-            name = "Secretaría ETSIIT",
-            email = "secretariaetsiit@ugr.es",
-            subject = "Matrícula del curso 2026/2027",
-            body = "Estimada estudiante:\n\nTu solicitud de modificación de matrícula ha sido procesada correctamente. Puedes consultar el resguardo actualizado en la sede electrónica.\n\nAtentamente,\nSecretaría ETSIIT",
-            time = "Ayer",
-            unread = true
-        ),
-        MailMessage(
-            id = 3L,
-            folder = MailFolder.INBOX,
-            outgoing = false,
-            name = "Biblioteca UGR",
-            email = "biblioteca@ugr.es",
-            subject = "Reserva disponible",
-            body = "El ejemplar que reservaste, «Computer Vision: Algorithms and Applications», ya está disponible para su recogida en el mostrador de préstamo de la Biblioteca de la ETSIIT.\n\nTienes 3 días para recogerlo.",
-            time = "Ayer",
-            unread = true
-        ),
-        MailMessage(
-            id = 4L,
-            folder = MailFolder.INBOX,
-            outgoing = false,
-            name = "PRADO · Visión por Computador",
-            email = "prado@ugr.es",
-            subject = "Publicado el guion de la práctica 1",
-            body = "Ya está disponible el guion de la práctica 1 en la plataforma. Revisadlo antes de la próxima sesión de prácticas.",
-            time = "14 oct.",
-            unread = false
-        ),
-        MailMessage(
-            id = 5L,
-            folder = MailFolder.SENT,
-            outgoing = true,
-            name = "Delegación de Estudiantes ETSIIT",
-            email = "delegacion.etsiit@ugr.es",
-            subject = "Consulta sobre las optativas de 2º semestre",
-            body = "Hola:\n\n¿Sabéis si este año se oferta Programación Lúdica en el segundo semestre?\n\nMuchas gracias,\nLucía",
-            time = "13 oct.",
-            unread = false
-        ),
-        MailMessage(
-            id = 6L,
-            folder = MailFolder.ARCHIVED,
-            outgoing = false,
-            name = "Secretaría ETSIIT",
-            email = "secretariaetsiit@ugr.es",
-            subject = "Bienvenida al curso 2026/2027",
-            body = "Te damos la bienvenida al nuevo curso académico. Consulta el calendario académico y los horarios en la web del centro.",
-            time = "9 sept.",
-            unread = false
-        )
-    )
+    val initialMails = emptyList<MailMessage>()
 
     val faqs = listOf(
         FaqItem("navigation", "¿Cómo llego a mi próxima clase?", "En Inicio, pulsa «Guiarme al aula» en la tarjeta de tu próxima clase. También puedes pulsar «Cómo llegar» en cualquier clase de tu horario."),
