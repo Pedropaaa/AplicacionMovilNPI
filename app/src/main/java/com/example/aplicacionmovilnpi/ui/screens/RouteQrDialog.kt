@@ -2,7 +2,6 @@ package com.example.aplicacionmovilnpi.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,11 +10,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Accessible
+import androidx.compose.material.icons.automirrored.rounded.DirectionsWalk
+import androidx.compose.material.icons.rounded.QrCode
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -70,14 +75,23 @@ fun RouteQrDialog(
                 modifier = Modifier.padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = if (isEnglish) "📱 Route QR Code" else "📱 QR de la Ruta",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Ink
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Rounded.QrCode,
+                        contentDescription = null,
+                        tint = Ink,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isEnglish) "Route QR Code" else "QR de la Ruta",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Ink
+                    )
+                }
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
                     text = "$startName ➔ $destName",
@@ -87,19 +101,30 @@ fun RouteQrDialog(
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Surface(
                     color = ToneBlueBg,
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text(
-                        text = if (isEnglish) { if (isAccessible) "♿ Accessible Route" else "🚶 Standard Route" } else { if (isAccessible) "♿ Ruta accesible PMR" else "🚶 Ruta Estándar" },
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Ink,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = if (isAccessible) Icons.AutoMirrored.Rounded.Accessible else Icons.AutoMirrored.Rounded.DirectionsWalk,
+                            contentDescription = null,
+                            tint = Ink,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (isEnglish) { if (isAccessible) "Accessible Route" else "Standard Route" } else { if (isAccessible) "Ruta accesible PMR" else "Ruta Estándar" },
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Ink
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))

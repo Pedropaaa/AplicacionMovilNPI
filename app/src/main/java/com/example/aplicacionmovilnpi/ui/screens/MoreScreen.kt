@@ -16,6 +16,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Accessible
+import androidx.compose.material.icons.automirrored.rounded.Help
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.BarChart
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.Email
+import androidx.compose.material.icons.rounded.Language
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
@@ -23,12 +33,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -90,7 +101,7 @@ fun MoreScreen(
         MoreOptionCard(
             title = if (isEnglish) "Language" else "Idioma",
             subtitle = if (isEnglish) "English 🇬🇧" else "Español 🇪🇸",
-            icon = "🌐",
+            icon = Icons.Rounded.Language,
             bgTone = ToneBlueBg,
             onClick = { showLanguageDialog = true }
         )
@@ -101,7 +112,7 @@ fun MoreScreen(
         MoreOptionCard(
             title = if (isEnglish) "Academic Record & Grades" else "Expediente y Notas",
             subtitle = if (isEnglish) "Grades and GPA" else "Calificaciones y nota media",
-            icon = "📊",
+            icon = Icons.Rounded.BarChart,
             bgTone = ToneRoseBg,
             onClick = { onNavigateToSubScreen("grades") }
         )
@@ -111,7 +122,7 @@ fun MoreScreen(
         MoreOptionCard(
             title = if (isEnglish) "Calendar & Deadlines" else "Calendario y Entregas",
             subtitle = if (isEnglish) "Exams, deadlines & events" else "Exámenes, entregas y eventos",
-            icon = "📅",
+            icon = Icons.Rounded.CalendarMonth,
             bgTone = TonePurpleBg,
             onClick = { onNavigateToSubScreen("calendar") }
         )
@@ -121,7 +132,7 @@ fun MoreScreen(
         MoreOptionCard(
             title = if (isEnglish) "Messages & Notices" else "Mensajes y Avisos",
             subtitle = if (isEnglish) "UGR institutional inbox" else "Buzón de correo institucional UGR",
-            icon = "✉️",
+            icon = Icons.Rounded.Email,
             bgTone = ToneBlueBg,
             onClick = { onNavigateToSubScreen("messages") }
         )
@@ -131,7 +142,7 @@ fun MoreScreen(
         MoreOptionCard(
             title = if (isEnglish) "Support & Help" else "Soporte y Ayuda",
             subtitle = if (isEnglish) "FAQs and support tickets" else "Preguntas frecuentes e incidencias",
-            icon = "❓",
+            icon = Icons.AutoMirrored.Rounded.Help,
             bgTone = ToneOrangeBg,
             onClick = { onNavigateToSubScreen("help") }
         )
@@ -141,7 +152,7 @@ fun MoreScreen(
         MoreOptionCard(
             title = if (isEnglish) "Accessibility" else "Accesibilidad",
             subtitle = if (isEnglish) "Large text, contrast & adapted routes" else "Texto grande, contraste y rutas adaptadas",
-            icon = "♿",
+            icon = Icons.AutoMirrored.Rounded.Accessible,
             bgTone = SoftBg,
             onClick = { onNavigateToSubScreen("accessibility") }
         )
@@ -150,8 +161,8 @@ fun MoreScreen(
 
         MoreOptionCard(
             title = if (isEnglish) "My Profile" else "Mi Perfil",
-            subtitle = "${FacultyData.Student.name}",
-            icon = "👤",
+            subtitle = FacultyData.Student.name,
+            icon = Icons.Rounded.Person,
             bgTone = SoftBg,
             onClick = { onNavigateToSubScreen("profile") }
         )
@@ -267,17 +278,17 @@ private fun LanguageRow(
 fun MoreOptionCard(
     title: String,
     subtitle: String,
-    icon: String,
-    bgTone: androidx.compose.ui.graphics.Color,
+    icon: ImageVector,
+    bgTone: Color,
     onClick: () -> Unit
 ) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        color = androidx.compose.ui.graphics.Color.White,
+        color = Color.White,
         shape = RoundedCornerShape(16.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+        border = BorderStroke(1.dp, CardBorder)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -289,7 +300,12 @@ fun MoreOptionCard(
                 modifier = Modifier.size(44.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text(text = icon, fontSize = 20.sp)
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = title,
+                        tint = Ink,
+                        modifier = Modifier.size(22.dp)
+                    )
                 }
             }
 
@@ -300,7 +316,12 @@ fun MoreOptionCard(
                 Text(text = subtitle, fontSize = 11.sp, color = MutedText, modifier = Modifier.padding(top = 2.dp))
             }
 
-            Text(text = "➔", fontSize = 14.sp, color = MutedText)
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MutedText,
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
 }

@@ -54,7 +54,6 @@ fun LocationStatusCard(
     hasLocationPermission: Boolean,
     onRequestPermission: () -> Unit,
     gpsLocation: Location?,
-    hasBarometer: Boolean,
     tracker: IndoorTracker,
     azimuthDeg: Float?,
     isRouteOpen: Boolean,
@@ -89,7 +88,7 @@ fun LocationStatusCard(
                     val here = gpsLocation.toGeoPoint()
                     val accuracy = "±${gpsLocation.accuracy.roundToInt()} m"
                     if (GeoUtils.isAtEtsiit(here)) {
-                        SensorLine("📍", if (isEnglish) "You are at ETSIIT ($accuracy). Indoors, the barometer and step counter help guide you." else "Estás en la ETSIIT ($accuracy). Dentro del edificio te guían el barómetro y los pasos.")
+                        SensorLine("📍", if (isEnglish) "You are at ETSIIT ($accuracy). Indoors, the step counter and map help guide you." else "Estás en la ETSIIT ($accuracy). Dentro del edificio te guían el plano y los pasos.")
                         if (onUseEntranceAsStart != null) {
                             SmallAction(if (isEnglish) "Start the route at the main entrance" else "Empezar la ruta en la entrada principal", onUseEntranceAsStart)
                         }
@@ -98,20 +97,6 @@ fun LocationStatusCard(
                         SensorLine("📍", if (isEnglish) "$distance from ETSIIT ($accuracy)" else "Estás a $distance de la ETSIIT ($accuracy)")
                     }
                 }
-            }
-
-            // --- Barómetro ---
-            if (hasBarometer) {
-                val floor = tracker.estimatedFloor
-                val pressure = tracker.pressureHpa?.let { "%.2f hPa".format(it).replace(".", ",") } ?: "…"
-                val altitude = tracker.relativeAltitudeM?.let { " · %+.1f m".format(it).replace(".", ",") } ?: ""
-                SensorLine(
-                    "🏢",
-                    if (floor != null) { if (isEnglish) "Estimated floor: ${getFloorName(floor)} ($pressure$altitude)" else "Planta estimada: ${getFloorName(floor)} ($pressure$altitude)" }
-                    else if (isEnglish) "Barometer ready ($pressure). Select your floor to calibrate it." else "Barómetro listo ($pressure). Indica en qué planta estás para calibrarlo."
-                )
-            } else {
-                SensorLine("🏢", if (isEnglish) "This phone has no barometer: change floors with the map buttons." else "Este móvil no tiene barómetro: cambia de planta con los botones del plano.")
             }
 
             // --- Brújula y pasos ---

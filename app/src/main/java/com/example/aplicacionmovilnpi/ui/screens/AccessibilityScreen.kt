@@ -18,10 +18,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -37,12 +33,14 @@ import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 @Composable
 fun AccessibilityScreen(
     onBack: () -> Unit,
+    isLargeText: Boolean,
+    onLargeTextChange: (Boolean) -> Unit,
+    isHighContrast: Boolean,
+    onHighContrastChange: (Boolean) -> Unit,
     defaultAccessibleRoute: Boolean,
     onDefaultAccessibleRouteChange: (Boolean) -> Unit
 ) {
     val isEnglish = LocalIsEnglish.current
-    var largeText by remember { mutableStateOf(false) }
-    var highContrast by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -108,8 +106,8 @@ fun AccessibilityScreen(
                         "Increase typography font size"
                     else
                         "Aumenta el tamaño de la tipografía",
-                    checked = largeText,
-                    onCheckedChange = { largeText = it }
+                    checked = isLargeText,
+                    onCheckedChange = onLargeTextChange
                 )
 
                 HorizontalDivider(
@@ -122,8 +120,8 @@ fun AccessibilityScreen(
                         "Improve element readability"
                     else
                         "Mejora la legibilidad de elementos",
-                    checked = highContrast,
-                    onCheckedChange = { highContrast = it }
+                    checked = isHighContrast,
+                    onCheckedChange = onHighContrastChange
                 )
 
                 HorizontalDivider(

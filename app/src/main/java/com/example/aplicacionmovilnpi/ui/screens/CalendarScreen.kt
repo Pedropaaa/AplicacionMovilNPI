@@ -1,7 +1,6 @@
 package com.example.aplicacionmovilnpi.ui.screens
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,8 +14,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,8 +30,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aplicacionmovilnpi.data.CalendarEventItem
-import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
 import com.example.aplicacionmovilnpi.data.SampleData
+import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
 import com.example.aplicacionmovilnpi.ui.theme.CardBorder
 import com.example.aplicacionmovilnpi.ui.theme.Ink
 import com.example.aplicacionmovilnpi.ui.theme.MutedText
@@ -90,7 +93,19 @@ fun CalendarScreen(onBack: () -> Unit) {
             colors = ButtonDefaults.buttonColors(containerColor = UgrRed),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Text(text = if (isEnglish) "➕ Add assignment / exam" else "➕ Añadir nueva entrega / examen", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Rounded.Add,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = if (isEnglish) "Add assignment / exam" else "Añadir nueva entrega / examen",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(30.dp))
@@ -158,12 +173,23 @@ fun CalendarEventCard(event: CalendarEventItem) {
                     fontWeight = FontWeight.Bold,
                     color = Ink
                 )
-                Text(
-                    text = if (isEnglish) "🕒 Time: ${event.time} · $englishDescription" else "🕒 Hora: ${event.time} · ${event.description}",
-                    fontSize = 11.sp,
-                    color = MutedText,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(top = 2.dp)
-                )
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Schedule,
+                        contentDescription = null,
+                        tint = MutedText,
+                        modifier = Modifier.size(12.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = if (isEnglish) "Time: ${event.time} · $englishDescription" else "Hora: ${event.time} · ${event.description}",
+                        fontSize = 11.sp,
+                        color = MutedText
+                    )
+                }
             }
         }
     }
