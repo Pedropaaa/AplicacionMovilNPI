@@ -40,12 +40,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -182,36 +180,19 @@ fun PoiPickerSheet(
             .associate { it.key to it.value }
     }
 
-    val isExpanded by remember {
-        derivedStateOf { sheetState.currentValue == SheetValue.Expanded }
-    }
-
-    val blockUpwardOverscrollToSheet = remember(isExpanded) {
+    // La lista se desplaza libremente en los dos sentidos. Solo se consume el desplazamiento
+    // que la lista ya no puede usar (al llegar arriba o abajo del todo), para que no pase a la
+    // hoja: si no, la hoja intenta moverse y la pantalla tintinea al llegar al final.
+    val keepScrollInsideList = remember {
         object : NestedScrollConnection {
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                if (isExpanded && available.y > 0f) {
-                    return Offset(0f, available.y)
-                }
-                return Offset.Zero
-            }
-
             override fun onPostScroll(
                 consumed: Offset,
                 available: Offset,
                 source: NestedScrollSource
-            ): Offset {
-                if (isExpanded && available.y > 0f) {
-                    return Offset(0f, available.y)
-                }
-                return Offset.Zero
-            }
+            ): Offset = Offset(0f, available.y)
 
-            override suspend fun onPreFling(available: Velocity): Velocity {
-                if (isExpanded && available.y > 0f) {
-                    return Velocity(0f, available.y)
-                }
-                return Velocity.Zero
-            }
+            override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity =
+                Velocity(0f, available.y)
         }
     }
 
@@ -361,7 +342,7 @@ fun PoiPickerSheet(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .nestedScroll(blockUpwardOverscrollToSheet),
+                        .nestedScroll(keepScrollInsideList),
                     contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 32.dp)
                 ) {
                     grouped.forEach { (floor, floorPois) ->
