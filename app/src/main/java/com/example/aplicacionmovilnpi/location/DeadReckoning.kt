@@ -35,7 +35,7 @@ object DeadReckoning {
     const val UNITS_PER_METER = 6f
 
     /** Longitud media de una zancada al caminar. */
-    const val STEP_LENGTH_M = 0.95f
+    const val STEP_LENGTH_M = 1.1f
 
     /**
      * Azimut (grados respecto al norte) que corresponde a «hacia arriba» en el plano.
