@@ -186,23 +186,31 @@ fun rememberCompassAzimuth(active: Boolean): Float? {
 }
 
 /**
- * Llama a [onStep] por cada paso. Usa el sensor de pasos del sistema si existe y hay permiso
- * de actividad física; si no, detecta los pasos con el acelerómetro ([StepDetector]).
+ * Llama a [onStep] por cada paso. Escucha a la vez el sensor de pasos del sistema (si existe y
+ * hay permiso de actividad física) y el acelerómetro ([StepDetector]); [StepFusion] decide cuál
+ * cuenta en cada momento para que los pasos empiecen a contarse enseguida y no se cuenten dos
+ * veces.
  */
 @Composable
 fun StepEffect(active: Boolean, onStep: () -> Unit) {
     val context = LocalContext.current
-    val useSystemDetector = hasSensor(context, Sensor.TYPE_STEP_DETECTOR) &&
+    val canUseSystemDetector = hasSensor(context, Sensor.TYPE_STEP_DETECTOR) &&
             LocationPermissions.hasActivityRecognition(context)
     val detector = remember { StepDetector() }
+    val fusion = remember { StepFusion() }
 
-    SensorEffect(active && useSystemDetector, listOf(Sensor.TYPE_STEP_DETECTOR)) { onStep() }
+    SensorEffect(active && canUseSystemDetector, listOf(Sensor.TYPE_STEP_DETECTOR)) { event ->
+        if (fusion.onSystemStep(event.timestamp / 1_000_000)) onStep()
+    }
     SensorEffect(
-        active && !useSystemDetector,
+        active,
         listOf(Sensor.TYPE_ACCELEROMETER),
         delay = SensorManager.SENSOR_DELAY_GAME
     ) { event ->
-        if (detector.onAcceleration(event.values[0], event.values[1], event.values[2], event.timestamp / 1_000_000)) {
+        val t = event.timestamp / 1_000_000
+        if (detector.onAcceleration(event.values[0], event.values[1], event.values[2], t) &&
+            fusion.onAccelerometerStep(t)
+        ) {
             onStep()
         }
     }

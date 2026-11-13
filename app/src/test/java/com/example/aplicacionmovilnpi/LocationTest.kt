@@ -6,6 +6,7 @@ import com.example.aplicacionmovilnpi.location.GeoUtils
 import com.example.aplicacionmovilnpi.location.IndoorTracker
 import com.example.aplicacionmovilnpi.location.MapPoint
 import com.example.aplicacionmovilnpi.location.StepDetector
+import com.example.aplicacionmovilnpi.location.StepFusion
 import com.example.aplicacionmovilnpi.model.Node
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -57,6 +58,61 @@ class LocationTest {
         var steps = 0
         for (i in 0 until 500) if (detector.onAcceleration(0.1f, 0f, 9.81f + (i % 3) * 0.1f, i * 20L)) steps++
         assertEquals(0, steps)
+    }
+
+    @Test
+    fun picosSuavesConElMovilEnLaManoTambienCuentan() {
+        val detector = StepDetector()
+        var steps = 0
+        var t = 0L
+        repeat(10) {
+            repeat(10) { if (detector.onAcceleration(0f, 0f, 9.81f, t)) steps++; t += 20 }
+            repeat(3) { if (detector.onAcceleration(0f, 0f, 11.3f, t)) steps++; t += 20 }
+            repeat(12) { if (detector.onAcceleration(0f, 0f, 9.0f, t)) steps++; t += 20 }
+        }
+        assertEquals(10, steps)
+    }
+
+    // --- Combinación sensor de pasos del sistema + acelerómetro ---
+
+    @Test
+    fun sinSensorDelSistemaCuentaElAcelerometro() {
+        val fusion = StepFusion()
+        val counted = (0 until 5).count { fusion.onAccelerometerStep(it * 500L) }
+        assertEquals(5, counted)
+    }
+
+    @Test
+    fun losPrimerosPasosLosCuentaElAcelerometroYLuegoElSistema() {
+        val fusion = StepFusion()
+        var steps = 0
+        // El sistema tarda en arrancar: los 4 primeros pasos solo los ve el acelerómetro
+        for (i in 0 until 4) if (fusion.onAccelerometerStep(i * 500L)) steps++
+        // Llega el sistema; desde entonces el acelerómetro no cuenta para no duplicar
+        for (i in 4 until 10) {
+            val t = i * 500L
+            if (fusion.onSystemStep(t)) steps++
+            if (fusion.onAccelerometerStep(t + 30)) steps++
+        }
+        assertEquals(10, steps)
+    }
+
+    @Test
+    fun pasosDelSistemaQueLleganTardeNoSeCuentanDosVeces() {
+        val fusion = StepFusion()
+        var steps = 0
+        for (i in 0 until 6) if (fusion.onAccelerometerStep(i * 500L)) steps++
+        // El sistema entrega de golpe los mismos 6 pasos, con sus instantes originales
+        for (i in 0 until 6) if (fusion.onSystemStep(i * 500L + 20)) steps++
+        assertEquals(6, steps)
+    }
+
+    @Test
+    fun siElSistemaDejaDeMandarPasosVuelveElAcelerometro() {
+        val fusion = StepFusion()
+        assertTrue(fusion.onSystemStep(0L))
+        assertFalse(fusion.onAccelerometerStep(1_000L))
+        assertTrue(fusion.onAccelerometerStep(3_000L))
     }
 
     // --- Pasos + brújula ---

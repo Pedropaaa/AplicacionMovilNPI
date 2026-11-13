@@ -1028,7 +1028,14 @@ initialDestPoiId
                 isTracking = isTracking,
 
                 showTrackingControl = isRouteOpen && routeSegments.isNotEmpty(),
-                onTrackingChange = { isTracking = it },
+                onTrackingChange = { enabled ->
+                    isTracking = enabled
+                    // El sensor de pasos del sistema necesita este permiso (Android 10+). Si la
+                    // ubicación ya estaba concedida, no se había vuelto a pedir.
+                    if (enabled && !LocationPermissions.hasActivityRecognition(context)) {
+                        permissionLauncher.launch(LocationPermissions.all)
+                    }
+                },
 
                 onCalibrateFloor = {
                     tracker.calibrateFloor(floorNumber)
