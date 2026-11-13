@@ -100,21 +100,6 @@ import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
 import java.io.File
 import org.osmdroid.util.GeoPoint as OsmPoint
 import org.osmdroid.events.MapListener
-import androidx.compose.foundation.background
-import com.example.aplicacionmovilnpi.ui.theme.SoftBg
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.ui.text.input.ImeAction
 
 private const val ORIGIN_GPS = "gps"
 private const val ORIGIN_MAP = "map"
@@ -196,83 +181,45 @@ fun CityRouteSection(
     var error by remember { mutableStateOf<String?>(null) }
     var showAllSteps by remember { mutableStateOf(false) }
 
-    val destination = CityPlaces.byId(destId)
+    val destination = CityPlaces.byId(destId) ?: CityPlaces.etsiit
 
-    val selectedOriginPlace = CityPlaces.byId(originId)
-
-    val originTitle = when (originId) {
-        ORIGIN_GPS ->
-            if (isEnglish) "My location" else "Mi ubicación"
-
-        ORIGIN_MAP ->
-            if (isEnglish) "Map point" else "Punto del mapa"
-
-        else ->
-            selectedOriginPlace?.name ?: ""
-    }
-
-    val originSubtitle = when (originId) {
-        ORIGIN_GPS ->
-            if (isEnglish) "GPS location" else "Ubicación GPS"
-
-        ORIGIN_MAP ->
-            if (isEnglish) "Selected on map" else "Seleccionado en el mapa"
-
-        else ->
-            selectedOriginPlace?.campus
-    }
-
-    var pickingOrigin by rememberSaveable {
-        mutableStateOf(false)
-    }
-
-    var pickingDestination by rememberSaveable {
-        mutableStateOf(false)
-    }
-
-    // Abrir el selector exterior de origen desde el buscador común.
-    LaunchedEffect(requestOriginPicker) {
-        if (requestOriginPicker) {
-            pickingOrigin = true
-            pickingDestination = false
-            onOriginPickerRequestConsumed()
-        }
-    }
-
-    // Abrir el selector exterior de destino desde el buscador común.
-    LaunchedEffect(requestDestinationPicker) {
-        if (requestDestinationPicker) {
-            pickingDestination = true
-            pickingOrigin = false
-            onDestinationPickerRequestConsumed()
-        }
-    }
-
-    // Intercambiar origen y destino desde el buscador común.
-    LaunchedEffect(requestSwap) {
-        if (requestSwap) {
-
-            val destinationCanBeSwapped =
-                destId == ORIGIN_GPS ||
-                        destId == ORIGIN_MAP ||
-                        destination != null
-
-            if (!initialDestinationResolutionPending && destinationCanBeSwapped) {
-                val previousOriginId = originId
-
-                originId = destId
-                destId = previousOriginId
-
-                // Cerramos cualquier selector que estuviera abierto.
-                pickingOrigin = false
-                pickingDestination = false
-
-                // Limpiamos el estado de la ruta anterior.
-                error = null
-                showAllSteps = false
+    // --- ESTADOS Y FILTRADO DE BÚSQUEDA DEL ORIGEN ---
+    var originSearchQuery by rememberSaveable {
+        mutableStateOf(
+            when (originId) {
+                ORIGIN_GPS -> "📍 Mi ubicación"
+                ORIGIN_MAP -> "👆 Punto del mapa"
+                else -> CityPlaces.byId(originId)?.name ?: ""
             }
+        )
+    }
+    var isOriginSearchExpanded by remember { mutableStateOf(false) }
 
-            onSwapRequestConsumed()
+    val filteredOrigins = remember(originSearchQuery, destId) {
+        val available = CityPlaces.all.filter { it.id != destId }
+        if (originSearchQuery.isBlank() || originSearchQuery == "📍 Mi ubicación" || originSearchQuery == "👆 Punto del mapa") {
+            available
+        } else {
+            available.filter { place ->
+                place.name.contains(originSearchQuery, ignoreCase = true) ||
+                        place.campus.contains(originSearchQuery, ignoreCase = true)
+            }
+        }
+    }
+
+    // --- ESTADOS Y FILTRADO DE BÚSQUEDA DEL DESTINO ---
+    var destSearchQuery by rememberSaveable { mutableStateOf(destination.name) }
+    var isDestSearchExpanded by remember { mutableStateOf(false) }
+
+    val filteredDestinations = remember(destSearchQuery, originId) {
+        val available = CityPlaces.all.filter { it.id != originId }
+        if (destSearchQuery.isBlank()) {
+            available
+        } else {
+            available.filter { place ->
+                place.name.contains(destSearchQuery, ignoreCase = true) ||
+                        place.campus.contains(destSearchQuery, ignoreCase = true)
+            }
         }
     }
 
@@ -727,30 +674,18 @@ fun CityRouteSection(
             onPlaceTap = { id ->
                 initialDestinationResolutionPending = false
                 destId = id
-                pickingDestination = false
-
+                CityPlaces.byId(id)?.let { destSearchQuery = it.name }
                 if (originId == id) {
-                    originId = if (hasLocationPermission) {
-                        ORIGIN_GPS
-                    } else {
-                        ORIGIN_MAP
-                    }
+                    originId = if (hasLocationPermission) ORIGIN_GPS else ORIGIN_MAP
+                    originSearchQuery = if (hasLocationPermission) "📍 Mi ubicación" else "👆 Punto del mapa"
                 }
             },
             onMapTap = { point ->
-                if (isMapOriginSelectionActive) {
-                    initialDestinationResolutionPending = false
-
-                    mapOriginLat = point.lat
-                    mapOriginLon = point.lon
-                    originId = ORIGIN_MAP
-
-                    pickingOrigin = false
-                    error = null
-
-                    // Desactivamos el botón después de seleccionar el punto.
-                    onMapOriginSelected()
-                }
+                mapOriginLat = point.lat
+                mapOriginLon = point.lon
+                originId = ORIGIN_MAP
+                originSearchQuery = "👆 Punto del mapa"
+                isOriginSearchExpanded = false
             },
             onLocateUnavailable = {
                 if (hasLocationPermission) error = if (isEnglish) "No GPS signal yet. Turn on location services." else "Todavía no hay señal GPS. Activa la ubicación del móvil."
@@ -906,118 +841,128 @@ private fun CityPlacePickerSheet(
                 .fillMaxWidth()
                 .fillMaxHeight(0.92f)
         ) {
+            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // ==================== SELECCIÓN DE ORIGEN ====================
+                Text(text = "🟢 Origen", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Ink)
 
-            // CABECERA
-            Row(
-                modifier = Modifier.padding(horizontal = 20.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .background(accent, CircleShape)
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Text(
-                    text = title,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Ink
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // BUSCADOR
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
-                placeholder = {
-                    Text(
-                        text = if (isEnglish) {
-                            "Search faculty, library, dining hall..."
-                        } else {
-                            "Buscar facultad, biblioteca, comedor..."
-                        },
-                        fontSize = 13.sp
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Rounded.Search,
-                        contentDescription = null,
-                        tint = MutedText,
-                        modifier = Modifier.size(20.dp)
-                    )
-                },
-                trailingIcon = if (query.isNotEmpty()) {
-                    {
-                        Icon(
-                            imageVector = Icons.Rounded.Clear,
-                            contentDescription = "Limpiar",
-                            tint = MutedText,
-                            modifier = Modifier
-                                .clickable { query = "" }
-                                .padding(8.dp)
-                                .size(18.dp)
-                        )
+                // Botones de acción rápida para GPS y Mapa
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PlaceChip("📍 Mi ubicación", selected = originId == ORIGIN_GPS) {
+                        if (hasLocationPermission) {
+                            originId = ORIGIN_GPS
+                            originSearchQuery = "📍 Mi ubicación"
+                            isOriginSearchExpanded = false
+                        } else onRequestPermission()
                     }
-                } else {
-                    null
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(14.dp),
-                keyboardOptions = KeyboardOptions(
-                    imeAction = ImeAction.Search
-                ),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = accent,
-                    unfocusedBorderColor = CardBorder,
-                    focusedContainerColor = SoftBg,
-                    unfocusedContainerColor = SoftBg,
-                    cursorColor = accent
+                    PlaceChip("👆 Punto del mapa", selected = originId == ORIGIN_MAP) {
+                        if (mapOrigin != null) {
+                            originId = ORIGIN_MAP
+                            originSearchQuery = "👆 Punto del mapa"
+                            isOriginSearchExpanded = false
+                        } else {
+                            error = "Toca el mapa para elegir el punto de origen"
+                        }
+                    }
+                }
+
+                // Campo de búsqueda de origen
+                androidx.compose.material3.OutlinedTextField(
+                    value = originSearchQuery,
+                    onValueChange = {
+                        originSearchQuery = it
+                        isOriginSearchExpanded = true
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    placeholder = { Text("O busca un origen UGR…", fontSize = 13.sp) },
+                    shape = RoundedCornerShape(12.dp)
                 )
-            )
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // FILTROS POR TIPO
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(CityPlaceFilter.entries) { item ->
-                    CityPlaceFilterPill(
-                        text = if (isEnglish) item.englishLabel else item.spanishLabel,
-                        icon = item.icon,
-                        selected = filter == item,
-                        accent = accent
+                // Resultados del buscador de origen
+                if (isOriginSearchExpanded && filteredOrigins.isNotEmpty()) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 160.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
+                        color = Color(0xFFFAFAFA)
                     ) {
-                        filter = item
+                        androidx.compose.foundation.lazy.LazyColumn {
+                            items(filteredOrigins) { place ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            originId = place.id
+                                            originSearchQuery = place.name
+                                            isOriginSearchExpanded = false
+                                        }
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(text = place.name, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Ink)
+                                        Text(text = "Campus ${place.campus}", fontSize = 10.sp, color = MutedText)
+                                    }
+                                }
+                                HorizontalDivider(color = CardBorder.copy(alpha = 0.5f))
+                            }
+                        }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+                // ==================== SELECCIÓN DE DESTINO ====================
+                Text(text = "🔴 Destino", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Ink)
 
-            // FILTROS POR CAMPUS
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                item {
-                    CityPlaceFilterPill(
-                        text = if (isEnglish) "All campuses" else "Todos los campus",
-                        selected = campusFilter == null,
-                        accent = accent,
-                        small = true
+                androidx.compose.material3.OutlinedTextField(
+                    value = destSearchQuery,
+                    onValueChange = {
+                        destSearchQuery = it
+                        isDestSearchExpanded = true
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    placeholder = { Text("Buscar facultad o centro UGR…", fontSize = 13.sp) },
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                // Resultados del buscador de destino
+                if (isDestSearchExpanded && filteredDestinations.isNotEmpty()) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 160.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
+                        color = Color(0xFFFAFAFA)
                     ) {
-                        campusFilter = null
+                        androidx.compose.foundation.lazy.LazyColumn {
+                            items(filteredDestinations) { place ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            destId = place.id
+                                            destSearchQuery = place.name
+                                            isDestSearchExpanded = false
+                                            if (originId == place.id) {
+                                                originId = if (hasLocationPermission) ORIGIN_GPS else ORIGIN_MAP
+                                                originSearchQuery = if (hasLocationPermission) "📍 Mi ubicación" else "👆 Punto del mapa"
+                                            }
+                                        }
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(text = place.name, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Ink)
+                                        Text(text = "Campus ${place.campus}", fontSize = 10.sp, color = MutedText)
+                                    }
+                                }
+                                HorizontalDivider(color = CardBorder.copy(alpha = 0.5f))
+                            }
+                        }
                     }
                 }
 
@@ -1034,29 +979,24 @@ private fun CityPlacePickerSheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // CONTADOR
-            Text(
-                text = if (isEnglish) {
-                    "${filteredPlaces.size} locations"
-                } else {
-                    "${filteredPlaces.size} ubicaciones"
-                },
-                fontSize = 11.sp,
-                color = MutedText,
-                modifier = Modifier.padding(horizontal = 20.dp)
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // RESULTADOS
-            if (filteredPlaces.isEmpty() && onSelectMyLocation == null) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
+                Button(
+                    onClick = {
+                        val from = origin ?: return@Button
+                        isLoading = true
+                        error = null
+                        isOriginSearchExpanded = false
+                        isDestSearchExpanded = false
+                        scope.launch {
+                            WalkingRouteService.fetch(from, destination.point)
+                                .onSuccess { route = it; showAllSteps = false }
+                                .onFailure { error = "No se pudo calcular la ruta. ¿Tienes conexión a internet?" }
+                            isLoading = false
+                        }
+                    },
+                    enabled = origin != null && !isLoading,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = UgrRed),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally
@@ -1236,58 +1176,13 @@ private fun CityPlacePickerSheet(
     }
 }
 
-@Composable
-private fun CityPlaceFilterPill(
-    text: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
-    selected: Boolean,
-    accent: Color,
-    small: Boolean = false,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .clip(CircleShape)
-            .background(
-                if (selected) accent.copy(alpha = 0.12f)
-                else SoftBg
-            )
-            .border(
-                width = 1.dp,
-                color = if (selected) {
-                    accent.copy(alpha = 0.5f)
-                } else {
-                    CardBorder
-                },
-                shape = CircleShape
-            )
-            .clickable(onClick = onClick)
-    ) {
-        Row(
-            modifier = Modifier.padding(
-                horizontal = 12.dp,
-                vertical = if (small) 7.dp else 9.dp
-            ),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (icon != null) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = if (selected) accent else Ink,
-                    modifier = Modifier.size(15.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-            }
-            Text(
-                text = text,
-                fontSize = if (small) 10.sp else 11.sp,
-                fontWeight = if (selected) {
-                    FontWeight.SemiBold
-                } else {
-                    FontWeight.Normal
-                },
-                color = if (selected) accent else Ink
+        route?.let { r ->
+            RouteInstructionsCard(
+                route = r,
+                destinationName = destination.name,
+                showAll = showAllSteps,
+                onToggleShowAll = { showAllSteps = !showAllSteps },
+                onContinueIndoors = onContinueIndoors.takeIf { destId == CityPlaces.etsiit.id }
             )
         }
     }

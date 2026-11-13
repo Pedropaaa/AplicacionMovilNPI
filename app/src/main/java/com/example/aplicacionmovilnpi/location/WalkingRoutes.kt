@@ -29,7 +29,6 @@ object CityPlaces {
         // ==========================================
         CityPlace("etsiit", "ETSIIT - Informática y Telecomunicación", "Aynadamar", GeoPoint(37.197076, -3.624243)),
         CityPlace("bellas_artes", "Facultad de Bellas Artes", "Aynadamar", GeoPoint(37.193240, -3.626210)),
-        CityPlace("comedor_etsiit", "Comedor Universitario ETSIIT", "Aynadamar", GeoPoint(37.197076, -3.624243)),
 
         // ==========================================
         // CAMPUS FUENTENUEVA
@@ -50,7 +49,7 @@ object CityPlaces {
         CityPlace("educacion", "Facultad de Ciencias de la Educación", "Cartuja", GeoPoint(37.191763, -3.599298)),
         CityPlace("odontologia", "Facultad de Odontología", "Cartuja", GeoPoint(37.187654, -3.596637)),
         CityPlace("comunicacion", "Facultad de Comunicación y Documentación", "Cartuja", GeoPoint(37.189658, -3.598910)),
-        CityPlace("inef", "Facultad de Ciencias del Deporte (INEF)", "Cartuja", GeoPoint(37.2050953, -3.5979293)),
+        CityPlace("inef", "Facultad de Ciencias del Deporte (INEF)", "Cartuja", GeoPoint(37.198337, -3.595906)),
         CityPlace("comedor_cartuja", "Comedor Universitario Cartuja", "Cartuja", GeoPoint(37.191297, -3.599427)),
 
         // ==========================================
@@ -78,69 +77,11 @@ object CityPlaces {
         CityPlace("triunfo", "Complejo Administrativo Triunfo", "Otros", GeoPoint(37.184400, -3.601000)),
         CityPlace("clm", "Centro de Lenguas Modernas (CLM)", "Otros", GeoPoint(37.173874, -3.592735)),
         CityPlace("carmen_victoria", "Carmen de la Victoria", "Otros", GeoPoint(37.178848, -3.587932)),
-        CityPlace("corrala_santiago", "Corrala de Santiago", "Otros", GeoPoint(37.173434, -3.594793)),
-
-        // ==========================================
-        // BIBLIOTECAS UNIVERSITARIAS UGR
-        // ==========================================
-
-        // ------------------------------------------
-        // CAMPUS AYNADAMAR
-        // ------------------------------------------
-        CityPlace("biblioteca_etsiit", "Biblioteca de Informática y Telecomunicación", "Aynadamar", GeoPoint(37.1968511, -3.6250039)),
-        CityPlace("biblioteca_bellas_artes", "Biblioteca de Bellas Artes", "Aynadamar", GeoPoint(37.1955078, -3.6266987)),
-
-        // ------------------------------------------
-        // CAMPUS FUENTENUEVA
-        // ------------------------------------------
-        CityPlace("biblioteca_ciencias", "Biblioteca de Ciencias", "Fuentenueva", GeoPoint(37.182470, -3.608300)),
-        CityPlace("biblioteca_politecnica", "Biblioteca Politécnica", "Fuentenueva", GeoPoint(37.183561, -3.608677)),
-
-        // ------------------------------------------
-        // ÁREA DE NUEVA GRANADA
-        // ------------------------------------------
-        CityPlace("biblioteca_deportes", "Biblioteca de Ciencias del Deporte", "Nueva Granada", GeoPoint(37.2050953, -3.5979293)),
-
-        // ------------------------------------------
-        // CAMPUS CARTUJA
-        // ------------------------------------------
-        CityPlace("biblioteca_colegio_maximo", "Biblioteca del Colegio Máximo", "Cartuja", GeoPoint(37.1932947, -3.5965153)),
-        CityPlace("biblioteca_educacion", "Biblioteca de Ciencias de la Educación", "Cartuja", GeoPoint(37.1927120, -3.5995049)),
-        CityPlace("biblioteca_economicas", "Biblioteca de Económicas y Empresariales", "Cartuja", GeoPoint(37.1924201, -3.5947257)),
-        CityPlace("biblioteca_farmacia", "Biblioteca de Farmacia", "Cartuja", GeoPoint(37.1945146, -3.5965296)),
-        CityPlace("biblioteca_filosofia", "Biblioteca de Filosofía y Letras", "Cartuja", GeoPoint(37.1912879, -3.5952891)),
-        CityPlace("biblioteca_psicologia", "Biblioteca de Psicología", "Cartuja", GeoPoint(37.1944643, -3.5943505)),
-
-        // ------------------------------------------
-        // CAMPUS CENTRO
-        // ------------------------------------------
-        CityPlace("biblioteca_derecho", "Biblioteca de Derecho", "Centro", GeoPoint(37.1787723, -3.6030586)),
-        CityPlace("biblioteca_hospital_real", "Biblioteca del Hospital Real", "Centro", GeoPoint(37.1846347, -3.6008714)),
-        CityPlace("biblioteca_institutos", "Biblioteca de Institutos y Recursos Especializados", "Centro", GeoPoint(37.1810261, -3.6044263)),
-        CityPlace("biblioteca_politicas", "Biblioteca de Ciencias Políticas y Sociología", "Centro", GeoPoint(37.1807027, -3.6045967)),
-        CityPlace("biblioteca_san_jeronimo", "Biblioteca del Edificio San Jerónimo", "Centro", GeoPoint(37.1804206, -3.6042372)),
-        CityPlace("biblioteca_traduccion", "Biblioteca de Traducción e Interpretación", "Centro", GeoPoint(37.1754771, -3.603615)),
-
-        // ------------------------------------------
-        // ÁREA DEL REALEJO
-        // ------------------------------------------
-        CityPlace("biblioteca_arquitectura", "Biblioteca de Arquitectura", "Realejo", GeoPoint(37.1729047, -3.5912768)),
-
-        // ------------------------------------------
-        // CAMPUS PTS
-        // ------------------------------------------
-        CityPlace("biblioteca_biosanitaria", "Biblioteca de Medicina y Ciencias de la Salud", "PTS", GeoPoint(37.1485325, -3.6029231))
+        CityPlace("corrala_santiago", "Corrala de Santiago", "Otros", GeoPoint(37.173434, -3.594793))
     )
 
     /** Referencia directa al destino por defecto. */
     val etsiit: CityPlace = all.first { it.id == "etsiit" }
-
-    /**
-     * Todas las bibliotecas de la UGR incluidas en el mapa.
-     */
-    val bibliotecas: List<CityPlace> by lazy {
-        all.filter { it.id.startsWith("biblioteca_") }
-    }
 
     /** Índice en memoria para consultas instantáneas O(1) por ID. */
     private val mapById: Map<String, CityPlace> by lazy {
