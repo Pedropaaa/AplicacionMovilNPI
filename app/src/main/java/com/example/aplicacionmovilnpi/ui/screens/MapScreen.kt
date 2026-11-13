@@ -419,61 +419,68 @@ initialDestPoiId
     val azimuth = rememberCompassAzimuth(active = indoorSensorsActive)
 
 // Si es un destino especial, buscamos el POI real más cercano.
-val destinationResolution = remember(
-    startPoiId,
-    destPoiId,
-    isAccessibleRoute,
-    allPois
-) {
-    when (destPoiId) {
+    val destinationResolution = remember(
+        startPoiId,
+        destPoiId,
+        isAccessibleRoute,
+        allPois
+    ) {
+        when (destPoiId) {
+            DEST_ASEO_CERCANO -> {
+                if (startPoiId.isBlank()) {
+                    DestinationResolution(poi = null)
+                } else {
+                    resolveNearestPoi(
+                        startPoiId = startPoiId,
+                        candidates = allPois.filter { it.isAseo() },
+                        routeManager = routeManager,
+                        isAccessibleRoute = isAccessibleRoute
+                    )
+                }
+            }
 
-        DEST_ASEO_CERCANO -> {
-            resolveNearestPoi(
-                startPoiId = startPoiId,
-                candidates = allPois.filter { it.isAseo() },
-                routeManager = routeManager,
-                isAccessibleRoute = isAccessibleRoute
-            )
-        }
+            DEST_FUENTE_CERCANA -> {
+                if (startPoiId.isBlank()) {
+                    DestinationResolution(poi = null)
+                } else {
+                    val nearestFacilityNodeIds = setOf(
+                        "n_banos_p0",
+                        "n_banos_p1",
+                        "n_banos_p2",
+                        "n_banos_p3",
+                        "n_escaleras_principal_p1",
+                        "n_escaleras_principal_p2",
+                        "n_escaleras_principal_p3",
+                        "n_escaleras_principal_p4"
+                    )
+                    resolveNearestPoi(
+                        startPoiId = startPoiId,
+                        candidates = allPois.filter { it.nodeId in nearestFacilityNodeIds },
+                        routeManager = routeManager,
+                        isAccessibleRoute = isAccessibleRoute
+                    )
+                }
+            }
 
-        DEST_FUENTE_CERCANA -> {
-            val nearestFacilityNodeIds = setOf(
-                "n_banos_p0",
-                "n_banos_p1",
-                "n_banos_p2",
-                "n_banos_p3",
-                "n_escaleras_principal_p1",
-                "n_escaleras_principal_p2",
-                "n_escaleras_principal_p3",
-                "n_escaleras_principal_p4"
-            )
-            resolveNearestPoi(
-                startPoiId = startPoiId,
-                candidates = allPois.filter { it.nodeId in nearestFacilityNodeIds },
-                routeManager = routeManager,
-                isAccessibleRoute = isAccessibleRoute
-            )
-        }
+            DEST_COMEDOR_CERCANO -> {
+                DestinationResolution(
+                    poi = allPois.find { it.id == "poi_comedor" }
+                )
+            }
 
-        DEST_COMEDOR_CERCANO -> {
-            DestinationResolution(
-                poi = allPois.find { it.id == "poi_comedor" }
-            )
-        }
+            DEST_BIBLIOTECA_CERCANA -> {
+                DestinationResolution(
+                    poi = allPois.find { it.id == "poi_biblioteca" }
+                )
+            }
 
-        DEST_BIBLIOTECA_CERCANA -> {
-            DestinationResolution(
-                poi = allPois.find { it.id == "poi_biblioteca" }
-            )
-        }
-
-        else -> {
-            DestinationResolution(
-                poi = allPois.find { it.id == destPoiId }
-            )
+            else -> {
+                DestinationResolution(
+                    poi = allPois.find { it.id == destPoiId }
+                )
+            }
         }
     }
-}
 
 // Calculamos la ruta utilizando el POI real resuelto.
     val calculatedRoute = remember(
@@ -532,17 +539,21 @@ val destinationResolution = remember(
     }
 
     val destinationError = when {
-        destPoiId == DEST_ASEO_CERCANO && destPoi == null ->
-            "No se ha encontrado un aseo con ruta disponible desde este origen."
+        destPoiId == DEST_ASEO_CERCANO && startPoi != null && destPoi == null ->
+            if (isEnglish) "No restroom with an available route was found from this origin."
+            else "No se ha encontrado un aseo con ruta disponible desde este origen."
 
-        destPoiId == DEST_FUENTE_CERCANA && destPoi == null ->
-            "No se ha encontrado una fuente con ruta disponible desde este origen."
+        destPoiId == DEST_FUENTE_CERCANA && startPoi != null && destPoi == null ->
+            if (isEnglish) "No water fountain with an available route was found from this origin."
+            else "No se ha encontrado una fuente con ruta disponible desde este origen."
 
         destPoiId == DEST_COMEDOR_CERCANO && destPoi == null ->
-            "No se ha encontrado el comedor de la ETSIIT."
+            if (isEnglish) "ETSIIT dining hall was not found."
+            else "No se ha encontrado el comedor de la ETSIIT."
 
         destPoiId == DEST_BIBLIOTECA_CERCANA && destPoi == null ->
-            "No se ha encontrado la biblioteca de la ETSIIT."
+            if (isEnglish) "ETSIIT library was not found."
+            else "No se ha encontrado la biblioteca de la ETSIIT."
 
         else -> null
     }
