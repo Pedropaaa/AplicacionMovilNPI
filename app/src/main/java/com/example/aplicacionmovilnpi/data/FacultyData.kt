@@ -324,8 +324,8 @@ object FacultyData {
         const val initials = "LM"
         const val email = "lucia@correo.ugr.es"
         const val degree = "Grado en Ingeniería Informática"
-        const val course = "4º · Computación y Sistemas Inteligentes"
-        const val group = "Grupo A · prácticas A1"
+        //const val course = "4º · Computación y Sistemas Inteligentes"
+        //const val group = "Grupo A · prácticas A1"
         const val academicYear = "2026/2027"
     }
 

@@ -40,6 +40,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
 import com.example.aplicacionmovilnpi.ui.theme.Ink
 import com.example.aplicacionmovilnpi.ui.theme.MutedText
 import com.example.aplicacionmovilnpi.ui.theme.UgrRed
@@ -49,6 +50,7 @@ import com.example.aplicacionmovilnpi.ui.theme.UgrRedDark
 fun LoginScreen(
     onLoginSuccess: (rememberAccount: Boolean) -> Unit
 ) {
+    val isEnglish = LocalIsEnglish.current
     var email by remember { mutableStateOf("lucia@correo.ugr.es") }
     var password by remember { mutableStateOf("••••••••") }
     var rememberAccount by remember { mutableStateOf(true) }
@@ -107,7 +109,7 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Tu facultad,\nmás cerca.",
+                    text = if (isEnglish) "Your school,\ncloser to you." else "Tu facultad,\nmás cerca.",
                     color = Color.White,
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Black,
@@ -117,7 +119,7 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
-                    text = "Encuentra tus clases y muévete por el centro sin perderte.",
+                    text = if (isEnglish) "Find your classes and get around campus without getting lost." else "Encuentra tus clases y muévete por el centro sin perderte.",
                     color = Color(0xFFF5D3DA),
                     fontSize = 13.sp,
                     lineHeight = 18.sp
@@ -135,14 +137,14 @@ fun LoginScreen(
         ) {
             Column {
                 Text(
-                    text = "Acceso Identificado",
+                    text = if (isEnglish) "Sign in" else "Acceso Identificado",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = Ink
                 )
 
                 Text(
-                    text = "Usa tu cuenta institucional @correo.ugr.es",
+                    text = if (isEnglish) "Use your institutional @correo.ugr.es account" else "Usa tu cuenta institucional @correo.ugr.es",
                     fontSize = 12.sp,
                     color = MutedText,
                     modifier = Modifier.padding(top = 4.dp, bottom = 20.dp)
@@ -150,7 +152,7 @@ fun LoginScreen(
 
                 // Email Input
                 Text(
-                    text = "CORREO INSTITUCIONAL",
+                    text = if (isEnglish) "INSTITUTIONAL EMAIL" else "CORREO INSTITUCIONAL",
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     color = MutedText
@@ -178,7 +180,7 @@ fun LoginScreen(
 
                 // Password Input
                 Text(
-                    text = "CONTRASEÑA",
+                    text = if (isEnglish) "PASSWORD" else "CONTRASEÑA",
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     color = MutedText
@@ -218,7 +220,7 @@ fun LoginScreen(
                             colors = CheckboxDefaults.colors(checkedColor = UgrRed)
                         )
                         Text(
-                            text = "Recordar cuenta",
+                            text = if (isEnglish) "Remember account" else "Recordar cuenta",
                             fontSize = 11.sp,
                             color = Ink
                         )
@@ -226,7 +228,7 @@ fun LoginScreen(
 
                     TextButton(onClick = { }) {
                         Text(
-                            text = "Olvidé mi contraseña",
+                            text = if (isEnglish) "Forgot password?" else "Olvidé mi contraseña",
                             fontSize = 11.sp,
                             color = UgrRed,
                             fontWeight = FontWeight.Bold
@@ -246,7 +248,7 @@ fun LoginScreen(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = "Acceder con correo UGR",
+                        text = if (isEnglish) "Sign in with UGR email" else "Acceder con correo UGR",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -266,7 +268,7 @@ fun LoginScreen(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = "Acceso rápido como estudiante (Demo)",
+                        text = if (isEnglish) "Quick student access (Demo)" else "Acceso rápido como estudiante (Demo)",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -275,7 +277,7 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
-                    text = "Servicio de Identificación UGR · Soporte Técnico",
+                    text = if (isEnglish) "UGR Identity Service · Technical Support" else "Servicio de Identificación UGR · Soporte Técnico",
                     fontSize = 10.sp,
                     color = MutedText,
                     modifier = Modifier.align(Alignment.CenterHorizontally)

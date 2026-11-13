@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.example.aplicacionmovilnpi.model.Node
+import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.BarcodeScanner
 import com.google.mlkit.vision.common.InputImage
@@ -41,6 +42,7 @@ fun QrScannerScreen(
     onQrResult: (String) -> Unit
 ) {
     val context = LocalContext.current
+    val isEnglish = LocalIsEnglish.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
 
@@ -117,7 +119,7 @@ fun QrScannerScreen(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            Text("Se necesita permiso de cámara para escanear el código QR.")
+            Text(if (isEnglish) "Camera permission is required to scan QR codes." else "Se necesita permiso de cámara para escanear el código QR.")
         }
     }
 }
@@ -154,10 +156,11 @@ private fun processImageProxy(
 
 @Composable
 fun QrLocationScannerScreen(
-    onNodeDetected: (Node) -> Unit,
+    onResultDetected: (QrScanResult) -> Unit,
     onCancel: () -> Unit
 ) {
     val context = LocalContext.current
+    val isEnglish = LocalIsEnglish.current
     var isProcessing by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -165,20 +168,31 @@ fun QrLocationScannerScreen(
             onQrResult = { rawQrContent ->
                 if (!isProcessing) {
                     isProcessing = true
-                    val match = QrLocationResolver.resolveQrCode(rawQrContent)
+                    val result = QrLocationResolver.resolveQrCodeResult(rawQrContent)
 
-                    if (match != null) {
-                        val locationName = match.poi?.nameEs ?: match.node.id
-                        Toast.makeText(
-                            context,
-                            "Ubicación fijada: $locationName (Planta ${match.node.floor})",
-                            Toast.LENGTH_LONG
-                        ).show()
-                        onNodeDetected(match.node)
+                    if (result != null) {
+                        when (result) {
+                            is QrScanResult.Location -> {
+                                val locationName = result.poi?.let { if (isEnglish && it.nameEn.isNotBlank()) it.nameEn else it.nameEs } ?: result.node.id
+                                Toast.makeText(
+                                    context,
+                                    if (isEnglish) "Location set: $locationName (Floor ${result.node.floor})" else "Ubicación fijada: $locationName (Planta ${result.node.floor})",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                            is QrScanResult.Route -> {
+                                Toast.makeText(
+                                    context,
+                                    if (isEnglish) "📍 Route loaded from QR: ${result.startPoi.nameEn} ➔ ${result.destPoi.nameEn}" else "📍 Ruta cargada por QR: ${result.startPoi.nameEs} ➔ ${result.destPoi.nameEs}",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
+                        onResultDetected(result)
                     } else {
                         Toast.makeText(
                             context,
-                            "Código QR no reconocido: $rawQrContent",
+                            if (isEnglish) "Unrecognized QR code: $rawQrContent" else "Código QR no reconocido: $rawQrContent",
                             Toast.LENGTH_SHORT
                         ).show()
                         android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
@@ -195,7 +209,26 @@ fun QrLocationScannerScreen(
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 32.dp)
         ) {
-            Text("Cancelar escaneo")
+            Text(if (isEnglish) "Cancel scan" else "Cancelar escaneo")
         }
     }
+}
+
+@Composable
+@JvmName("QrLocationScannerScreenOnNode")
+fun QrLocationScannerScreen(
+    onNodeDetected: (Node) -> Unit,
+    onCancel: () -> Unit
+) {
+    QrLocationScannerScreen(
+        onResultDetected = { result ->
+            when (result) {
+                is QrScanResult.Location -> onNodeDetected(result.node)
+                is QrScanResult.Route -> {
+                    com.example.aplicacionmovilnpi.navigation.EtsiitData.nodes[result.startPoi.nodeId]?.let { onNodeDetected(it) }
+                }
+            }
+        },
+        onCancel = onCancel
+    )
 }

@@ -16,6 +16,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Map
+import androidx.compose.material.icons.rounded.Place
+import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -31,6 +36,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aplicacionmovilnpi.data.ClassLesson
+import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
+import com.example.aplicacionmovilnpi.ui.localizedCourseText
+import com.example.aplicacionmovilnpi.ui.localizedDayName
 import com.example.aplicacionmovilnpi.data.FacultyData
 import com.example.aplicacionmovilnpi.data.Moment
 import com.example.aplicacionmovilnpi.data.SampleData
@@ -44,6 +52,7 @@ import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 fun ScheduleScreen(
     onNavigateToMap: (String?) -> Unit
 ) {
+    val isEnglish = LocalIsEnglish.current
     val weekSchedule = remember { SampleData.weekSchedule() }
     // Por defecto, el día de hoy (o el lunes si es fin de semana)
     var selectedDayIndex by remember { mutableIntStateOf(Moment.now().day.let { if (it > 5) 0 else it - 1 }) }
@@ -57,16 +66,10 @@ fun ScheduleScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         Text(
-            text = "Horario semanal",
+            text = if (isEnglish) "Weekly Schedule" else "Horario semanal",
             fontSize = 24.sp,
             fontWeight = FontWeight.Black,
             color = Ink
-        )
-        Text(
-            text = "${FacultyData.Student.course} · ${FacultyData.Student.group}",
-            fontSize = 12.sp,
-            color = MutedText,
-            modifier = Modifier.padding(top = 2.dp)
         )
 
         Spacer(modifier = Modifier.height(18.dp))
@@ -92,7 +95,7 @@ fun ScheduleScreen(
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = day.short,
+                            text = if (isEnglish) listOf("M", "T", "W", "T", "F")[index] else day.short,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (selected) Color.White else MutedText
@@ -113,7 +116,7 @@ fun ScheduleScreen(
 
         // Selected Day Banner
         Text(
-            text = "${daySchedule.day}, ${daySchedule.date} de ${daySchedule.month}",
+            text = if (isEnglish) "${localizedDayName(daySchedule.day, true)}, ${daySchedule.date} ${when (daySchedule.month.lowercase()) { "enero" -> "January"; "febrero" -> "February"; "marzo" -> "March"; "abril" -> "April"; "mayo" -> "May"; "junio" -> "June"; "julio" -> "July"; "agosto" -> "August"; "septiembre" -> "September"; "octubre" -> "October"; "noviembre" -> "November"; "diciembre" -> "December"; else -> daySchedule.month }}" else "${daySchedule.day}, ${daySchedule.date} de ${daySchedule.month}",
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
             color = Ink
@@ -123,7 +126,7 @@ fun ScheduleScreen(
 
         if (daySchedule.classes.isEmpty()) {
             Text(
-                text = "No tienes clases este día 🎉",
+                text = if (isEnglish) "No classes today 🎉" else "No tienes clases este día 🎉",
                 fontSize = 12.sp,
                 color = MutedText
             )
@@ -134,7 +137,7 @@ fun ScheduleScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             items(daySchedule.classes) { lesson ->
-                LessonCard(lesson = lesson, onNavigateToMap = onNavigateToMap)
+                LessonCard(lesson = lesson, onNavigateToMap = onNavigateToMap, isEnglish = isEnglish)
             }
         }
     }
@@ -143,7 +146,8 @@ fun ScheduleScreen(
 @Composable
 fun LessonCard(
     lesson: ClassLesson,
-    onNavigateToMap: (String?) -> Unit
+    onNavigateToMap: (String?) -> Unit,
+    isEnglish: Boolean
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -161,21 +165,41 @@ fun LessonCard(
                     color = SoftBg,
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text(
-                        text = "🕒 ${lesson.time} - ${lesson.end}",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Ink,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Schedule,
+                            contentDescription = null,
+                            tint = Ink,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "${lesson.time} - ${lesson.end}",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Ink
+                        )
+                    }
                 }
 
-                Text(
-                    text = "📍 ${lesson.room}",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = UgrRed
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Rounded.Place,
+                        contentDescription = null,
+                        tint = UgrRed,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = localizedCourseText(lesson.room, LocalIsEnglish.current),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = UgrRed
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -198,12 +222,25 @@ fun LessonCard(
                 shape = RoundedCornerShape(10.dp),
                 border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
             ) {
-                Text(
-                    text = if (lesson.poiId != null) "Cómo llegar al ${lesson.room} ➔" else "${lesson.room} aún no está en el plano",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Ink
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Rounded.Map,
+                        contentDescription = null,
+                        tint = if (lesson.poiId != null) UgrRed else MutedText,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (isEnglish) {
+                            if (lesson.poiId != null) "Directions to ${lesson.room}" else "${lesson.room} is not on the map yet"
+                        } else {
+                            if (lesson.poiId != null) "Cómo llegar al ${lesson.room}" else "${lesson.room} aún no está en el plano"
+                        },
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Ink
+                    )
+                }
             }
         }
     }

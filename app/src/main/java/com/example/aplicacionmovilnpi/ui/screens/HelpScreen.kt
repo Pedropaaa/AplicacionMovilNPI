@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aplicacionmovilnpi.data.FaqItem
 import com.example.aplicacionmovilnpi.data.SampleData
+import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
 import com.example.aplicacionmovilnpi.ui.theme.CardBorder
 import com.example.aplicacionmovilnpi.ui.theme.Ink
 import com.example.aplicacionmovilnpi.ui.theme.MutedText
@@ -40,6 +41,7 @@ import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 
 @Composable
 fun HelpScreen(onBack: () -> Unit) {
+    val isEnglish = LocalIsEnglish.current
     var ticketSubject by remember { mutableStateOf("") }
     var ticketDesc by remember { mutableStateOf("") }
     var submittedNotice by remember { mutableStateOf<String?>(null) }
@@ -54,7 +56,7 @@ fun HelpScreen(onBack: () -> Unit) {
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "⬅ Volver a Más",
+                text = if (isEnglish) "⬅ Back to More" else "⬅ Volver a Más",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 color = UgrRed,
@@ -65,13 +67,13 @@ fun HelpScreen(onBack: () -> Unit) {
         Spacer(modifier = Modifier.height(14.dp))
 
         Text(
-            text = "Centro de Ayuda",
+            text = if (isEnglish) "Help Center" else "Centro de Ayuda",
             fontSize = 24.sp,
             fontWeight = FontWeight.Black,
             color = Ink
         )
         Text(
-            text = "Resuelve dudas o envía una incidencia técnica",
+            text = if (isEnglish) "Get answers or report a technical issue" else "Resuelve dudas o envía una incidencia técnica",
             fontSize = 12.sp,
             color = MutedText
         )
@@ -79,7 +81,7 @@ fun HelpScreen(onBack: () -> Unit) {
         Spacer(modifier = Modifier.height(20.dp))
 
         Text(
-            text = "Preguntas Frecuentes (FAQ)",
+            text = if (isEnglish) "Frequently Asked Questions (FAQ)" else "Preguntas Frecuentes (FAQ)",
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             color = Ink
@@ -87,15 +89,30 @@ fun HelpScreen(onBack: () -> Unit) {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        SampleData.faqs.forEach { faq ->
-            FaqItemCard(faq = faq)
+        val faqTranslations = listOf(
+            "How do I get to my next class?" to "On Home, tap ‘Guide me to the classroom’ on your next class card. You can also tap ‘Directions’ for any class in your schedule.",
+            "Can I avoid stairs?" to "Yes. Turn on ‘Accessible route’ on the route screen and we will guide you using elevators and ramps.",
+            "My location is inaccurate inside the building" to "GPS is less accurate indoors. Turn on Wi-Fi and Bluetooth to improve location, or select your floor manually on the map.",
+            "How do I change floors on the map?" to "On Map › View building plan, use the floor selector (P2, P1, GF, B1) at the top.",
+            "Where does my schedule come from?" to "Your schedule is generated from the courses in which you are enrolled at UGR.",
+            "How do I add an assignment or exam?" to "Go to More › Calendar, select the date and tap ‘+ Add’. You can enter the subject, time and a description.",
+            "I forgot my password" to "Your password is for your UGR institutional account. Reset it from UGR Identified Access using your ID and personal email.",
+            "How do I sign out?" to "Tap your avatar in the top-right corner and choose ‘Log out’, or sign out from My Profile."
+        )
+        SampleData.faqs.forEachIndexed { index, faq ->
+            FaqItemCard(
+                faq = faq,
+                isEnglish = isEnglish,
+                translatedQuestion = faqTranslations[index].first,
+                translatedAnswer = faqTranslations[index].second
+            )
             Spacer(modifier = Modifier.height(8.dp))
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "Reportar una incidencia",
+            text = if (isEnglish) "Report an issue" else "Reportar una incidencia",
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             color = Ink
@@ -113,7 +130,7 @@ fun HelpScreen(onBack: () -> Unit) {
                 OutlinedTextField(
                     value = ticketSubject,
                     onValueChange = { ticketSubject = it },
-                    placeholder = { Text(text = "Asunto de la incidencia...", fontSize = 12.sp) },
+                    placeholder = { Text(text = if (isEnglish) "Issue subject..." else "Asunto de la incidencia...", fontSize = 12.sp) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(10.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -128,7 +145,7 @@ fun HelpScreen(onBack: () -> Unit) {
                 OutlinedTextField(
                     value = ticketDesc,
                     onValueChange = { ticketDesc = it },
-                    placeholder = { Text(text = "Describe el problema o duda...", fontSize = 12.sp) },
+                    placeholder = { Text(text = if (isEnglish) "Describe the problem or question..." else "Describe el problema o duda...", fontSize = 12.sp) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(10.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -143,7 +160,7 @@ fun HelpScreen(onBack: () -> Unit) {
                 Button(
                     onClick = {
                         if (ticketSubject.isNotBlank()) {
-                            submittedNotice = "Incidencia INC-0143 enviada correctamente. Te responderemos en 48h."
+                            submittedNotice = if (isEnglish) "Issue INC-0143 submitted successfully. We will reply within 48 hours." else "Incidencia INC-0143 enviada correctamente. Te responderemos en 48h."
                             ticketSubject = ""
                             ticketDesc = ""
                         }
@@ -154,7 +171,7 @@ fun HelpScreen(onBack: () -> Unit) {
                     colors = ButtonDefaults.buttonColors(containerColor = UgrRed),
                     shape = RoundedCornerShape(10.dp)
                 ) {
-                    Text(text = "Enviar Incidencia", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Text(text = if (isEnglish) "Submit Issue" else "Enviar Incidencia", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 }
 
                 if (submittedNotice != null) {
@@ -169,7 +186,7 @@ fun HelpScreen(onBack: () -> Unit) {
 }
 
 @Composable
-fun FaqItemCard(faq: FaqItem) {
+fun FaqItemCard(faq: FaqItem, isEnglish: Boolean, translatedQuestion: String, translatedAnswer: String) {
     var expanded by remember { mutableStateOf(false) }
 
     Surface(
@@ -187,7 +204,7 @@ fun FaqItemCard(faq: FaqItem) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = faq.question,
+                    text = if (isEnglish) translatedQuestion else faq.question,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = Ink,
@@ -199,7 +216,7 @@ fun FaqItemCard(faq: FaqItem) {
             AnimatedVisibility(visible = expanded) {
                 Column {
                     HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
-                    Text(text = faq.answer, fontSize = 11.sp, color = MutedText, lineHeight = 16.sp)
+                    Text(text = if (isEnglish) translatedAnswer else faq.answer, fontSize = 11.sp, color = MutedText, lineHeight = 16.sp)
                 }
             }
         }

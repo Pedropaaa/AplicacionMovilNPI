@@ -1,7 +1,6 @@
 package com.example.aplicacionmovilnpi.ui.screens
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,8 +14,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aplicacionmovilnpi.data.CalendarEventItem
 import com.example.aplicacionmovilnpi.data.SampleData
+import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
 import com.example.aplicacionmovilnpi.ui.theme.CardBorder
 import com.example.aplicacionmovilnpi.ui.theme.Ink
 import com.example.aplicacionmovilnpi.ui.theme.MutedText
@@ -39,6 +43,7 @@ import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 
 @Composable
 fun CalendarScreen(onBack: () -> Unit) {
+    val isEnglish = LocalIsEnglish.current
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -49,7 +54,7 @@ fun CalendarScreen(onBack: () -> Unit) {
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "⬅ Volver a Más",
+                text = if (isEnglish) "⬅ Back to More" else "⬅ Volver a Más",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 color = UgrRed,
@@ -60,13 +65,13 @@ fun CalendarScreen(onBack: () -> Unit) {
         Spacer(modifier = Modifier.height(14.dp))
 
         Text(
-            text = "Calendario y Entregas",
+            text = if (isEnglish) "Calendar & Deadlines" else "Calendario y Entregas",
             fontSize = 24.sp,
             fontWeight = FontWeight.Black,
             color = Ink
         )
         Text(
-            text = "Entregas de trabajos, exámenes y eventos",
+            text = if (isEnglish) "Assignments, exams and events" else "Entregas de trabajos, exámenes y eventos",
             fontSize = 12.sp,
             color = MutedText
         )
@@ -88,7 +93,19 @@ fun CalendarScreen(onBack: () -> Unit) {
             colors = ButtonDefaults.buttonColors(containerColor = UgrRed),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Text(text = "➕ Añadir nueva entrega / examen", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Rounded.Add,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = if (isEnglish) "Add assignment / exam" else "Añadir nueva entrega / examen",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(30.dp))
@@ -97,7 +114,23 @@ fun CalendarScreen(onBack: () -> Unit) {
 
 @Composable
 fun CalendarEventCard(event: CalendarEventItem) {
-    val isExam = event.type == "Examen"
+    val isEnglish = LocalIsEnglish.current
+    val englishTitle = when (event.id) {
+        1L -> "NPI Lab 1 submission"
+        2L -> "Lab 1 · Visión por Computador"
+        3L -> "PL lexical analyzer"
+        4L -> "Exam · Teoría de la Información y la Codificación"
+        else -> event.title
+    }
+    val englishSubject = event.subject
+    val englishDescription = when (event.id) {
+        1L -> "Mobile app prototype and report submission on PRADO."
+        2L -> "Filtering and edge detection. Submit on PRADO."
+        3L -> "Language specification and lexical analyzer."
+        4L -> "Regular exam session. Check the classroom on the ETSIIT website."
+        else -> event.description
+    }
+    val isExam = event.type == "Examen" || event.type == "Exam"
     val (badgeBg, badgeText) = if (isExam) ToneOrangeBg to ToneOrangeText else ToneRoseBg to ToneRoseText
 
     Surface(
@@ -129,23 +162,34 @@ fun CalendarEventCard(event: CalendarEventItem) {
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "${event.type.uppercase()} · ${event.subject}",
+                    text = "${if (isEnglish && isExam) "EXAM" else if (isEnglish) "ASSIGNMENT" else event.type.uppercase()} · ${if (isEnglish) englishSubject else event.subject}",
                     fontSize = 9.sp,
                     fontWeight = FontWeight.Bold,
                     color = badgeText
                 )
                 Text(
-                    text = event.title,
+                    text = if (isEnglish) englishTitle else event.title,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     color = Ink
                 )
-                Text(
-                    text = "🕒 Hora: ${event.time} · ${event.description}",
-                    fontSize = 11.sp,
-                    color = MutedText,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(top = 2.dp)
-                )
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Schedule,
+                        contentDescription = null,
+                        tint = MutedText,
+                        modifier = Modifier.size(12.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = if (isEnglish) "Time: ${event.time} · $englishDescription" else "Hora: ${event.time} · ${event.description}",
+                        fontSize = 11.sp,
+                        color = MutedText
+                    )
+                }
             }
         }
     }

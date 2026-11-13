@@ -4,13 +4,6 @@ import java.util.Calendar
 
 object SampleData {
 
-    val places = listOf(
-        PlaceCategory("Aulas", "Todas las plantas", "building", "rose"),
-        PlaceCategory("Despachos", "Profesorado", "person", "purple"),
-        PlaceCategory("Biblioteca", "Planta 1", "book", "blue"),
-        PlaceCategory("Cafetería", "Planta baja", "coffee", "orange")
-    )
-
     private val subjectNames = mapOf(
         "NPI" to "Nuevos Paradigmas de Interacción",
         "PL" to "Procesadores de Lenguajes",
@@ -75,59 +68,6 @@ object SampleData {
 
     val professors: List<Professor> get() = FacultyData.professors
 
-    val campuses = listOf(
-        CampusItem(
-            key = "etsiit",
-            name = "ETSIIT",
-            campus = "CAMPUS AYNADAMAR",
-            full = "Escuela Técnica Superior de Ingenierías Informática y de Telecomunicación",
-            distance = "1,2 km",
-            hours = "Abierto hasta 21:30"
-        ),
-        CampusItem(
-            key = "sciences",
-            name = "Ciencias",
-            campus = "CAMPUS FUENTENUEVA",
-            full = "Facultad de Ciencias",
-            distance = "2,8 km",
-            hours = "Abierto hasta 21:00"
-        ),
-        CampusItem(
-            key = "cartuja",
-            name = "Cartuja",
-            campus = "CAMPUS CARTUJA",
-            full = "Facultades de Psicología, Ciencias Económicas y Empresariales",
-            distance = "0,9 km",
-            hours = "Abierto hasta 21:30"
-        )
-    )
-
-    val floorRooms = mapOf(
-        "P2" to listOf("Despachos 2.01–2.20", "Sala de juntas", "Laboratorio 5", "Laboratorio 6", "Seminario 2"),
-        "P1" to listOf("Aulas B-10–B-13", "Biblioteca", "Sala de estudio", "Laboratorio 2", "Aula B-08"),
-        "PB" to listOf("Aulas 0.1–0.4", "Secretaría", "Conserjería", "Cafetería", "Biblioteca"),
-        "S1" to listOf("Laboratorios S1.1–S1.4", "Taquillas", "Almacén", "Reprografía", "Aparcamiento de bicis")
-    )
-
-    val pointsOfInterest = listOf(
-        PointOfInterest("Biblioteca", "book", "Planta 1", "Biblioteca"),
-        PointOfInterest("Cafetería", "coffee", "Planta baja", "Cafetería"),
-        PointOfInterest("Secretaría", "services", "Planta baja", "Secretaría"),
-        PointOfInterest("Conserjería", "person", "Entrada", "Conserjería"),
-        PointOfInterest("Baños cercanos", "location", "A 24 m", "Baños más cercanos"),
-        PointOfInterest("Sala de estudio", "book", "Planta 1", "Sala de estudio"),
-        PointOfInterest("Reprografía", "services", "Sótano 1", "Reprografía")
-    )
-
-    fun getRouteSteps(accessible: Boolean, destination: String): List<RouteStep> = listOf(
-        RouteStep("↑", "Continúa recto por el pasillo", "32 m"),
-        RouteStep("←", "Gira a la izquierda en el pasillo principal", "18 m"),
-        if (accessible) RouteStep("⇅", "Toma el ascensor hasta la planta 1", "1 planta")
-        else RouteStep("⇅", "Sube por las escaleras a la planta 1", "1 planta"),
-        RouteStep("→", "Gira a la derecha al salir", if (accessible) "64 m" else "24 m"),
-        RouteStep("✓", "Has llegado: $destination", "")
-    )
-
     // Fechas de ejemplo: no son las fechas oficiales de entregas ni de exámenes.
     val initialEvents = listOf(
         CalendarEventItem(
@@ -168,74 +108,7 @@ object SampleData {
         )
     )
 
-    val initialMails = listOf(
-        MailMessage(
-            id = 1L,
-            folder = MailFolder.INBOX,
-            outgoing = false,
-            name = "PRADO · Nuevos Paradigmas de Interacción",
-            email = "prado@ugr.es",
-            subject = "Nuevo material disponible",
-            body = "Se ha publicado nuevo material en la asignatura Nuevos Paradigmas de Interacción.\n\nAccede a PRADO para consultarlo.",
-            time = "10:24",
-            unread = true
-        ),
-        MailMessage(
-            id = 2L,
-            folder = MailFolder.INBOX,
-            outgoing = false,
-            name = "Secretaría ETSIIT",
-            email = "secretariaetsiit@ugr.es",
-            subject = "Matrícula del curso 2026/2027",
-            body = "Estimada estudiante:\n\nTu solicitud de modificación de matrícula ha sido procesada correctamente. Puedes consultar el resguardo actualizado en la sede electrónica.\n\nAtentamente,\nSecretaría ETSIIT",
-            time = "Ayer",
-            unread = true
-        ),
-        MailMessage(
-            id = 3L,
-            folder = MailFolder.INBOX,
-            outgoing = false,
-            name = "Biblioteca UGR",
-            email = "biblioteca@ugr.es",
-            subject = "Reserva disponible",
-            body = "El ejemplar que reservaste, «Computer Vision: Algorithms and Applications», ya está disponible para su recogida en el mostrador de préstamo de la Biblioteca de la ETSIIT.\n\nTienes 3 días para recogerlo.",
-            time = "Ayer",
-            unread = true
-        ),
-        MailMessage(
-            id = 4L,
-            folder = MailFolder.INBOX,
-            outgoing = false,
-            name = "PRADO · Visión por Computador",
-            email = "prado@ugr.es",
-            subject = "Publicado el guion de la práctica 1",
-            body = "Ya está disponible el guion de la práctica 1 en la plataforma. Revisadlo antes de la próxima sesión de prácticas.",
-            time = "14 oct.",
-            unread = false
-        ),
-        MailMessage(
-            id = 5L,
-            folder = MailFolder.SENT,
-            outgoing = true,
-            name = "Delegación de Estudiantes ETSIIT",
-            email = "delegacion.etsiit@ugr.es",
-            subject = "Consulta sobre las optativas de 2º semestre",
-            body = "Hola:\n\n¿Sabéis si este año se oferta Programación Lúdica en el segundo semestre?\n\nMuchas gracias,\nLucía",
-            time = "13 oct.",
-            unread = false
-        ),
-        MailMessage(
-            id = 6L,
-            folder = MailFolder.ARCHIVED,
-            outgoing = false,
-            name = "Secretaría ETSIIT",
-            email = "secretariaetsiit@ugr.es",
-            subject = "Bienvenida al curso 2026/2027",
-            body = "Te damos la bienvenida al nuevo curso académico. Consulta el calendario académico y los horarios en la web del centro.",
-            time = "9 sept.",
-            unread = false
-        )
-    )
+    val initialMails = emptyList<MailMessage>()
 
     val faqs = listOf(
         FaqItem("navigation", "¿Cómo llego a mi próxima clase?", "En Inicio, pulsa «Guiarme al aula» en la tarjeta de tu próxima clase. También puedes pulsar «Cómo llegar» en cualquier clase de tu horario."),

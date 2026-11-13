@@ -35,7 +35,7 @@ object DeadReckoning {
     const val UNITS_PER_METER = 6f
 
     /** Longitud media de una zancada al caminar. */
-    const val STEP_LENGTH_M = 0.7f
+    const val STEP_LENGTH_M = 0.95f
 
     /**
      * Azimut (grados respecto al norte) que corresponde a «hacia arriba» en el plano.
@@ -110,11 +110,9 @@ object DeadReckoning {
     fun turnInstruction(headingDeg: Float, targetAzimuthDeg: Float): String {
         val diff = signedDifference(headingDeg, targetAzimuthDeg)
         return when {
-            abs(diff) <= 25f -> "Sigue recto"
-            abs(diff) >= 150f -> "Date la vuelta"
-            diff > 0 && diff < 65f -> "Gira un poco a la derecha"
+            abs(diff) <= 45f -> "Sigue recto"
+            abs(diff) >= 125f -> "Date la vuelta"
             diff > 0 -> "Gira a la derecha"
-            diff > -65f -> "Gira un poco a la izquierda"
             else -> "Gira a la izquierda"
         }
     }

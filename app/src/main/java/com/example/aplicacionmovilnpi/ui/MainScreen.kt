@@ -1,6 +1,5 @@
 package com.example.aplicacionmovilnpi.ui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,9 +13,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Logout
+import androidx.compose.material.icons.rounded.CalendarToday
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Map
+import androidx.compose.material.icons.rounded.Menu
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.School
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -25,6 +33,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -32,11 +41,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aplicacionmovilnpi.data.FacultyData
-import com.example.aplicacionmovilnpi.qr.RouteQrScreen
 import com.example.aplicacionmovilnpi.ui.screens.AccessibilityScreen
 import com.example.aplicacionmovilnpi.ui.screens.CalendarScreen
 import com.example.aplicacionmovilnpi.ui.screens.GradesScreen
@@ -53,30 +62,36 @@ import com.example.aplicacionmovilnpi.ui.theme.MutedText
 import com.example.aplicacionmovilnpi.ui.theme.PageBg
 import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 
-enum class NavTab(val id: String, val label: String, val icon: String) {
-    HOME("home", "Inicio", "🏠"),
-    SCHEDULE("schedule", "Horario", "📅"),
-    PROFESSORS("professors", "Profesorado", "👨‍🏫"),
-    MAP("map", "Mapa", "🗺️"),
-    MORE("more", "Más", "☰")
+enum class NavTab(val id: String, val spanishLabel: String, val englishLabel: String, val icon: ImageVector) {
+    HOME("home", "Inicio", "Home", Icons.Rounded.Home),
+    SCHEDULE("schedule", "Horario", "Schedule", Icons.Rounded.CalendarToday),
+    PROFESSORS("professors", "Profesorado", "Faculty", Icons.Rounded.School),
+    MAP("map", "Mapa", "Map", Icons.Rounded.Map),
+    MORE("more", "Más", "More", Icons.Rounded.Menu)
 }
 
 @Composable
 fun MainScreen(
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onLanguageChange: (Boolean) -> Unit,
+    isLargeText: Boolean = false,
+    onLargeTextChange: (Boolean) -> Unit = {},
+    isHighContrast: Boolean = false,
+    onHighContrastChange: (Boolean) -> Unit = {},
+    defaultAccessibleRoute: Boolean = false,
+    onDefaultAccessibleRouteChange: (Boolean) -> Unit = {}
 ) {
     var activeTab by rememberSaveable { mutableStateOf(NavTab.HOME) }
+    var mapEntryKey by rememberSaveable { mutableIntStateOf(0) }
     var currentSubScreen by rememberSaveable { mutableStateOf<String?>(null) }
     var showMenu by remember { mutableStateOf(false) }
 
-    // ESTADOS AÑADIDOS PARA EL QR DE LA RUTA
-    var showRouteQr by rememberSaveable { mutableStateOf(false) }
-    var routeTextForQr by rememberSaveable { mutableStateOf("") }
-
-    // POI al que debe guiar el mapa al abrirlo desde otra pantalla (null = mapa sin ruta)
+    // POI al que debe guiar el mapa al abrirlo desde otra pantalla (null = mapa sin ruta).
     var mapDestination by rememberSaveable { mutableStateOf<String?>(null) }
+
     val openMap: (String?) -> Unit = { poiId ->
         mapDestination = poiId
+        mapEntryKey++
         activeTab = NavTab.MAP
         currentSubScreen = null
     }
@@ -100,7 +115,13 @@ fun MainScreen(
         bottomBar = {
             UgrBottomBar(
                 activeTab = activeTab,
+                isEnglish = LocalIsEnglish.current,
                 onTabSelected = { tab ->
+                    // Cada pulsación en Mapa fuerza una nueva comprobación de ubicación.
+                    if (tab == NavTab.MAP) {
+                        mapEntryKey++
+                    }
+
                     activeTab = tab
                     currentSubScreen = null
                     mapDestination = null
@@ -120,27 +141,44 @@ fun MainScreen(
                 currentSubScreen == "calendar" -> CalendarScreen(onBack = { currentSubScreen = null })
                 currentSubScreen == "messages" -> MessagesScreen(onBack = { currentSubScreen = null })
                 currentSubScreen == "help" -> HelpScreen(onBack = { currentSubScreen = null })
-                currentSubScreen == "accessibility" -> AccessibilityScreen(onBack = { currentSubScreen = null })
+                currentSubScreen == "accessibility" ->
+                    AccessibilityScreen(
+                        onBack = { currentSubScreen = null },
+                        isLargeText = isLargeText,
+                        onLargeTextChange = onLargeTextChange,
+                        isHighContrast = isHighContrast,
+                        onHighContrastChange = onHighContrastChange,
+                        defaultAccessibleRoute = defaultAccessibleRoute,
+                        onDefaultAccessibleRouteChange = onDefaultAccessibleRouteChange
+                    )
 
                 activeTab == NavTab.HOME -> HomeScreen(
-                    onNavigateToSchedule = { activeTab = NavTab.SCHEDULE; currentSubScreen = null },
-                    onNavigateToProfessors = { activeTab = NavTab.PROFESSORS; currentSubScreen = null },
+                    onNavigateToSchedule = {
+                        activeTab = NavTab.SCHEDULE
+                        currentSubScreen = null
+                    },
+                    onNavigateToProfessors = {
+                        activeTab = NavTab.PROFESSORS
+                        currentSubScreen = null
+                    },
                     onNavigateToMap = openMap,
-                    onNavigateToCalendar = { activeTab = NavTab.MORE; currentSubScreen = "calendar" }
+                    onNavigateToCalendar = {
+                        activeTab = NavTab.MORE
+                        currentSubScreen = "calendar"
+                    }
                 )
+
                 activeTab == NavTab.SCHEDULE -> ScheduleScreen(onNavigateToMap = openMap)
                 activeTab == NavTab.PROFESSORS -> ProfessorsScreen(onNavigateToMap = openMap)
-                activeTab == NavTab.MAP -> MapScreen(initialDestPoiId = mapDestination)
-                activeTab == NavTab.MORE -> MoreScreen(
-                    onNavigateToSubScreen = { subScreen -> currentSubScreen = subScreen }
+                activeTab == NavTab.MAP -> MapScreen(
+                    initialDestPoiId = mapDestination,
+                    mapEntryKey = mapEntryKey,
+                    defaultAccessibleRoute = defaultAccessibleRoute
                 )
-            }
 
-            // PANTALLA SUPERPUESTA DEL QR AÑADIDA (Se muestra cuando showRouteQr es true)
-            if (showRouteQr) {
-                RouteQrScreen(
-                    routeDetails = routeTextForQr,
-                    onClose = { showRouteQr = false }
+                activeTab == NavTab.MORE -> MoreScreen(
+                    onNavigateToSubScreen = { subScreen -> currentSubScreen = subScreen },
+                    onLanguageChange = onLanguageChange
                 )
             }
         }
@@ -202,7 +240,6 @@ fun UgrHeader(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // User Avatar Circle
             Box {
                 Surface(
                     color = Color(0xFFEEE4EA),
@@ -228,19 +265,49 @@ fun UgrHeader(
                     DropdownMenuItem(
                         text = {
                             Column {
-                                Text(text = FacultyData.Student.name, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                Text(text = FacultyData.Student.email, fontSize = 10.sp, color = MutedText)
+                                Text(
+                                    text = FacultyData.Student.name,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
+                                )
+                                Text(
+                                    text = FacultyData.Student.email,
+                                    fontSize = 10.sp,
+                                    color = MutedText
+                                )
                             }
                         },
                         onClick = onProfileClick
                     )
                     HorizontalDivider()
                     DropdownMenuItem(
-                        text = { Text(text = "👤 Mi Perfil", fontSize = 12.sp) },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Rounded.Person,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        },
+                        text = { Text(text = if (LocalIsEnglish.current) "My Profile" else "Mi Perfil", fontSize = 12.sp) },
                         onClick = onProfileClick
                     )
                     DropdownMenuItem(
-                        text = { Text(text = "🚪 Cerrar sesión", fontSize = 12.sp, color = UgrRed, fontWeight = FontWeight.Bold) },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Rounded.Logout,
+                                contentDescription = null,
+                                tint = UgrRed,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        },
+                        text = {
+                            Text(
+                                text = if (LocalIsEnglish.current) "Log out" else "Cerrar sesión",
+                                fontSize = 12.sp,
+                                color = UgrRed,
+                                fontWeight = FontWeight.Bold
+                            )
+                        },
                         onClick = onLogoutClick
                     )
                 }
@@ -252,6 +319,7 @@ fun UgrHeader(
 @Composable
 fun UgrBottomBar(
     activeTab: NavTab,
+    isEnglish: Boolean,
     onTabSelected: (NavTab) -> Unit
 ) {
     NavigationBar(
@@ -263,10 +331,16 @@ fun UgrBottomBar(
             NavigationBarItem(
                 selected = selected,
                 onClick = { onTabSelected(tab) },
-                icon = { Text(text = tab.icon, fontSize = 18.sp) },
+                icon = {
+                    Icon(
+                        imageVector = tab.icon,
+                        contentDescription = if (isEnglish) tab.englishLabel else tab.spanishLabel,
+                        modifier = Modifier.size(22.dp)
+                    )
+                },
                 label = {
                     Text(
-                        text = tab.label,
+                        text = if (isEnglish) tab.englishLabel else tab.spanishLabel,
                         fontSize = 10.sp,
                         maxLines = 1,
                         softWrap = false,

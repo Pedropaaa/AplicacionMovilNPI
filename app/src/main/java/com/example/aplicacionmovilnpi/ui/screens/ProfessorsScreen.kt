@@ -18,6 +18,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Email
+import androidx.compose.material.icons.rounded.Map
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -37,6 +42,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aplicacionmovilnpi.data.ActivityKind
+import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
+import com.example.aplicacionmovilnpi.ui.localizedCourseText
+import com.example.aplicacionmovilnpi.ui.localizedDayName
 import com.example.aplicacionmovilnpi.data.Moment
 import com.example.aplicacionmovilnpi.data.Professor
 import com.example.aplicacionmovilnpi.data.ProfessorLocator
@@ -59,6 +67,7 @@ import kotlinx.coroutines.delay
 fun ProfessorsScreen(
     onNavigateToMap: (String) -> Unit
 ) {
+    val isEnglish = LocalIsEnglish.current
     var searchQuery by remember { mutableStateOf("") }
 
     // Se recalcula cada 30 s para que el estado ("en clase", "en tutoría"...) siga la hora real.
@@ -85,13 +94,13 @@ fun ProfessorsScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         Text(
-            text = "Profesorado y Tutorías",
+            text = if (isEnglish) "Faculty & Office Hours" else "Profesorado y Tutorías",
             fontSize = 24.sp,
             fontWeight = FontWeight.Black,
             color = Ink
         )
         Text(
-            text = "4º CSI · ${moment.semester}º semestre · dónde está cada profesor ahora",
+            text = if (isEnglish) "Semester ${moment.semester} · Where each professor is now" else "${moment.semester}º semestre · Dónde está cada profesor ahora",
             fontSize = 12.sp,
             color = MutedText,
             modifier = Modifier.padding(top = 2.dp)
@@ -103,8 +112,15 @@ fun ProfessorsScreen(
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            placeholder = { Text(text = "Buscar profesor, asignatura o despacho...", fontSize = 12.sp, color = MutedText) },
-            leadingIcon = { Text(text = "🔍", fontSize = 16.sp) },
+            placeholder = { Text(text = if (isEnglish) "Search professor, subject or office..." else "Buscar profesor, asignatura o despacho...", fontSize = 12.sp, color = MutedText) },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Rounded.Search,
+                    contentDescription = null,
+                    tint = MutedText,
+                    modifier = Modifier.size(20.dp)
+                )
+            },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(14.dp),
             colors = OutlinedTextFieldDefaults.colors(
@@ -120,7 +136,7 @@ fun ProfessorsScreen(
 
         if (filteredProfessors.isEmpty()) {
             Text(
-                text = "No hay ningún profesor de 4º CSI que coincida con «$searchQuery».",
+                text = if (isEnglish) "No 4th-year Computer Science professor matches “$searchQuery”." else "No hay ningún profesor de 4º CSI que coincida con «$searchQuery».",
                 fontSize = 12.sp,
                 color = MutedText
             )
@@ -150,6 +166,7 @@ fun ProfessorCard(
     onNavigateToMap: (String) -> Unit
 ) {
     val context = LocalContext.current
+    val isEnglish = LocalIsEnglish.current
     val (avatarBg, avatarText) = when (professor.tone) {
         "red" -> ToneRoseBg to ToneRoseText
         "blue" -> ToneBlueBg to ToneBlueText
@@ -158,15 +175,15 @@ fun ProfessorCard(
 
     val currentSlot = (whereabouts as? Whereabouts.Located)?.slot
     val (statusLabel, statusBg, statusText) = when (currentSlot?.kind) {
-        ActivityKind.CLASE -> Triple("En clase", ToneRoseBg, ToneRoseText)
-        ActivityKind.TUTORIA -> Triple("En tutoría", ToneBlueBg, ToneBlueText)
-        null -> Triple("Sin información", SoftBg, MutedText)
+        ActivityKind.CLASE -> Triple(if (isEnglish) "In class" else "En clase", ToneRoseBg, ToneRoseText)
+        ActivityKind.TUTORIA -> Triple(if (isEnglish) "In office hours" else "En tutoría", ToneBlueBg, ToneBlueText)
+        null -> Triple(if (isEnglish) "No information" else "Sin información", SoftBg, MutedText)
     }
 
     // A dónde guía el botón: primero donde está ahora; si no se sabe, a su despacho (si está en el plano).
     val routeTarget: Pair<String, String>? = when {
-        currentSlot?.poiId != null -> "Guiarme a ${currentSlot.place}" to currentSlot.poiId
-        currentSlot == null && professor.officePoiId != null -> "Ir a su despacho" to professor.officePoiId
+        currentSlot?.poiId != null -> "${if (isEnglish) "Guide me to" else "Guiarme a"} ${currentSlot.place}" to currentSlot.poiId
+        currentSlot == null && professor.officePoiId != null -> (if (isEnglish) "Go to their office" else "Ir a su despacho") to professor.officePoiId
         else -> null
     }
 
@@ -204,7 +221,7 @@ fun ProfessorCard(
                         color = Ink
                     )
                     Text(
-                        text = "${professor.role} · ${professor.department}",
+                        text = localizedCourseText("${professor.role} · ${professor.department}", isEnglish).replace("Catedrático", if (isEnglish) "Professor" else "Catedrático").replace("Titular", if (isEnglish) "Associate Professor" else "Titular"),
                         fontSize = 10.sp,
                         color = MutedText
                     )
@@ -239,16 +256,16 @@ fun ProfessorCard(
                     when (whereabouts) {
                         is Whereabouts.Located -> {
                             val slot = whereabouts.slot
-                            val activity = if (slot.kind == ActivityKind.CLASE) slot.title else "Tutoría"
+                            val activity = if (slot.kind == ActivityKind.CLASE) slot.title else if (isEnglish) "Office hours" else "Tutoría"
                             Text(
-                                text = "📍 Ahora: $activity en ${slot.place} (hasta las ${slot.end})",
+                                text = if (isEnglish) "📍 Now: $activity at ${slot.place} (until ${slot.end})" else "📍 Ahora: $activity en ${slot.place} (hasta las ${slot.end})",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = statusText
                             )
                             if (slot.poiId == null) {
                                 Text(
-                                    text = "Este lugar todavía no está en el plano de la app, así que no podemos guiarte hasta allí.",
+                                    text = if (isEnglish) "This place is not on the app map yet, so we can't guide you there." else "Este lugar todavía no está en el plano de la app, así que no podemos guiarte hasta allí.",
                                     fontSize = 10.sp,
                                     color = Ink,
                                     modifier = Modifier.padding(top = 4.dp)
@@ -257,22 +274,22 @@ fun ProfessorCard(
                         }
                         is Whereabouts.Unknown -> {
                             Text(
-                                text = "ℹ️ Ahora mismo no sabemos dónde está",
+                                text = if (isEnglish) "ℹ️ We don't know their current location" else "ℹ️ Ahora mismo no sabemos dónde está",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Ink
                             )
                             Text(
                                 text = professor.note
-                                    ?: "No tiene clase ni tutoría en la ETSIIT a esta hora. Puede estar en otro centro o fuera de su horario publicado.",
+                                    ?: if (isEnglish) "They have no class or office hours at ETSIIT right now. They may be at another campus or outside their published schedule." else "No tiene clase ni tutoría en la ETSIIT a esta hora. Puede estar en otro centro o fuera de su horario publicado.",
                                 fontSize = 10.sp,
                                 color = MutedText,
                                 modifier = Modifier.padding(top = 2.dp)
                             )
                             whereabouts.next?.let { next ->
-                                val activity = if (next.kind == ActivityKind.CLASE) next.title else "Tutoría"
+                                val activity = if (next.kind == ActivityKind.CLASE) next.title else if (isEnglish) "Office hours" else "Tutoría"
                                 Text(
-                                    text = "Próximamente: ${ProfessorLocator.dayName(next.day)} ${next.start} · $activity · ${next.place}",
+                                    text = if (isEnglish) "Coming up: ${localizedDayName(ProfessorLocator.dayName(next.day), isEnglish)} ${next.start} · $activity · ${next.place}" else "Próximamente: ${localizedDayName(ProfessorLocator.dayName(next.day), isEnglish)} ${next.start} · $activity · ${next.place}",
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = Ink,
@@ -288,20 +305,20 @@ fun ProfessorCard(
 
             // Details
             Text(
-                text = "📚 Asignaturas: ${professor.subjects.joinToString(", ")}",
+                text = "📚 ${if (isEnglish) "Subjects" else "Asignaturas"}: ${professor.subjects.joinToString(", ")}",
                 fontSize = 11.sp,
                 color = Ink
             )
 
             Text(
-                text = "🚪 Despacho: ${professor.office}",
+                text = "🚪 ${if (isEnglish) "Office" else "Despacho"}: ${professor.office}",
                 fontSize = 11.sp,
                 color = Ink,
                 modifier = Modifier.padding(top = 4.dp)
             )
 
             Text(
-                text = "🕒 Tutorías (${semester}º sem.): ${ProfessorLocator.officeHoursText(professor, semester)}",
+                text = "🕒 ${if (isEnglish) "Office hours" else "Tutorías"} (${if (isEnglish) "semester" else "sem."} $semester): ${ProfessorLocator.officeHoursText(professor, semester)}",
                 fontSize = 11.sp,
                 color = MutedText,
                 modifier = Modifier.padding(top = 4.dp)
@@ -329,7 +346,21 @@ fun ProfessorCard(
                     shape = RoundedCornerShape(10.dp),
                     border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
                 ) {
-                    Text(text = "✉️ Enviar correo", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Ink)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Rounded.Email,
+                            contentDescription = null,
+                            tint = Ink,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (isEnglish) "Send email" else "Enviar correo",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Ink
+                        )
+                    }
                 }
 
                 OutlinedButton(
@@ -341,13 +372,22 @@ fun ProfessorCard(
                     shape = RoundedCornerShape(10.dp),
                     border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
                 ) {
-                    Text(
-                        text = routeTarget?.let { "🗺️ ${it.first}" } ?: "Sin ubicación en el plano",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (routeTarget != null) UgrRed else MutedText,
-                        maxLines = 1
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Rounded.Map,
+                            contentDescription = null,
+                            tint = if (routeTarget != null) UgrRed else MutedText,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = routeTarget?.let { it.first } ?: if (isEnglish) "No map location" else "Sin ubicación en el plano",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (routeTarget != null) UgrRed else MutedText,
+                            maxLines = 1
+                        )
+                    }
                 }
             }
         }
