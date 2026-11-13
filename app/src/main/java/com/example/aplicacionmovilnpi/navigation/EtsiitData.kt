@@ -34,19 +34,25 @@ object EtsiitData {
         Node("n_patio", x = 500f, y = 605f, floor = 0),
         Node("n_hall", x = 380f, y = 470f, floor = 0),
         Node("n_secretaria", x = 450f, y = 400f, floor = 0),
+        // Zona abierta entre el hall (secretaría), la conserjería y el ascensor/escaleras principales
+        Node("n_vestibulo_principal_p0", x = 334f, y = 527f, floor = 0),
         Node("n_distribuidor_entrada_principal_p0", x = 283f, y = 565f, floor = 0),
         Node("n_conserjeria_edificio_principal", x = 270f, y = 565f, floor = 0),
-        Node("n_entrada_edificio_principal_p0", x = 360f, y = 630f, floor = 0),
+        Node("n_entrada_edificio_principal_p0", x = 398f, y = 609f, floor = 0),
         Node("n_ascensor_principal_p0", x = 335f, y = 580f, floor = 0),
         Node("n_escaleras_principal_p0", x = 315f, y = 595f, floor = 0),
         Node("n_banos_edificio_principal_p0", x = 282f, y = 635f, floor = 0),
+        // Inicio del pasillo de los baños, a la derecha de la conserjería
+        Node("n_pasillo_banos_principal_p0", x = 292f, y = 585f, floor = 0),
         Node("n_corredor_central", x = 610f, y = 530f, floor = 0),
         Node("n_corredor_lateral", x = 500f, y = 330f, floor = 0),
         Node("n_escaleras_lateral_p0", x = 510f, y = 300f, floor = 0),
         Node("n_escaleras_patio_central_p0", x = 630f, y = 590f, floor = 0),
-        Node("n_entrada_lateral_aulas", x = 560f, y = 309f, floor = 0),
+        Node("n_entrada_lateral_aulas", x = 564.81f, y = 306.17f, floor = 0),
         Node("n_entrada_central_aulas", x = 650f, y = 510f, floor = 0),
-        Node("n_conserjeria_p0", x = 645f, y = 460f, floor = 0),
+        // Punto del pasillo del aulario justo enfrente de la entrada central (proyección perpendicular)
+        Node("n_pasillo_entrada_central_p0", x = 676f, y = 495f, floor = 0),
+        Node("n_conserjeria_p0", x = 652.65f, y = 455.5f, floor = 0),
 
         // aulario
         Node("n_aula01", x = 520f, y = 230f, floor = 0),
@@ -65,7 +71,7 @@ object EtsiitData {
         Node("n_ascensor_principal_p1", x = 320f, y = 550f, floor = 1),
         Node("n_escaleras_principal_p1", x = 310f, y = 570f, floor = 1),
         Node("n_biblioteca", x = 350f, y = 500f, floor = 1),
-        Node("n_entrada_lateral_aulas_p1", x = 560f, y = 275f, floor = 1),
+        Node("n_entrada_lateral_aulas_p1", x = 564.03f, y = 272.54f, floor = 1),
         Node("n_escaleras_lateral_p1", x = 480f, y = 310f, floor = 1),
         Node("n_aula11", x = 535f, y = 225f, floor = 1),
         Node("n_aula12", x = 580.82f, y = 300.05f, floor = 1),
@@ -75,9 +81,9 @@ object EtsiitData {
         Node("n_aula16", x = 733.94f, y = 550.85f, floor = 1),
         Node("n_aula17", x = 790.78f, y = 643.95f, floor = 1),
         Node("n_aula18", x = 825f, y = 700f, floor = 1),
-        Node("n_escaleras_p1", x = 745f, y = 582.5f, floor = 1),
-        Node("n_ascensor_p1", x = 715f, y = 530f, floor = 1),
-        Node("n_banos_p1", x = 755f, y = 600f, floor = 1),
+        Node("n_escaleras_p1", x = 751.02f, y = 578.82f, floor = 1),
+        Node("n_ascensor_p1", x = 719.52f, y = 527.24f, floor = 1),
+        Node("n_banos_p1", x = 761.52f, y = 596.02f, floor = 1),
 
         // --- PLANTA 2 ---
         Node("n_ascensor_principal_p2", x = 305f, y = 535f, floor = 2),
@@ -85,7 +91,7 @@ object EtsiitData {
         Node("n_despachos_p2_12", x = 280f, y = 505f, floor = 2),
         Node("n_despachos_p2_3-26", x = 250f, y = 560f, floor = 2),
         Node("n_despachos_p2_27-40", x = 330f, y = 470f, floor = 2),
-        Node("n_entrada_lateral_aulas_p2", x = 560f, y = 250f, floor = 2),
+        Node("n_entrada_lateral_aulas_p2", x = 563.81f, y = 247.68f, floor = 2),
         Node("n_escaleras_lateral_p2", x = 530f, y = 270f, floor = 2),
         Node("n_sala_operadores", x = 536.56f, y = 202.92f, floor = 2),
         Node("n_aula21", x = 550f, y = 225f, floor = 2),
@@ -98,9 +104,9 @@ object EtsiitData {
         Node("n_aula28", x = 776.52f, y = 597.14f, floor = 2),
         Node("n_aula29", x = 803.26f, y = 641.07f, floor = 2),
         Node("n_aula210", x = 830f, y = 685f, floor = 2),
-        Node("n_escaleras_p2", x = 760f, y = 545f, floor = 2),
-        Node("n_ascensor_p2", x = 740f, y = 525f, floor = 2),
-        Node("n_banos_p2", x = 760f, y = 555f, floor = 2),
+        Node("n_escaleras_p2", x = 748.9f, y = 551.76f, floor = 2),
+        Node("n_ascensor_p2", x = 734.61f, y = 528.28f, floor = 2),
+        Node("n_banos_p2", x = 753.34f, y = 559.06f, floor = 2),
 
 
         // --- PLANTA 3 --
@@ -111,7 +117,7 @@ object EtsiitData {
         Node("n_despachos_p3_3-26", x = 235f, y = 535f, floor = 3),
         Node("n_despachos_p3_27-40", x = 315f, y = 460f, floor = 3),
 
-        Node("n_entrada_lateral_aulas_p3", x = 545f, y = 225f, floor = 3),
+        Node("n_entrada_lateral_aulas_p3", x = 555.24f, y = 218.51f, floor = 3),
 
         // aulario
         Node("n_escaleras_lateral_p3", x = 525f, y = 245f, floor = 3),
@@ -176,18 +182,22 @@ object EtsiitData {
         Edge(from = "n_entrada", to = "n_distribuidor_entrada_principal_p0", weight = 25f),
 
         // Patio conecta con la entrada lateral del Edificio Principal
-        Edge(from = "n_patio", to = "n_entrada_edificio_principal_p0", weight = 12f),
-        Edge(from = "n_entrada_edificio_principal_p0", to = "n_hall", weight = 14f),
-        Edge(from = "n_entrada_edificio_principal_p0", to = "n_distribuidor_entrada_principal_p0", weight = 7f),
+        Edge(from = "n_patio", to = "n_entrada_edificio_principal_p0", weight = 10f),
         Edge(from = "n_hall", to = "n_secretaria", weight = 13f),
 
-        // Hall comunica la zona central con la entrada general
-        Edge(from = "n_hall", to = "n_distribuidor_entrada_principal_p0", weight = 13f),
+        // Planta baja del edificio principal: todo pasa por el vestíbulo, la zona abierta entre el
+        // hall (secretaría), la conserjería, el ascensor/escaleras principales y la puerta al patio.
+        // No hay atajos directos entre esos puntos que se salten el vestíbulo.
+        Edge(from = "n_hall", to = "n_vestibulo_principal_p0", weight = 7f, type = EdgeType.WALKWAY),
+        Edge(from = "n_vestibulo_principal_p0", to = "n_distribuidor_entrada_principal_p0", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_vestibulo_principal_p0", to = "n_ascensor_principal_p0", weight = 5f, type = EdgeType.WALKWAY),
+        Edge(from = "n_vestibulo_principal_p0", to = "n_escaleras_principal_p0", weight = 7f, type = EdgeType.STAIRS),
+        Edge(from = "n_entrada_edificio_principal_p0", to = "n_vestibulo_principal_p0", weight = 10f, type = EdgeType.WALKWAY),
+        Edge(from = "n_vestibulo_principal_p0", to = "n_pasillo_banos_principal_p0", weight = 7f, type = EdgeType.WALKWAY),
 
-        // Distribuidor de la Entrada General conecta con el núcleo de ascensores/escaleras principales y baños
-        Edge(from = "n_distribuidor_entrada_principal_p0", to = "n_ascensor_principal_p0", weight = 5f, type = EdgeType.WALKWAY),
-        Edge(from = "n_distribuidor_entrada_principal_p0", to = "n_escaleras_principal_p0", weight = 6f, type = EdgeType.STAIRS),
-        Edge(from = "n_distribuidor_entrada_principal_p0", to = "n_banos_edificio_principal_p0", weight = 7f, type = EdgeType.WALKWAY),
+        // Pasillo de los baños (empieza junto a la conserjería) y conserjería
+        Edge(from = "n_distribuidor_entrada_principal_p0", to = "n_pasillo_banos_principal_p0", weight = 2f, type = EdgeType.WALKWAY),
+        Edge(from = "n_pasillo_banos_principal_p0", to = "n_banos_edificio_principal_p0", weight = 5f, type = EdgeType.WALKWAY),
         Edge(from = "n_distribuidor_entrada_principal_p0", to = "n_conserjeria_edificio_principal", weight = 3f, type = EdgeType.WALKWAY),
 
         Edge(from = "n_patio", to = "n_corredor_central", weight = 15f),
@@ -196,13 +206,22 @@ object EtsiitData {
         Edge(from = "n_corredor_central", to = "n_entrada_central_aulas", weight = 4f),
         Edge(from = "n_corredor_lateral", to = "n_entrada_lateral_aulas", weight = 5f),
         Edge(from = "n_entrada_lateral_aulas", to = "n_aula02", weight = 7f),
-        Edge(from = "n_entrada_central_aulas", to = "n_aula05", weight = 13f),
-
-        Edge(from = "n_entrada_central_aulas", to = "n_conserjeria_p0", weight = 5f, type = EdgeType.WALKWAY),
-        Edge(from = "n_entrada_central_aulas", to = "n_escaleras_p0", weight = 15f, type = EdgeType.STAIRS),
-        Edge(from = "n_entrada_central_aulas", to = "n_ascensor_p0", weight = 5f, type = EdgeType.WALKWAY),
-        Edge(from = "n_entrada_central_aulas", to = "n_banos_p0", weight = 10f, type = EdgeType.WALKWAY),
+        // La entrada central da al pasillo del aulario: se entra en perpendicular hasta el pasillo
+        // y desde ahí se sigue por él (antes había aristas en diagonal hacia el ascensor, los
+        // baños, las escaleras y la conserjería que cruzaban el aulario).
+        Edge(from = "n_entrada_central_aulas", to = "n_pasillo_entrada_central_p0", weight = 3f, type = EdgeType.WALKWAY),
+        Edge(from = "n_pasillo_entrada_central_p0", to = "n_aula05", weight = 1f, type = EdgeType.WALKWAY),
+        Edge(from = "n_pasillo_entrada_central_p0", to = "n_ascensor_p0", weight = 4f, type = EdgeType.WALKWAY),
         Edge(from = "n_ascensor_p0", to = "n_banos_p0", weight = 6f, type = EdgeType.WALKWAY),
+        // El ascensor está en el pasillo entre el aula 0.5 y la 0.6 (como en P1–P3)
+        Edge(from = "n_ascensor_p0", to = "n_aula06", weight = 3f, type = EdgeType.WALKWAY),
+        // Pasillo que pasa por delante del ascensor sin entrar en él
+        Edge(from = "n_pasillo_entrada_central_p0", to = "n_aula06", weight = 7f, type = EdgeType.WALKWAY),
+        // Las escaleras también están en el pasillo (entre los baños y el aula 0.7), como en P1.
+        // Los tramos que llegan a ellas son STAIRS para que una ruta accesible nunca lleve allí.
+        Edge(from = "n_aula06", to = "n_banos_p0", weight = 4f, type = EdgeType.WALKWAY),
+        Edge(from = "n_banos_p0", to = "n_escaleras_p0", weight = 4f, type = EdgeType.STAIRS),
+        Edge(from = "n_escaleras_p0", to = "n_aula07", weight = 4f, type = EdgeType.STAIRS),
 
         // Pasillo Aulario P0
         Edge(from = "n_aula01", to = "n_aula02", weight = 7f),
@@ -256,6 +275,8 @@ object EtsiitData {
         Edge(from = "n_escaleras_principal_p2", to = "n_despachos_p2_27-40", weight = 6f, type = EdgeType.WALKWAY),
         Edge(from = "n_despachos_p2_12", to = "n_despachos_p2_3-26", weight = 6f, type = EdgeType.WALKWAY),
         Edge(from = "n_despachos_p2_3-26", to = "n_despachos_p2_27-40", weight = 6f, type = EdgeType.WALKWAY),
+        // El pasillo sigue de los despachos 12 a los 27-40 sin pasar por el ascensor/escaleras
+        Edge(from = "n_despachos_p2_12", to = "n_despachos_p2_27-40", weight = 6f, type = EdgeType.WALKWAY),
         Edge(from = "n_ascensor_principal_p2", to = "n_despachos_p2_3-26", weight = 4f, type = EdgeType.WALKWAY),
         Edge(from = "n_ascensor_principal_p2", to = "n_despachos_p2_27-40", weight = 4f, type = EdgeType.WALKWAY),
         Edge(from = "n_ascensor_principal_p2", to = "n_despachos_p2_12", weight = 4f, type = EdgeType.WALKWAY),
@@ -289,11 +310,12 @@ object EtsiitData {
         Edge(from = "n_escaleras_principal_p3", to = "n_despachos_p3_27-40", weight = 6f, type = EdgeType.WALKWAY),
         Edge(from = "n_despachos_p3_12", to = "n_despachos_p3_3-26", weight = 6f, type = EdgeType.WALKWAY),
         Edge(from = "n_despachos_p3_3-26", to = "n_despachos_p3_27-40", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_despachos_p3_12", to = "n_despachos_p3_27-40", weight = 5f, type = EdgeType.WALKWAY),
         Edge(from = "n_ascensor_principal_p3", to = "n_despachos_p3_12", weight = 4f, type = EdgeType.WALKWAY),
         Edge(from = "n_ascensor_principal_p3", to = "n_despachos_p3_27-40", weight = 4f, type = EdgeType.WALKWAY),
         Edge(from = "n_ascensor_principal_p3", to = "n_despachos_p3_3-26", weight = 4f, type = EdgeType.WALKWAY),
 
-        Edge(from = "n_entrada_lateral_aulas_p3", to = "n_aula31", weight = 8f),
+        Edge(from = "n_entrada_lateral_aulas_p3", to = "n_aula31", weight = 2f),
         Edge(from = "n_ascensor_p3", to = "n_aula38", weight = 7f, type = EdgeType.WALKWAY),
         Edge(from = "n_escaleras_p3", to = "n_aula38", weight = 10f, type = EdgeType.STAIRS),
         Edge(from = "n_banos_p3", to = "n_aula38", weight = 11f, type = EdgeType.WALKWAY),
@@ -327,6 +349,7 @@ object EtsiitData {
         Edge(from = "n_escaleras_principal_p4", to = "n_despachos_p4_27-40", weight = 6f, type = EdgeType.WALKWAY),
         Edge(from = "n_despachos_p4_12", to = "n_despachos_p4_3-26", weight = 6f, type = EdgeType.WALKWAY),
         Edge(from = "n_despachos_p4_3-26", to = "n_despachos_p4_27-40", weight = 6f, type = EdgeType.WALKWAY),
+        Edge(from = "n_despachos_p4_12", to = "n_despachos_p4_27-40", weight = 10f, type = EdgeType.WALKWAY),
         Edge(from = "n_ascensor_principal_p4", to = "n_despachos_p4_12", weight = 4f, type = EdgeType.WALKWAY),
         Edge(from = "n_ascensor_principal_p4", to = "n_despachos_p4_27-40", weight = 4f, type = EdgeType.WALKWAY),
         Edge(from = "n_ascensor_principal_p4", to = "n_despachos_p4_3-26", weight = 4f, type = EdgeType.WALKWAY),
@@ -352,7 +375,34 @@ object EtsiitData {
         Edge(from = "n_entrada_lateral_aulas_p3", to = "n_escaleras_lateral_p3", weight = 3f),
         Edge(from = "n_entrada_lateral_aulas_p2", to = "n_escaleras_lateral_p2", weight = 4f),
         Edge(from = "n_entrada_lateral_aulas_p1", to = "n_escaleras_lateral_p1", weight = 8f),
-        Edge(from = "n_entrada_lateral_aulas", to = "n_escaleras_lateral_p0", weight = 4f)
+        Edge(from = "n_entrada_lateral_aulas", to = "n_escaleras_lateral_p0", weight = 4f),
+
+        // La entrada desde la escalera lateral cae en el pasillo entre dos aulas; se conecta con
+        // las dos para que la ruta no pase de largo por una y tenga que volver hacia atrás.
+        Edge(from = "n_entrada_lateral_aulas", to = "n_aula03", weight = 4f),
+        Edge(from = "n_entrada_lateral_aulas_p1", to = "n_aula11", weight = 3f),
+        Edge(from = "n_entrada_lateral_aulas_p2", to = "n_aula22", weight = 2f),
+        Edge(from = "n_entrada_lateral_aulas_p3", to = "n_aula32", weight = 1f),
+
+        // Correcciones de idas y vueltas detectadas por RouteBacktrackTest:
+        // - Ascensor y escaleras principales están juntos en cada planta; sin esta arista, ir de
+        //   uno a otro obligaba a pasar por la biblioteca o los despachos y volver.
+        Edge(from = "n_ascensor_principal_p-1", to = "n_escaleras_internas_p-1_a_p0", weight = 3f, type = EdgeType.STAIRS),
+        Edge(from = "n_ascensor_principal_p1", to = "n_escaleras_principal_p1", weight = 3f, type = EdgeType.STAIRS),
+        Edge(from = "n_ascensor_principal_p2", to = "n_escaleras_principal_p2", weight = 3f, type = EdgeType.STAIRS),
+        Edge(from = "n_ascensor_principal_p3", to = "n_escaleras_principal_p3", weight = 3f, type = EdgeType.STAIRS),
+        Edge(from = "n_ascensor_principal_p4", to = "n_escaleras_principal_p4", weight = 3f, type = EdgeType.STAIRS),
+        // - En P1 el ascensor del aulario está entre el aula 1.5 y la 1.6 (solo conectaba con la 1.6).
+        Edge(from = "n_ascensor_p1", to = "n_aula15", weight = 3f, type = EdgeType.WALKWAY),
+        // - En P0, en ruta accesible, de los baños al aula 0.7 sin volver por el aula 0.6
+        //   (el tramo por el pie de las escaleras es STAIRS).
+        Edge(from = "n_banos_p0", to = "n_aula07", weight = 8f, type = EdgeType.WALKWAY),
+        // - La escalera de bajada a P-1 da al paseo exterior que pasa por la puerta del edificio
+        //   principal; sin esto había que ir hasta la entrada del recinto y volver.
+        Edge(from = "n_escaleras_entrada_p-1", to = "n_entrada_edificio_principal_p0", weight = 17f, type = EdgeType.WALKWAY),
+        // - La conserjería del aulario está en el pasillo entre el aula 0.4 y la 0.5.
+        Edge(from = "n_conserjeria_p0", to = "n_aula04", weight = 4f, type = EdgeType.WALKWAY),
+        Edge(from = "n_conserjeria_p0", to = "n_aula05", weight = 3f, type = EdgeType.WALKWAY)
     )
 
     // 3. Puntos de Interés seleccionables

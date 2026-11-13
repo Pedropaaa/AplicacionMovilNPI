@@ -41,42 +41,71 @@ class RouteManager {
             adj.getOrPut(edge.to) { mutableListOf() }.add(edge.from to edge.weight)
         }
 
-        // 4. Estructuras auxiliares para Dijkstra
-        val distances = mutableMapOf<String, Float>().withDefault { Float.MAX_VALUE }
-        val previous = mutableMapOf<String, String?>()
-        val priorityQueue = PriorityQueue<Pair<String, Float>>(compareBy { it.second })
+        // 4. Dijkstra sobre estados (nodo, ¿se llegó a él desde su misma planta?).
+        //    Así se puede penalizar usar unas escaleras o un ascensor como atajo dentro de una
+        //    planta (entrar y salir por la misma planta) sin encarecer cambiar de planta con ellos.
+        data class State(val nodeId: String, val enteredFromSameFloor: Boolean)
 
-        distances[startNodeId] = 0f
-        priorityQueue.add(startNodeId to 0f)
+        val start = State(startNodeId, false)
+        val distances = mutableMapOf(start to 0f)
+        val previous = mutableMapOf<State, State>()
+        val priorityQueue = PriorityQueue<Pair<State, Float>>(compareBy { it.second })
+        priorityQueue.add(start to 0f)
+        var reached: State? = null
 
         // 5. Exploración de caminos
         while (priorityQueue.isNotEmpty()) {
             val (current, currentDist) = priorityQueue.poll()!!
 
-            if (current == destNodeId) break
-            if (currentDist > distances.getValue(current)) continue
+            if (current.nodeId == destNodeId) {
+                reached = current
+                break
+            }
+            if (currentDist > (distances[current] ?: Float.MAX_VALUE)) continue
 
-            adj[current]?.forEach { (neighbor, weight) ->
-                val newDist = currentDist + weight
-                if (newDist < distances.getValue(neighbor)) {
-                    distances[neighbor] = newDist
-                    previous[neighbor] = current
-                    priorityQueue.add(neighbor to newDist)
+            val currentFloor = EtsiitData.nodes[current.nodeId]?.floor
+            adj[current.nodeId]?.forEach { (neighbor, weight) ->
+                val sameFloor = EtsiitData.nodes[neighbor]?.floor == currentFloor
+                val transitPenalty =
+                    if (current.enteredFromSameFloor && sameFloor && isFloorChangeNode(current.nodeId)) {
+                        FLOOR_CHANGE_TRANSIT_PENALTY
+                    } else {
+                        0f
+                    }
+                val next = State(neighbor, sameFloor)
+                val newDist = currentDist + weight + transitPenalty
+                if (newDist < (distances[next] ?: Float.MAX_VALUE)) {
+                    distances[next] = newDist
+                    previous[next] = current
+                    priorityQueue.add(next to newDist)
                 }
             }
         }
 
         // 6. Reconstruir el camino desde el destino hacia atrás
+        if (reached == null) return emptyList()
         val path = mutableListOf<Node>()
-        var step: String? = destNodeId
+        var step: State? = reached
 
         while (step != null) {
-            EtsiitData.nodes[step]?.let { path.add(0, it) }
+            EtsiitData.nodes[step.nodeId]?.let { path.add(0, it) }
             step = previous[step]
         }
 
         // Si el primer nodo no es el de inicio, significa que no hubo camino posible
         return if (path.firstOrNull()?.id == startNodeId) path else emptyList()
+    }
+
+    /** Nodos de escaleras o ascensor: solo se deben cruzar para cambiar de planta. */
+    private fun isFloorChangeNode(nodeId: String): Boolean =
+        nodeId.contains("escaleras") || nodeId.contains("ascensor")
+
+    companion object {
+        /**
+         * Coste extra por cruzar unas escaleras o un ascensor sin cambiar de planta (entrar y
+         * salir por la misma). Es alto para que solo se haga si no hay otro camino razonable.
+         */
+        const val FLOOR_CHANGE_TRANSIT_PENALTY = 40f
     }
 
     /**
