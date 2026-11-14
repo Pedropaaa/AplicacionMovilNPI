@@ -1,18 +1,28 @@
 package com.example.aplicacionmovilnpi.navigation
 
 import com.example.aplicacionmovilnpi.model.Node
-import com.example.aplicacionmovilnpi.model.PointOfInterest
 import java.util.PriorityQueue
 
 class RouteManager {
 
     /**
-     * Calcula la ruta óptima entre dos POIs usando el algoritmo de Dijkstra.
+     * Busca una ruta de coste mínimo entre dos puntos de interés del edificio.
      *
-     * @param startPoiId ID del punto de inicio
-     * @param destPoiId ID del punto de destino
-     * @param onlyAccessible Si es true, ignora escaleras y prioriza ascensores (PMR)
-     * @return Lista ordenada de [Node] que componen el camino, o lista vacía si no hay ruta.
+     * Los POI se convierten en sus nodos asociados y se recorren las conexiones del grafo como
+     * tramos transitables en ambos sentidos. La búsqueda usa Dijkstra, teniendo en cuenta el
+     * peso de cada conexión. Se añade una penalización al atravesar un nodo de escaleras o
+     * ascensor y volver a la misma planta, para evitar usar esos elementos como atajos
+     * horizontales.
+     *
+     * Si [onlyAccessible] es `true`, solo se consideran conexiones marcadas como accesibles.
+     * Esto excluye, por ejemplo, los tramos de escaleras no accesibles.
+     *
+     * @param startPoiId Identificador del POI de origen.
+     * @param destPoiId Identificador del POI de destino.
+     * @param onlyAccessible Si es `true`, limita la búsqueda a conexiones accesibles.
+     * @return Los nodos de la ruta, en orden desde el origen hasta el destino, ambos incluidos.
+     *         Devuelve una lista vacía si algún POI no existe o no hay una ruta válida.
+     *         Si origen y destino corresponden al mismo nodo, devuelve ese nodo.
      */
     fun calculateRoute(
         startPoiId: String,
@@ -107,9 +117,4 @@ class RouteManager {
          */
         const val FLOOR_CHANGE_TRANSIT_PENALTY = 40f
     }
-
-    /**
-     * Devuelve la lista completa de POIs disponibles para mostrarlos en la UI.
-     */
-    fun getAllPois(): List<PointOfInterest> = EtsiitData.pois
 }

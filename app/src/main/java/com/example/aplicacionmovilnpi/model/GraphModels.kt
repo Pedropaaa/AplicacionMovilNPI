@@ -53,6 +53,7 @@ data class Edge(
  * @property category Categoría para filtrar en la app (ej: "AULA", "DESPACHO", "SERVICIO", "CAFETERIA").
  * @property nodeId ID del nodo físico donde se ubica la puerta o acceso a este punto.
  * @property description Información adicional (horarios, equipamiento, capacidad).
+ * @property descriptionEn Información adicional en inglés.
  */
 data class PointOfInterest(
     val id: String,
@@ -64,8 +65,14 @@ data class PointOfInterest(
     val descriptionEn: String = ""
 )
 
+/**
+ * Devuelve el nombre del POI en el idioma actual.
+ */
 fun PointOfInterest.getName(isEnglish: Boolean): String =
     if (isEnglish && nameEn.isNotBlank()) nameEn else nameEs
 
+/**
+ * Devuelve la descripción del POI en el idioma actual.
+ */
 fun PointOfInterest.getDescription(isEnglish: Boolean): String =
     if (isEnglish && descriptionEn.isNotBlank()) descriptionEn else description
