@@ -13,8 +13,8 @@ object EtsiitData {
         // PLANTA -1 (SÓTANO Y PATIO INFERIOR
         //Node("n_escaleras_entrada_p-1", x = 257f, y = 701f, floor = 0),
         Node("n_pasillo_abierto_p-1", x = 240f, y = 650f, floor = -1),
-        Node("n_aula-11", x = 200f, y = 650f, floor = -1),
-        Node("n_aula-12", x = 200f, y = 550f, floor = -1),
+        Node("n_aula-11", x = 237f, y = 749f, floor = -1),
+        Node("n_aula-12", x = 184f, y = 743f, floor = -1),
         Node("n_entrada_edificio_principal_p-1", x = 275f, y = 605f, floor = -1),
         Node("n_escaleras_internas_p-1_a_p0", x = 320f, y = 635f, floor = -1),
         Node("n_ascensor_principal_p-1", x = 330f, y = 610f, floor = -1),
@@ -155,8 +155,10 @@ object EtsiitData {
         Edge(from = "n_entrada", to = "n_escaleras_entrada_p-1", weight = 13f),
         Edge(from = "n_escaleras_entrada_p-1", to = "n_pasillo_abierto_p-1", weight = 15f, type = EdgeType.STAIRS),
         Edge(from = "n_pasillo_abierto_p-1", to = "n_entrada_edificio_principal_p-1", weight = 6f),
-        Edge(from = "n_pasillo_abierto_p-1", to = "n_aula-11", weight = 6f),
-        Edge(from = "n_pasillo_abierto_p-1", to = "n_aula-12", weight = 6f),
+        Edge(from = "n_pasillo_abierto_p-1", to = "n_aula-11", weight = 10f),
+        Edge(from = "n_pasillo_abierto_p-1", to = "n_aula-12", weight = 11f),
+        // Las aulas -1.1 y -1.2 están una al lado de la otra
+        Edge(from = "n_aula-11", to = "n_aula-12", weight = 5f),
 
         // Escaleras internas conectadas exclusivamente a la entrada desde el patio en P0
         Edge(from = "n_entrada_edificio_principal_p0", to = "n_escaleras_internas_p-1_a_p0", weight = 15f, type = EdgeType.STAIRS),
