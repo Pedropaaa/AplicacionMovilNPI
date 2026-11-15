@@ -39,9 +39,20 @@ import com.example.aplicacionmovilnpi.ui.theme.Ink
 import com.example.aplicacionmovilnpi.ui.theme.MutedText
 import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 
+/**
+ * Pantalla del centro de ayuda y soporte técnico.
+ *
+ * Ofrece un acordeón interactivo de Preguntas Frecuentes (FAQ) y un formulario
+ * para la recepción e incidencias de soporte técnico.
+ *
+ * @param onBack Callback de navegación para regresar a la pantalla anterior.
+ */
 @Composable
 fun HelpScreen(onBack: () -> Unit) {
+    // 1. Obtención del estado global de idioma (Español / Inglés)
     val isEnglish = LocalIsEnglish.current
+
+    // 2. Estados locales para los campos del formulario de reporte de incidencias
     var ticketSubject by remember { mutableStateOf("") }
     var ticketDesc by remember { mutableStateOf("") }
     var submittedNotice by remember { mutableStateOf<String?>(null) }
@@ -54,6 +65,7 @@ fun HelpScreen(onBack: () -> Unit) {
     ) {
         Spacer(modifier = Modifier.height(16.dp))
 
+        // 3. Botón de navegación para regresar
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = if (isEnglish) "⬅ Back to More" else "⬅ Volver a Más",
@@ -66,6 +78,7 @@ fun HelpScreen(onBack: () -> Unit) {
 
         Spacer(modifier = Modifier.height(14.dp))
 
+        // 4. Encabezados descriptivos de la pantalla
         Text(
             text = if (isEnglish) "Help Center" else "Centro de Ayuda",
             fontSize = 24.sp,
@@ -80,6 +93,7 @@ fun HelpScreen(onBack: () -> Unit) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
+        // 5. Sección de Preguntas Frecuentes (FAQ)
         Text(
             text = if (isEnglish) "Frequently Asked Questions (FAQ)" else "Preguntas Frecuentes (FAQ)",
             fontSize = 16.sp,
@@ -89,6 +103,7 @@ fun HelpScreen(onBack: () -> Unit) {
 
         Spacer(modifier = Modifier.height(10.dp))
 
+        // Lista de traducciones de preguntas y respuestas frecuentes
         val faqTranslations = listOf(
             "How do I get to my next class?" to "On Home, tap ‘Guide me to the classroom’ on your next class card. You can also tap ‘Directions’ for any class in your schedule.",
             "Can I avoid stairs?" to "Yes. Turn on ‘Accessible route’ on the route screen and we will guide you using elevators and ramps.",
@@ -99,6 +114,7 @@ fun HelpScreen(onBack: () -> Unit) {
             "I forgot my password" to "Your password is for your UGR institutional account. Reset it from UGR Identified Access using your ID and personal email.",
             "How do I sign out?" to "Tap your avatar in the top-right corner and choose ‘Log out’, or sign out from My Profile."
         )
+
         SampleData.faqs.forEachIndexed { index, faq ->
             FaqItemCard(
                 faq = faq,
@@ -111,6 +127,7 @@ fun HelpScreen(onBack: () -> Unit) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // 6. Sección de Formulario de Incidencias Técnicas
         Text(
             text = if (isEnglish) "Report an issue" else "Reportar una incidencia",
             fontSize = 16.sp,
@@ -159,6 +176,7 @@ fun HelpScreen(onBack: () -> Unit) {
 
                 Button(
                     onClick = {
+                        // 7. Validación y confirmación del envío de la incidencia
                         if (ticketSubject.isNotBlank()) {
                             submittedNotice = if (isEnglish) "Issue INC-0143 submitted successfully. We will reply within 48 hours." else "Incidencia INC-0143 enviada correctamente. Te responderemos en 48h."
                             ticketSubject = ""
@@ -185,8 +203,22 @@ fun HelpScreen(onBack: () -> Unit) {
     }
 }
 
+/**
+ * Tarjeta desplegable (acordeón) para visualizar una Pregunta Frecuente (FAQ).
+ *
+ * @param faq Elemento [FaqItem] original en español.
+ * @param isEnglish Booleano que determina si se usa la traducción en inglés.
+ * @param translatedQuestion Pregunta adaptada al inglés.
+ * @param translatedAnswer Respuesta adaptada al inglés.
+ */
 @Composable
-fun FaqItemCard(faq: FaqItem, isEnglish: Boolean, translatedQuestion: String, translatedAnswer: String) {
+fun FaqItemCard(
+    faq: FaqItem,
+    isEnglish: Boolean,
+    translatedQuestion: String,
+    translatedAnswer: String
+) {
+    // Control local del estado de expansión de la tarjeta
     var expanded by remember { mutableStateOf(false) }
 
     Surface(
@@ -213,10 +245,16 @@ fun FaqItemCard(faq: FaqItem, isEnglish: Boolean, translatedQuestion: String, tr
                 Text(text = if (expanded) "▲" else "▼", fontSize = 10.sp, color = MutedText)
             }
 
+            // Animación de despliegue para la respuesta
             AnimatedVisibility(visible = expanded) {
                 Column {
                     HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
-                    Text(text = if (isEnglish) translatedAnswer else faq.answer, fontSize = 11.sp, color = MutedText, lineHeight = 16.sp)
+                    Text(
+                        text = if (isEnglish) translatedAnswer else faq.answer,
+                        fontSize = 11.sp,
+                        color = MutedText,
+                        lineHeight = 16.sp
+                    )
                 }
             }
         }

@@ -1,8 +1,10 @@
+// 1. Configuración de plugins de Gradle para el módulo Android Application y Soporte para Jetpack Compose
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
 }
 
+// 2. Configuración principal de Android Gradle Plugin (AGP)
 android {
     namespace = "com.example.aplicacionmovilnpi"
     compileSdk = 37
@@ -17,6 +19,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Configuración de variantes de compilación (Release / Debug)
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -27,15 +30,18 @@ android {
         }
     }
 
+    // Compatibilidad de bytecode Java/Kotlin
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
 
+    // Habilitar características de compilación (Jetpack Compose UI)
     buildFeatures {
         compose = true
     }
 
+    // Configuración de empaquetado de librerías nativas JNI
     packaging {
         jniLibs {
             useLegacyPackaging = true
@@ -43,7 +49,9 @@ android {
     }
 }
 
+// 3. Declaración de dependencias del proyecto
 dependencies {
+    // Jetpack Compose BOM para gestión centralizada de versiones
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
@@ -54,24 +62,24 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
+
+    // OSMDroid para representación de mapas OpenStreetMap
     implementation(libs.osmdroid.android)
 
-    // CameraX para el escáner de códigos QR.
+    // CameraX para la captura e integración del escáner de códigos QR
     implementation("androidx.camera:camera-core:1.3.1")
     implementation("androidx.camera:camera-camera2:1.3.1")
     implementation("androidx.camera:camera-lifecycle:1.3.1")
     implementation("androidx.camera:camera-view:1.3.1")
 
-    // ML Kit Barcode Scanning para leer códigos QR.
+    // ML Kit Barcode Scanning para el reconocimiento visual de códigos QR
     implementation("com.google.mlkit:barcode-scanning:17.2.0")
 
-    // ZXing para generar códigos QR.
-    // Se usa la coordenada explícita de HEAD para no depender de que
-    // exista el alias libs.zxing.core en gradle/libs.versions.toml.
+    // ZXing para la generación dinámica de códigos QR
     implementation("com.google.zxing:core:3.5.2")
 
+    // Frameworks de pruebas unitarias e instrumentales
     testImplementation(libs.junit)
-    // org.json real para los tests (el de Android es solo un esqueleto fuera del móvil).
     testImplementation(libs.org.json)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

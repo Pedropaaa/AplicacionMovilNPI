@@ -93,6 +93,7 @@ object EtsiitData {
         Node("n_despachos_p2_27-40", x = 330f, y = 470f, floor = 2),
         Node("n_entrada_lateral_aulas_p2", x = 563.81f, y = 247.68f, floor = 2),
         Node("n_escaleras_lateral_p2", x = 530f, y = 270f, floor = 2),
+
         Node("n_sala_operadores", x = 536.56f, y = 202.92f, floor = 2),
         Node("n_aula21", x = 550f, y = 225f, floor = 2),
         Node("n_aula22", x = 578.56f, y = 271.92f, floor = 2),
@@ -108,8 +109,7 @@ object EtsiitData {
         Node("n_ascensor_p2", x = 734.61f, y = 528.28f, floor = 2),
         Node("n_banos_p2", x = 753.34f, y = 559.06f, floor = 2),
 
-
-        // PLANTA 3
+        // --- PLANTA 3 --
         Node("n_ascensor_principal_p3", x = 290f, y = 510f, floor = 3),
         Node("n_escaleras_principal_p3", x = 310f, y = 530f, floor = 3),
 
@@ -143,6 +143,7 @@ object EtsiitData {
         Node("n_despachos_p4_3-26", x = 235f, y = 515f, floor = 4),
         Node("n_despachos_p4_27-40", x = 330f, y = 405f, floor = 4),
 
+        // aulario
         Node("n_delegacion_estudiantes", x = 725f, y = 510f, floor = 4),
         Node("n_escaleras_p4", x = 780f, y = 490f, floor = 4),
         Node("n_ascensor_p4", x = 700f, y = 470f, floor = 4)

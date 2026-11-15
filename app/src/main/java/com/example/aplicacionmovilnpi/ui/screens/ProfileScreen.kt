@@ -35,9 +35,20 @@ import com.example.aplicacionmovilnpi.ui.theme.ToneRoseBg
 import com.example.aplicacionmovilnpi.ui.theme.ToneRoseText
 import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 
+/**
+ * Muestra el perfil académico y de contacto de la estudiante autenticada.
+ *
+ * Presenta un resumen estructurado con datos del centro, titulación, asignaturas
+ * matriculadas y canales de contacto institucional.
+ *
+ * @param onBack Callback de navegación para regresar a la pantalla anterior (Más opciones).
+ */
 @Composable
 fun ProfileScreen(onBack: () -> Unit) {
+    // 1. Obtener idioma activo desde el proveedor de composición local
     val isEnglish = LocalIsEnglish.current
+
+    // 2. Estructura principal con soporte de desplazamiento vertical
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -46,6 +57,7 @@ fun ProfileScreen(onBack: () -> Unit) {
     ) {
         Spacer(modifier = Modifier.height(16.dp))
 
+        // 3. Botón de retroceso a la pantalla previa
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = if (isEnglish) "⬅ Back to More" else "⬅ Volver a Más",
@@ -58,6 +70,7 @@ fun ProfileScreen(onBack: () -> Unit) {
 
         Spacer(modifier = Modifier.height(14.dp))
 
+        // 4. Encabezado de la pantalla
         Text(
             text = if (isEnglish) "Student Profile" else "Perfil de Estudiante",
             fontSize = 24.sp,
@@ -72,7 +85,7 @@ fun ProfileScreen(onBack: () -> Unit) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Avatar Profile Card
+        // 5. Tarjeta principal con el avatar y datos del estudiante
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = Color.White,
@@ -83,6 +96,7 @@ fun ProfileScreen(onBack: () -> Unit) {
                 modifier = Modifier.padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // Avatar circular con iniciales
                 Surface(
                     color = ToneRoseBg,
                     shape = CircleShape,
@@ -100,6 +114,7 @@ fun ProfileScreen(onBack: () -> Unit) {
 
                 Spacer(modifier = Modifier.height(12.dp))
 
+                // Nombre completo
                 Text(
                     text = FacultyData.Student.name,
                     fontSize = 18.sp,
@@ -107,6 +122,7 @@ fun ProfileScreen(onBack: () -> Unit) {
                     color = Ink
                 )
 
+                // Titulación actual
                 Text(
                     text = localizedCourseText(FacultyData.Student.degree, isEnglish),
                     fontSize = 12.sp,
@@ -120,13 +136,26 @@ fun ProfileScreen(onBack: () -> Unit) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                ProfileDetailRow(label = if (isEnglish) "School" else "Centro", value = if (isEnglish) "School of Computer and Telecommunication Engineering" else "E.T.S. de Ingenierías Informática y de Telecomunicación")
+                // 6. Filas detalladas de información académica y de contacto
+                ProfileDetailRow(
+                    label = if (isEnglish) "School" else "Centro",
+                    value = if (isEnglish) "School of Computer and Telecommunication Engineering" else "E.T.S. de Ingenierías Informática y de Telecomunicación"
+                )
                 Spacer(modifier = Modifier.height(10.dp))
-                ProfileDetailRow(label = if (isEnglish) "Subjects" else "Asignaturas", value = FacultyData.studentSubjects.joinToString(", "))
+                ProfileDetailRow(
+                    label = if (isEnglish) "Subjects" else "Asignaturas",
+                    value = FacultyData.studentSubjects.joinToString(", ")
+                )
                 Spacer(modifier = Modifier.height(10.dp))
-                ProfileDetailRow(label = if (isEnglish) "UGR email" else "Correo UGR", value = FacultyData.Student.email)
+                ProfileDetailRow(
+                    label = if (isEnglish) "UGR email" else "Correo UGR",
+                    value = FacultyData.Student.email
+                )
                 Spacer(modifier = Modifier.height(10.dp))
-                ProfileDetailRow(label = if (isEnglish) "Phone" else "Teléfono", value = "+34 600 000 000")
+                ProfileDetailRow(
+                    label = if (isEnglish) "Phone" else "Teléfono",
+                    value = "+34 600 000 000"
+                )
             }
         }
 
@@ -134,6 +163,12 @@ fun ProfileScreen(onBack: () -> Unit) {
     }
 }
 
+/**
+ * Componente auxiliar para mostrar un par campo-valor con formato consistente dentro del perfil.
+ *
+ * @param label Etiqueta o título del campo descriptivo (ej: "Correo UGR").
+ * @param value Valor textual asociado (ej: "lucia@correo.ugr.es").
+ */
 @Composable
 fun ProfileDetailRow(label: String, value: String) {
     Row(

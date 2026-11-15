@@ -56,14 +56,25 @@ import com.example.aplicacionmovilnpi.ui.theme.TonePurpleBg
 import com.example.aplicacionmovilnpi.ui.theme.ToneRoseBg
 import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 
+/**
+ * Pantalla principal del menú "Más", que actúa como hub de accesos directos
+ * a secciones secundarias como Expediente, Calendario, Mensajes, Ayuda, Accesibilidad y Perfil.
+ *
+ * @param onNavigateToSubScreen Callback para navegar a la subpantalla correspondiente según la clave dada.
+ * @param onLanguageChange Callback invocado al modificar la preferencia de idioma (Español/Inglés).
+ */
 @Composable
 fun MoreScreen(
     onNavigateToSubScreen: (String) -> Unit,
     onLanguageChange: (Boolean) -> Unit
 ) {
+    // 1. Obtener idioma actual del proveedor de estado de composición
     val isEnglish = LocalIsEnglish.current
+
+    // 2. Control de visibilidad del diálogo de cambio de idioma
     var showLanguageDialog by remember { mutableStateOf(false) }
 
+    // 3. Renderizado condicional del diálogo emergente de idioma
     if (showLanguageDialog) {
         LanguageSelectionDialog(
             isEnglish = isEnglish,
@@ -74,6 +85,7 @@ fun MoreScreen(
         )
     }
 
+    // 4. Estructura principal en columna con desplazamiento vertical
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -82,6 +94,7 @@ fun MoreScreen(
     ) {
         Spacer(modifier = Modifier.height(20.dp))
 
+        // Encabezado del menú
         Text(
             text = if (isEnglish) "More options" else "Más opciones",
             fontSize = 24.sp,
@@ -97,7 +110,7 @@ fun MoreScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Language Option Card
+        // 5. Opciones principales del menú representadas mediante [MoreOptionCard]
         MoreOptionCard(
             title = if (isEnglish) "Language" else "Idioma",
             subtitle = if (isEnglish) "English 🇬🇧" else "Español 🇪🇸",
@@ -108,7 +121,6 @@ fun MoreScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Options List
         MoreOptionCard(
             title = if (isEnglish) "Academic Record & Grades" else "Expediente y Notas",
             subtitle = if (isEnglish) "Grades and GPA" else "Calificaciones y nota media",
@@ -171,6 +183,13 @@ fun MoreScreen(
     }
 }
 
+/**
+ * Diálogo modal para la selección preferente del idioma de la aplicación.
+ *
+ * @param isEnglish Estado actual del idioma (`true` si es inglés, `false` si es español).
+ * @param onSelectLanguage Callback invocado al hacer clic en una de las opciones de idioma.
+ * @param onDismiss Callback invocado para cerrar el diálogo emergente.
+ */
 @Composable
 fun LanguageSelectionDialog(
     isEnglish: Boolean,
@@ -239,6 +258,13 @@ fun LanguageSelectionDialog(
     }
 }
 
+/**
+ * Fila seleccionable con botón de radio para una opción de idioma dentro del diálogo.
+ *
+ * @param label Etiqueta del idioma a mostrar (ej: "Español 🇪🇸").
+ * @param selected Indica si esta opción es la seleccionada actualmente.
+ * @param onClick Callback ejecutado al presionar sobre la fila o el botón de radio.
+ */
 @Composable
 private fun LanguageRow(
     label: String,
@@ -274,6 +300,15 @@ private fun LanguageRow(
     }
 }
 
+/**
+ * Tarjeta interactiva reutilizable para representar opciones en la pantalla [MoreScreen].
+ *
+ * @param title Título representativo de la opción (ej: "Expediente y Notas").
+ * @param subtitle Descripción o resumen complementario de la opción.
+ * @param icon Icono vectorial característico de la acción.
+ * @param bgTone Color de fondo del icono.
+ * @param onClick Acción a realizar al pulsar sobre la tarjeta.
+ */
 @Composable
 fun MoreOptionCard(
     title: String,

@@ -41,7 +41,6 @@ private val HighContrastColorScheme = lightColorScheme(
 
 @Composable
 fun AplicacionMovilNPITheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
     highContrast: Boolean = LocalHighContrast.current,
     content: @Composable () -> Unit
 ) {

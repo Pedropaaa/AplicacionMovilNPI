@@ -5,29 +5,26 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Apartment
 import androidx.compose.material.icons.rounded.DirectionsCar
 import androidx.compose.material.icons.rounded.LocalCafe
-import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.rounded.QrCodeScanner
@@ -36,8 +33,7 @@ import androidx.compose.material.icons.rounded.WaterDrop
 import androidx.compose.material.icons.rounded.Wc
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -55,13 +51,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aplicacionmovilnpi.data.FacultyData
-import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
-import com.example.aplicacionmovilnpi.ui.localizedCourseText
-import com.example.aplicacionmovilnpi.ui.localizedDayName
 import com.example.aplicacionmovilnpi.data.Moment
 import com.example.aplicacionmovilnpi.data.PlaceCategory
 import com.example.aplicacionmovilnpi.data.ProfessorLocator
 import com.example.aplicacionmovilnpi.data.SampleData
+import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
+import com.example.aplicacionmovilnpi.ui.localizedCourseText
+import com.example.aplicacionmovilnpi.ui.localizedDayName
 import com.example.aplicacionmovilnpi.ui.theme.CardBorder
 import com.example.aplicacionmovilnpi.ui.theme.Ink
 import com.example.aplicacionmovilnpi.ui.theme.MutedText
@@ -75,9 +71,20 @@ import com.example.aplicacionmovilnpi.ui.theme.ToneRoseBg
 import com.example.aplicacionmovilnpi.ui.theme.ToneRoseText
 import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 import com.example.aplicacionmovilnpi.ui.theme.UgrRedDark
-import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material3.Icon
 
+/**
+ * Pantalla principal (Inicio / Dashboard) de la aplicación.
+ *
+ * Muestra el saludo personalizado a la estudiante, la tarjeta de la próxima clase
+ * o clase en curso con botón de guiado directo en el plano, el aviso de la próxima entrega
+ * o examen agendado, y una parrilla de accesos rápidos a servicios del centro (Comedor,
+ * Biblioteca, Escáner QR, Aseos y Fuentes).
+ *
+ * @param onNavigateToSchedule Callback para navegar a la pestaña de horario completo.
+ * @param onNavigateToProfessors Callback para navegar al directorio de profesorado.
+ * @param onNavigateToMap Callback para navegar al mapa especificando opcionalmente un POI de destino.
+ * @param onNavigateToCalendar Callback para navegar al calendario de entregas y eventos.
+ */
 @Composable
 fun HomeScreen(
     onNavigateToSchedule: () -> Unit,
@@ -85,13 +92,15 @@ fun HomeScreen(
     onNavigateToMap: (String?) -> Unit,
     onNavigateToCalendar: () -> Unit
 ) {
+    // 1. Obtener preferencia de idioma desde el CompositionLocal
     val isEnglish = LocalIsEnglish.current
-    var searchQuery by remember { mutableStateOf("") }
 
-    // Próxima clase (o la que está en curso) según el horario real de la alumna
+    // 2. Calcular en tiempo real la lección actual o posterior del estudiante
     val moment = remember { Moment.now() }
     val nextSlot = remember(moment) { SampleData.nextLesson(moment) }
     val nextLesson = nextSlot?.let(SampleData::toLesson)
+    
+    // 3. Formatear la etiqueta de estado de la clase (EN CURSO, PRÓXIMA CLASE · EN X MIN, etc.)
     val nextLabel = when {
         nextSlot == null -> if (isEnglish) "NO CLASSES SCHEDULED" else "SIN CLASES PROGRAMADAS"
         nextSlot.day == moment.day && moment.minutes >= nextSlot.startMinutes -> if (isEnglish) "IN PROGRESS · UNTIL ${nextSlot.end}" else "EN CURSO · HASTA LAS ${nextSlot.end}"
@@ -101,7 +110,8 @@ fun HomeScreen(
         }
         else -> "${if (isEnglish) "NEXT CLASS · " else "PRÓXIMA CLASE · "}${localizedDayName(ProfessorLocator.dayName(nextSlot.day), isEnglish).uppercase()}"
     }
-    // Primera entrega (o examen) a partir de hoy
+
+    // 4. Obtener la entrega o examen más próximo en el calendario
     val nextEvent = remember {
         val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.ROOT).format(java.util.Date())
         SampleData.initialEvents.sortedBy { it.date }.firstOrNull { it.date >= today }
@@ -115,6 +125,7 @@ fun HomeScreen(
         if (it == "0") if (isEnglish) "Ground floor" else "Planta baja" else "${if (isEnglish) "Floor" else "Planta"} $it"
     }
 
+    // 5. Definir gradiente visual para la tarjeta destacada de la próxima clase
     val nextClassGradient = remember {
         Brush.linearGradient(
             colors = listOf(
@@ -132,7 +143,7 @@ fun HomeScreen(
     ) {
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Intro Greeting
+        // Saludo personalizado
         Text(
             text = "${if (isEnglish) "Hello" else "¡Hola"}, ${FacultyData.Student.firstName}! 👋",
             fontSize = 28.sp,
@@ -142,7 +153,7 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Next Class Card
+        // 6. Tarjeta destacada de la próxima clase con botón de navegación indoor al aula
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
@@ -208,6 +219,7 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
+                    // Botón para iniciar el guiado indoor hasta el aula
                     Button(
                         onClick = { onNavigateToMap(nextLesson?.poiId) },
                         enabled = nextLesson?.poiId != null,
@@ -232,7 +244,7 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Next Delivery Banner Card
+        // 7. Tarjeta informativa del próximo evento / examen
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -301,7 +313,7 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Places Quick Categories Horizontal Row
+        // 8. Sección de accesos rápidos a servicios del centro
         Text(
             text = if (isEnglish) "Explore the university" else "Explorar la universidad",
             fontSize = 16.sp,
@@ -315,7 +327,7 @@ fun HomeScreen(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // FILA 1
+            // Fila 1 de servicios: Comedor y Biblioteca
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -354,7 +366,7 @@ fun HomeScreen(
                 )
             }
 
-            // FILA 2
+            // Fila 2 de servicios: Escáner QR, Aseos y Fuentes de agua
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -362,7 +374,7 @@ fun HomeScreen(
                     .height(IntrinsicSize.Min),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // TARJETA IZQUIERDA: ESCÁNER QR
+                // Escáner QR
                 PlaceCategoryCard(
                     place = PlaceCategory(
                         name = if (isEnglish) "QR Scanner" else "Escáner QR",
@@ -378,7 +390,7 @@ fun HomeScreen(
                         .fillMaxHeight()
                 )
 
-                // COLUMNA DERECHA: ASEOS Y FUENTES
+                // Subcolumna: Aseos y Fuentes
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -419,17 +431,25 @@ fun HomeScreen(
         }
 
         Spacer(modifier = Modifier.height(12.dp))
-
     }
 }
 
-
+/**
+ * Componente visual para renderizar una tarjeta de categoría de servicios o puntos de interés.
+ *
+ * Soporta diseños tanto verticales como horizontales en función del tipo de icono.
+ *
+ * @param place Objeto [PlaceCategory] con el nombre, detalle e icono de la categoría.
+ * @param onClick Acción a ejecutar al seleccionar la tarjeta (abre el mapa o scanner).
+ * @param modifier Modificador de diseño Compose.
+ */
 @Composable
 fun PlaceCategoryCard(
     place: PlaceCategory,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // 1. Asignar esquema de color según el tono especificado en la categoría
     val (bgColor, textColor) = when (place.tone) {
         "rose" -> ToneRoseBg to ToneRoseText
         "purple" -> TonePurpleBg to TonePurpleText
@@ -438,6 +458,7 @@ fun PlaceCategoryCard(
         else -> ToneOrangeBg to ToneOrangeText
     }
 
+    // 2. Mapear el identificador textual de icono a un [ImageVector] de Material Icons
     val vectorIcon = when (place.icon) {
         "building" -> Icons.Rounded.Apartment
         "person" -> Icons.Rounded.Person
@@ -452,6 +473,7 @@ fun PlaceCategoryCard(
 
     val isHorizontal = place.icon == "toilet" || place.icon == "water"
 
+    // 3. Renderizar superficie interactiva con esquinas redondeadas
     Surface(
         modifier = modifier.clickable { onClick() },
         color = Color.White,
@@ -459,6 +481,7 @@ fun PlaceCategoryCard(
         border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
     ) {
         if (isHorizontal) {
+            // Diseño en fila para tarjetas más compactas (Aseos, Fuentes)
             Row(
                 modifier = Modifier
                     .fillMaxSize()
@@ -491,7 +514,7 @@ fun PlaceCategoryCard(
                         fontWeight = FontWeight.Bold,
                         color = Ink,
                         maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis
                     )
 
                     Text(
@@ -500,11 +523,12 @@ fun PlaceCategoryCard(
                         fontWeight = FontWeight.Medium,
                         color = MutedText,
                         maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
         } else {
+            // Diseño en columna para tarjetas principales
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -548,49 +572,6 @@ fun PlaceCategoryCard(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 2.dp)
                 )
-            }
-        }
-    }
-}
-
-
-@Composable
-fun ShortcutCard(
-    title: String,
-    subtitle: String,
-    icon: String,
-    bgTone: Color,
-    iconTone: Color,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier
-            .height(90.dp)
-            .clickable { onClick() },
-        color = Color.White,
-        shape = RoundedCornerShape(16.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                color = bgTone,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.size(40.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(text = icon, fontSize = 20.sp)
-                }
-            }
-
-            Spacer(modifier = Modifier.width(10.dp))
-
-            Column {
-                Text(text = title, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Ink)
-                Text(text = subtitle, fontSize = 9.sp, color = MutedText, modifier = Modifier.padding(top = 2.dp))
             }
         }
     }

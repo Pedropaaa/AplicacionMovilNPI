@@ -34,9 +34,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aplicacionmovilnpi.data.MailFolder
-import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
 import com.example.aplicacionmovilnpi.data.MailMessage
 import com.example.aplicacionmovilnpi.data.SampleData
+import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
 import com.example.aplicacionmovilnpi.ui.theme.CardBorder
 import com.example.aplicacionmovilnpi.ui.theme.Ink
 import com.example.aplicacionmovilnpi.ui.theme.MutedText
@@ -44,11 +44,23 @@ import com.example.aplicacionmovilnpi.ui.theme.ToneRoseBg
 import com.example.aplicacionmovilnpi.ui.theme.ToneRoseText
 import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 
+/**
+ * Pantalla que simula el buzón de correo institucional UGR del estudiante.
+ *
+ * Permite filtrar mensajes por carpetas (Recibidos, Enviados, Archivados) y consultar
+ * avisos académicos y notificaciones docentes.
+ *
+ * @param onBack Callback para volver a la pantalla de origen (Más opciones).
+ */
 @Composable
 fun MessagesScreen(onBack: () -> Unit) {
+    // 1. Obtención del estado global de idioma
     val isEnglish = LocalIsEnglish.current
+
+    // 2. Estado local para controlar la carpeta activa del buzón
     var activeFolder by remember { mutableStateOf(MailFolder.INBOX) }
 
+    // 3. Filtrar los mensajes de muestra según la carpeta seleccionada
     val filteredMails = SampleData.initialMails.filter { it.folder == activeFolder }
 
     Column(
@@ -59,6 +71,7 @@ fun MessagesScreen(onBack: () -> Unit) {
     ) {
         Spacer(modifier = Modifier.height(16.dp))
 
+        // 4. Botón superior de retroceso
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = if (isEnglish) "⬅ Back to More" else "⬅ Volver a Más",
@@ -71,6 +84,7 @@ fun MessagesScreen(onBack: () -> Unit) {
 
         Spacer(modifier = Modifier.height(14.dp))
 
+        // 5. Título y subtítulo descriptivo del buzón institucional
         Text(
             text = if (isEnglish) "Messages & Notices" else "Mensajes y Avisos",
             fontSize = 24.sp,
@@ -85,7 +99,7 @@ fun MessagesScreen(onBack: () -> Unit) {
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        // Folders Row
+        // 6. Fila de pestañas para selección de carpeta (Recibidos, Enviados, Archivados)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -119,6 +133,7 @@ fun MessagesScreen(onBack: () -> Unit) {
 
         Spacer(modifier = Modifier.height(18.dp))
 
+        // 7. Renderizado de la lista de correos o mensaje de estado vacío
         if (filteredMails.isEmpty()) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -162,8 +177,15 @@ fun MessagesScreen(onBack: () -> Unit) {
     }
 }
 
+/**
+ * Representación visual de un correo electrónico o notificación de aviso.
+ *
+ * @param mail Objeto [MailMessage] con los datos del remitente, asunto y cuerpo.
+ * @param isEnglish Indica si la interfaz se está presentando en idioma inglés.
+ */
 @Composable
 fun MailCard(mail: MailMessage, isEnglish: Boolean) {
+    // 1. Mapeo de asuntos traducidos
     val englishSubject = when (mail.id) {
         1L -> "New course material available"
         2L -> "Enrollment for academic year 2026/2027"
@@ -173,6 +195,7 @@ fun MailCard(mail: MailMessage, isEnglish: Boolean) {
         6L -> "Welcome to academic year 2026/2027"
         else -> mail.subject
     }
+    // 2. Mapeo de cuerpos de mensaje traducidos
     val englishBody = when (mail.id) {
         1L -> "New material has been published for Nuevos Paradigmas de Interacción.\n\nVisit PRADO to view it."
         2L -> "Dear student:\n\nYour enrollment change request has been processed. You can view the updated receipt on the electronic office.\n\nRegards,\nETSIIT Office"
@@ -182,6 +205,8 @@ fun MailCard(mail: MailMessage, isEnglish: Boolean) {
         6L -> "Welcome to the new academic year. See the academic calendar and schedules on the school website."
         else -> mail.body
     }
+
+    // 3. Renderizado de tarjeta con indicador de estado (No leído / Leído)
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = Color.White,
@@ -192,6 +217,7 @@ fun MailCard(mail: MailMessage, isEnglish: Boolean) {
             modifier = Modifier.padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Avatar con las dos primeras letras del nombre del remitente
             Surface(
                 color = ToneRoseBg,
                 shape = CircleShape,
@@ -209,6 +235,7 @@ fun MailCard(mail: MailMessage, isEnglish: Boolean) {
 
             Spacer(modifier = Modifier.width(12.dp))
 
+            // Datos del remitente, hora, asunto y extracto del cuerpo
             Column(modifier = Modifier.weight(1f)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -220,7 +247,11 @@ fun MailCard(mail: MailMessage, isEnglish: Boolean) {
                         fontWeight = if (mail.unread) FontWeight.Black else FontWeight.Bold,
                         color = Ink
                     )
-                    Text(text = if (isEnglish) when (mail.time) { "Ayer" -> "Yesterday"; "14 oct." -> "Oct 14"; "13 oct." -> "Oct 13"; "9 sept." -> "Sep 9"; else -> mail.time } else mail.time, fontSize = 10.sp, color = MutedText)
+                    Text(
+                        text = if (isEnglish) when (mail.time) { "Ayer" -> "Yesterday"; "14 oct." -> "Oct 14"; "13 oct." -> "Oct 13"; "9 sept." -> "Sep 9"; else -> mail.time } else mail.time,
+                        fontSize = 10.sp,
+                        color = MutedText
+                    )
                 }
 
                 Text(

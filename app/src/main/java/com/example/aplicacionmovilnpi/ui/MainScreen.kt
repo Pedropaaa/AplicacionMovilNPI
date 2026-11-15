@@ -63,14 +63,42 @@ import com.example.aplicacionmovilnpi.ui.theme.MutedText
 import com.example.aplicacionmovilnpi.ui.theme.PageBg
 import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 
+/**
+ * Pestañas principales de navegación inferior de la aplicación.
+ *
+ * @property id Identificador clave de la pestaña.
+ * @property spanishLabel Etiqueta en idioma español.
+ * @property englishLabel Etiqueta en idioma inglés.
+ * @property icon Icono vectorial de Material Design.
+ */
 enum class NavTab(val id: String, val spanishLabel: String, val englishLabel: String, val icon: ImageVector) {
+    /** Pestaña principal de Inicio */
     HOME("home", "Inicio", "Home", Icons.Rounded.Home),
+    /** Pestaña del horario semanal del estudiante */
     SCHEDULE("schedule", "Horario", "Schedule", Icons.Rounded.CalendarToday),
+    /** Pestaña del directorio de profesorado y tutorías */
     PROFESSORS("professors", "Profesorado", "Faculty", Icons.Rounded.School),
+    /** Pestaña del mapa y planos de navegación indoor */
     MAP("map", "Mapa", "Map", Icons.Rounded.Map),
+    /** Pestaña con opciones secundarias y configuración */
     MORE("more", "Más", "More", Icons.Rounded.Menu)
 }
 
+/**
+ * Pantalla contenedora principal de la aplicación.
+ *
+ * Administra la navegación entre pestañas inferiores, el renderizado de subpantallas,
+ * el encabezado institucional UGR con menú de usuario y las configuraciones de accesibilidad e idioma.
+ *
+ * @param onLogout Callback para cerrar la sesión del estudiante.
+ * @param onLanguageChange Callback para alternar el idioma de la aplicación.
+ * @param isLargeText Indica si está activa la preferencia de texto grande.
+ * @param onLargeTextChange Callback para actualizar el estado de texto grande.
+ * @param isHighContrast Indica si está activo el modo de alto contraste.
+ * @param onHighContrastChange Callback para actualizar el estado de alto contraste.
+ * @param defaultAccessibleRoute Indica si las rutas asignadas por defecto deben ser accesibles.
+ * @param onDefaultAccessibleRouteChange Callback para actualizar las rutas accesibles por defecto.
+ */
 @Composable
 fun MainScreen(
     onLogout: () -> Unit,
@@ -82,14 +110,22 @@ fun MainScreen(
     defaultAccessibleRoute: Boolean = false,
     onDefaultAccessibleRouteChange: (Boolean) -> Unit = {}
 ) {
+    // 1. Estado de la pestaña activa en la barra inferior
     var activeTab by rememberSaveable { mutableStateOf(NavTab.HOME) }
+
+    // 2. Clave para forzar la actualización/reubicación al entrar al mapa
     var mapEntryKey by rememberSaveable { mutableIntStateOf(0) }
+
+    // 3. Subpantalla secundaria seleccionada desde el menú "Más" o perfil (null = pantalla principal de la pestaña)
     var currentSubScreen by rememberSaveable { mutableStateOf<String?>(null) }
+
+    // 4. Estado de visibilidad del menú desplegable del avatar en el encabezado
     var showMenu by remember { mutableStateOf(false) }
 
-    // POI al que debe guiar el mapa al abrirlo desde otra pantalla (null = mapa sin ruta).
+    // 5. Destino POI seleccionado para guiar directamente al mapa (null = mapa libre)
     var mapDestination by rememberSaveable { mutableStateOf<String?>(null) }
 
+    // Función auxiliar para abrir el mapa y centrar la ruta hacia un POI
     val openMap: (String?) -> Unit = { poiId ->
         mapDestination = poiId
         mapEntryKey++
@@ -97,6 +133,7 @@ fun MainScreen(
         currentSubScreen = null
     }
 
+    // 6. Estructura Scaffold con cabecera y barra de navegación inferior
     Scaffold(
         topBar = {
             UgrHeader(
@@ -118,7 +155,7 @@ fun MainScreen(
                 activeTab = activeTab,
                 isEnglish = LocalIsEnglish.current,
                 onTabSelected = { tab ->
-                    // Cada pulsación en Mapa fuerza una nueva comprobación de ubicación.
+                    // Cada pulsación en Mapa fuerza una nueva comprobación de ubicación
                     if (tab == NavTab.MAP) {
                         mapEntryKey++
                     }
@@ -136,6 +173,7 @@ fun MainScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
+            // 7. Renderizado condicional de subpantallas secundarias o pestañas principales
             when {
                 currentSubScreen == "profile" -> ProfileScreen(onBack = { currentSubScreen = null })
                 currentSubScreen == "grades" -> GradesScreen(onBack = { currentSubScreen = null })
@@ -186,6 +224,15 @@ fun MainScreen(
     }
 }
 
+/**
+ * Cabecera institucional superior con marca corporativa UGR y avatar de perfil de usuario.
+ *
+ * @param onAvatarClick Callback al pulsar sobre las iniciales/avatar del estudiante.
+ * @param showMenu Controla la visibilidad del menú desplegable del usuario.
+ * @param onDismissMenu Callback para cerrar el menú desplegable.
+ * @param onProfileClick Callback para navegar al perfil de usuario.
+ * @param onLogoutClick Callback para cerrar la sesión.
+ */
 @Composable
 fun UgrHeader(
     onAvatarClick: () -> Unit,
@@ -194,8 +241,7 @@ fun UgrHeader(
     onProfileClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
-    // La app se dibuja de borde a borde (enableEdgeToEdge), así que la cabecera reserva el
-    // alto de la barra de estado para que su contenido no quede pegado arriba.
+    // 1. Superficie superior adaptada al insets de la barra de estado (Edge-to-Edge)
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = Color.White,
@@ -210,7 +256,7 @@ fun UgrHeader(
                 .padding(horizontal = 20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Brand Logo Mark
+            // Logotipo distintivo UGR
             Surface(
                 color = UgrRed,
                 shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp, bottomStart = 12.dp, bottomEnd = 6.dp),
@@ -228,6 +274,7 @@ fun UgrHeader(
 
             Spacer(modifier = Modifier.width(10.dp))
 
+            // Textos institucionales del centro y campus
             Column {
                 Text(
                     text = "ETSIIT · UGR",
@@ -244,6 +291,7 @@ fun UgrHeader(
 
             Spacer(modifier = Modifier.weight(1f))
 
+            // 2. Avatar circular con las iniciales del estudiante y menú desplegable de usuario
             Box {
                 Surface(
                     color = Color(0xFFEEE4EA),
@@ -262,6 +310,7 @@ fun UgrHeader(
                     }
                 }
 
+                // Menú emergente de usuario
                 DropdownMenu(
                     expanded = showMenu,
                     onDismissRequest = onDismissMenu
@@ -320,6 +369,13 @@ fun UgrHeader(
     }
 }
 
+/**
+ * Barra de navegación inferior principal con pestañas e iconos adaptados al idioma.
+ *
+ * @param activeTab Identificador de la pestaña activa actualmente.
+ * @param isEnglish Indica si se presenta la etiqueta en idioma inglés.
+ * @param onTabSelected Callback ejecutado al presionar sobre cualquier elemento de la barra.
+ */
 @Composable
 fun UgrBottomBar(
     activeTab: NavTab,

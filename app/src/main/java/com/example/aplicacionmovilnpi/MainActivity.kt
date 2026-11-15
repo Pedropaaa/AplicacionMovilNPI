@@ -24,11 +24,31 @@ import com.example.aplicacionmovilnpi.ui.MainScreen
 import com.example.aplicacionmovilnpi.ui.screens.LoginScreen
 import com.example.aplicacionmovilnpi.ui.theme.AplicacionMovilNPITheme
 
+/**
+ * Actividad principal de la aplicación móvil NPI para la Escuela Técnica Superior de
+ * Ingenierías Informática y de Telecomunicación (ETSIIT) de la Universidad de Granada.
+ *
+ * Gestiona el ciclo de vida principal de la aplicación, el estado global de autenticación,
+ * las preferencias de accesibilidad e idioma, así como la integración con sensores físicos
+ * (sensor de proximidad).
+ */
 class MainActivity : ComponentActivity() {
+
+    /**
+     * Punto de entrada de la actividad. Configura el diseño edge-to-edge, inicializa
+     * los proveedores de estado local (Density, Idioma, Accesibilidad) y renderiza
+     * la UI principal o la pantalla de inicio de sesión según el estado de autenticación.
+     *
+     * @param savedInstanceState Estado guardado de la instancia previa de la actividad.
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // 1. Activar renderizado Edge-to-Edge para aprovechar toda la pantalla
         enableEdgeToEdge()
+
         setContent {
+            // 2. Obtener contexto de Compose e inicializar estados persistentes de sesión y configuración
             val context = LocalContext.current
             var isAuthenticated by rememberSaveable {
                 mutableStateOf(SessionStore.isLoggedIn(context))
@@ -54,6 +74,7 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
+            // 6. Inyección de variables globales mediante CompositionLocalProvider y renderizado de la UI
             CompositionLocalProvider(
                 LocalDensity provides adaptedDensity,
                 LocalIsEnglish provides isEnglish,

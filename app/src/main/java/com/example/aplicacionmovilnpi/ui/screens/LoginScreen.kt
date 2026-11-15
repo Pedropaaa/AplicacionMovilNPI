@@ -46,15 +46,27 @@ import com.example.aplicacionmovilnpi.ui.theme.MutedText
 import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 import com.example.aplicacionmovilnpi.ui.theme.UgrRedDark
 
+/**
+ * Pantalla de inicio de sesión e identificación corporativa para la comunidad UGR.
+ *
+ * Ofrece campos para introducir credenciales institucionales (@correo.ugr.es), opción
+ * de recordar cuenta, recuperación de contraseña y un botón de acceso directo en modo demostración.
+ *
+ * @param onLoginSuccess Callback de éxito al autenticar, recibiendo el indicador [rememberAccount].
+ */
 @Composable
 fun LoginScreen(
     onLoginSuccess: (rememberAccount: Boolean) -> Unit
 ) {
+    // 1. Obtener idioma local para adaptar los textos bilingües de la interfaz
     val isEnglish = LocalIsEnglish.current
+
+    // 2. Estados locales para almacenar correo, contraseña y casilla de verificación de sesión
     var email by remember { mutableStateOf("lucia@correo.ugr.es") }
     var password by remember { mutableStateOf("••••••••") }
     var rememberAccount by remember { mutableStateOf(true) }
 
+    // 3. Gradiente institucional de color rojo UGR para la sección superior (Hero)
     val gradientBrush = remember {
         Brush.linearGradient(
             colors = listOf(
@@ -65,13 +77,14 @@ fun LoginScreen(
         )
     }
 
+    // 4. Estructura vertical desplazable
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
             .verticalScroll(rememberScrollState())
     ) {
-        // Hero Section
+        // Sección Hero con el logotipo de UGR y eslogan de bienvenida
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -79,7 +92,7 @@ fun LoginScreen(
                 .padding(start = 24.dp, end = 24.dp, top = 48.dp, bottom = 40.dp)
         ) {
             Column {
-                // Brand Logo Badge
+                // Insignia del logotipo de la UGR
                 Surface(
                     color = Color.White,
                     shape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp, bottomStart = 16.dp, bottomEnd = 8.dp),
@@ -127,7 +140,7 @@ fun LoginScreen(
             }
         }
 
-        // Login Card Container
+        // 5. Contenedor de la tarjeta de inicio de sesión
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -150,7 +163,7 @@ fun LoginScreen(
                     modifier = Modifier.padding(top = 4.dp, bottom = 20.dp)
                 )
 
-                // Email Input
+                // Campo de texto: Correo institucional
                 Text(
                     text = if (isEnglish) "INSTITUTIONAL EMAIL" else "CORREO INSTITUCIONAL",
                     fontSize = 10.sp,
@@ -178,7 +191,7 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Password Input
+                // Campo de texto: Contraseña
                 Text(
                     text = if (isEnglish) "PASSWORD" else "CONTRASEÑA",
                     fontSize = 10.sp,
@@ -207,7 +220,7 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Options Row
+                // Fila de opciones: Recordar cuenta y Recuperar contraseña
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -238,7 +251,7 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Primary Login Button
+                // 6. Botón de acceso principal con credenciales UGR
                 Button(
                     onClick = { onLoginSuccess(rememberAccount) },
                     modifier = Modifier
@@ -257,7 +270,7 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Demo Direct Button
+                // 7. Botón de acceso rápido para pruebas / demostración del proyecto
                 OutlinedButton(
                     onClick = { onLoginSuccess(rememberAccount) },
                     modifier = Modifier
@@ -276,6 +289,7 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
+                // Pie de página con información de soporte técnico
                 Text(
                     text = if (isEnglish) "UGR Identity Service · Technical Support" else "Servicio de Identificación UGR · Soporte Técnico",
                     fontSize = 10.sp,
