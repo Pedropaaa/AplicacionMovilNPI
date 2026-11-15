@@ -1,3 +1,4 @@
+/*
 package com.example.aplicacionmovilnpi.ui.screens
 
 import androidx.compose.foundation.layout.Row
@@ -64,3 +65,4 @@ fun QrScanButton(
         }
     }
 }
+*/

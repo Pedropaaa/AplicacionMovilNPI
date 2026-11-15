@@ -72,7 +72,7 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
-            // 6. Inyección de variables globales mediante CompositionLocalProvider y renderizado de la UI
+            // 3. Inyección de variables globales mediante CompositionLocalProvider y renderizado de la UI
             CompositionLocalProvider(
                 LocalDensity provides adaptedDensity,
                 LocalIsEnglish provides isEnglish,

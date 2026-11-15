@@ -115,12 +115,14 @@ object CityPlaces {
         all.associateBy { it.id }
     }
 
+    /** Busca una ubicación universitaria por su identificador. Devuelve null si no existe. */
     fun byId(id: String): CityPlace? = mapById[id]
 }
 
 /** Una indicación de la ruta a pie: "Gira a la izquierda por Calle Periodista…", con su distancia. */
 data class RouteInstruction(val text: String, val distanceM: Double, val location: GeoPoint)
 
+/** Representa una ruta a pie entre dos ubicaciones, con su recorrido, distancia, duración e indicaciones. */
 data class WalkingRoute(
     val points: List<GeoPoint>,
     val distanceM: Double,

@@ -1,3 +1,4 @@
+/*
 package com.example.aplicacionmovilnpi.ui.components
 
 import androidx.compose.material3.Text
@@ -19,3 +20,4 @@ fun AppEmojiIcon(
         modifier = modifier
     )
 }
+*/

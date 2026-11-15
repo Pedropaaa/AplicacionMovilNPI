@@ -4,9 +4,7 @@ import androidx.compose.ui.graphics.Color
 
 val UgrRed = Color(0xFFAE1F3F)
 val UgrRedDark = Color(0xFF85132E)
-val UgrRedLight = Color(0xFFBE2949)
 val UgrRedSoft = Color(0xFFFCEDF0)
-
 val Ink = Color(0xFF1E2432)
 val MutedText = Color(0xFF727A8A)
 val SoftBg = Color(0xFFF5F6F8)
