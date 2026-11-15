@@ -1,5 +1,7 @@
 package com.example.aplicacionmovilnpi.ui
 
+import com.example.aplicacionmovilnpi.ui.providers.LocalIsEnglish
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,18 +48,18 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.aplicacionmovilnpi.data.FacultyData
-import com.example.aplicacionmovilnpi.ui.screens.AccessibilityScreen
-import com.example.aplicacionmovilnpi.ui.screens.CalendarScreen
-import com.example.aplicacionmovilnpi.ui.screens.GradesScreen
-import com.example.aplicacionmovilnpi.ui.screens.HelpScreen
-import com.example.aplicacionmovilnpi.ui.screens.HomeScreen
-import com.example.aplicacionmovilnpi.ui.screens.MapScreen
-import com.example.aplicacionmovilnpi.ui.screens.MessagesScreen
-import com.example.aplicacionmovilnpi.ui.screens.MoreScreen
-import com.example.aplicacionmovilnpi.ui.screens.ProfessorsScreen
-import com.example.aplicacionmovilnpi.ui.screens.ProfileScreen
-import com.example.aplicacionmovilnpi.ui.screens.ScheduleScreen
+import com.example.aplicacionmovilnpi.feature.academic.data.FacultyData
+import com.example.aplicacionmovilnpi.feature.settings.ui.AccessibilityScreen
+import com.example.aplicacionmovilnpi.feature.dashboard.ui.CalendarScreen
+import com.example.aplicacionmovilnpi.feature.academic.ui.GradesScreen
+import com.example.aplicacionmovilnpi.feature.settings.ui.HelpScreen
+import com.example.aplicacionmovilnpi.feature.dashboard.ui.HomeScreen
+import com.example.aplicacionmovilnpi.feature.map.ui.MapScreen
+import com.example.aplicacionmovilnpi.feature.dashboard.ui.MessagesScreen
+import com.example.aplicacionmovilnpi.feature.settings.ui.MoreScreen
+import com.example.aplicacionmovilnpi.feature.academic.ui.ProfessorsScreen
+import com.example.aplicacionmovilnpi.feature.settings.ui.ProfileScreen
+import com.example.aplicacionmovilnpi.feature.academic.ui.ScheduleScreen
 import com.example.aplicacionmovilnpi.ui.theme.Ink
 import com.example.aplicacionmovilnpi.ui.theme.MutedText
 import com.example.aplicacionmovilnpi.ui.theme.PageBg

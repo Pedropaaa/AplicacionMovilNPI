@@ -1,13 +1,13 @@
 package com.example.aplicacionmovilnpi
 
-import com.example.aplicacionmovilnpi.data.ActivityKind
-import com.example.aplicacionmovilnpi.data.FacultyData
-import com.example.aplicacionmovilnpi.data.Moment
-import com.example.aplicacionmovilnpi.data.ProfessorLocator
-import com.example.aplicacionmovilnpi.data.SampleData
-import com.example.aplicacionmovilnpi.data.Whereabouts
-import com.example.aplicacionmovilnpi.navigation.EtsiitData
-import com.example.aplicacionmovilnpi.navigation.RouteManager
+import com.example.aplicacionmovilnpi.core.data.model.ActivityKind
+import com.example.aplicacionmovilnpi.feature.academic.data.FacultyData
+import com.example.aplicacionmovilnpi.feature.academic.data.Moment
+import com.example.aplicacionmovilnpi.feature.academic.data.ProfessorLocator
+import com.example.aplicacionmovilnpi.feature.academic.data.SampleData
+import com.example.aplicacionmovilnpi.feature.academic.data.Whereabouts
+import com.example.aplicacionmovilnpi.core.navigation.EtsiitData
+import com.example.aplicacionmovilnpi.core.navigation.RouteManager
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull

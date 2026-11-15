@@ -1,13 +1,13 @@
 package com.example.aplicacionmovilnpi
 
-import com.example.aplicacionmovilnpi.location.DeadReckoning
-import com.example.aplicacionmovilnpi.location.GeoPoint
-import com.example.aplicacionmovilnpi.location.GeoUtils
-import com.example.aplicacionmovilnpi.location.IndoorTracker
-import com.example.aplicacionmovilnpi.location.MapPoint
-import com.example.aplicacionmovilnpi.location.StepDetector
-import com.example.aplicacionmovilnpi.location.StepFusion
-import com.example.aplicacionmovilnpi.model.Node
+import com.example.aplicacionmovilnpi.core.location.indoor.DeadReckoning
+import com.example.aplicacionmovilnpi.core.location.outdoor.GeoPoint
+import com.example.aplicacionmovilnpi.core.location.outdoor.GeoUtils
+import com.example.aplicacionmovilnpi.core.location.indoor.IndoorTracker
+import com.example.aplicacionmovilnpi.core.location.indoor.MapPoint
+import com.example.aplicacionmovilnpi.core.location.indoor.StepDetector
+import com.example.aplicacionmovilnpi.core.location.indoor.StepFusion
+import com.example.aplicacionmovilnpi.core.navigation.model.Node
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

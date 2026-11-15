@@ -1,8 +1,8 @@
 package com.example.aplicacionmovilnpi
 
-import com.example.aplicacionmovilnpi.qr.QrGenerator
-import com.example.aplicacionmovilnpi.qr.QrLocationResolver
-import com.example.aplicacionmovilnpi.qr.QrScanResult
+import com.example.aplicacionmovilnpi.core.qr.QrGenerator
+import com.example.aplicacionmovilnpi.core.qr.QrLocationResolver
+import com.example.aplicacionmovilnpi.core.qr.QrScanResult
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull

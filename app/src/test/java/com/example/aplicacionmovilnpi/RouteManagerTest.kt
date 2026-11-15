@@ -1,6 +1,6 @@
 package com.example.aplicacionmovilnpi
 
-import com.example.aplicacionmovilnpi.navigation.RouteManager
+import com.example.aplicacionmovilnpi.core.navigation.RouteManager
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

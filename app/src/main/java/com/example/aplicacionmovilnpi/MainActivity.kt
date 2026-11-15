@@ -13,14 +13,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
-import com.example.aplicacionmovilnpi.data.AccessibilityStore
-import com.example.aplicacionmovilnpi.data.LanguageStore
-import com.example.aplicacionmovilnpi.data.SessionStore
-import com.example.aplicacionmovilnpi.ui.LocalHighContrast
-import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
-import com.example.aplicacionmovilnpi.ui.LocalLargeText
+import com.example.aplicacionmovilnpi.core.data.preferences.AccessibilityStore
+import com.example.aplicacionmovilnpi.core.data.preferences.LanguageStore
+import com.example.aplicacionmovilnpi.core.data.preferences.SessionStore
+import com.example.aplicacionmovilnpi.ui.providers.LocalHighContrast
+import com.example.aplicacionmovilnpi.ui.providers.LocalIsEnglish
+import com.example.aplicacionmovilnpi.ui.providers.LocalLargeText
 import com.example.aplicacionmovilnpi.ui.MainScreen
-import com.example.aplicacionmovilnpi.ui.screens.LoginScreen
+import com.example.aplicacionmovilnpi.feature.auth.ui.LoginScreen
 import com.example.aplicacionmovilnpi.ui.theme.AplicacionMovilNPITheme
 
 /**

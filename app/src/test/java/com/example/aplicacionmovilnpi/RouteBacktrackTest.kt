@@ -1,8 +1,8 @@
 package com.example.aplicacionmovilnpi
 
-import com.example.aplicacionmovilnpi.model.Node
-import com.example.aplicacionmovilnpi.navigation.EtsiitData
-import com.example.aplicacionmovilnpi.navigation.RouteManager
+import com.example.aplicacionmovilnpi.core.navigation.model.Node
+import com.example.aplicacionmovilnpi.core.navigation.EtsiitData
+import com.example.aplicacionmovilnpi.core.navigation.RouteManager
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.math.acos

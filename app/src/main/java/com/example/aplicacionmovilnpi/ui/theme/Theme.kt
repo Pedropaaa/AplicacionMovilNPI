@@ -4,7 +4,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import com.example.aplicacionmovilnpi.ui.LocalHighContrast
+import com.example.aplicacionmovilnpi.ui.providers.LocalHighContrast
 
 /** Esquema de color institucional estándar UGR (Material 3 Light Color Scheme). */
 private val UgrColorScheme = lightColorScheme(

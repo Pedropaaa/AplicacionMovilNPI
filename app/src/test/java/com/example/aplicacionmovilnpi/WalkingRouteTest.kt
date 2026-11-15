@@ -1,8 +1,8 @@
 package com.example.aplicacionmovilnpi
 
-import com.example.aplicacionmovilnpi.location.GeoPoint
-import com.example.aplicacionmovilnpi.location.WalkingRoute
-import com.example.aplicacionmovilnpi.location.WalkingRouteService
+import com.example.aplicacionmovilnpi.core.location.outdoor.GeoPoint
+import com.example.aplicacionmovilnpi.core.location.outdoor.WalkingRoute
+import com.example.aplicacionmovilnpi.core.location.outdoor.WalkingRouteService
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
