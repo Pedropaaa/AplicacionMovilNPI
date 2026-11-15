@@ -3,11 +3,14 @@ package com.example.aplicacionmovilnpi.location
 import kotlin.math.sqrt
 
 /**
- * Podómetro a partir del acelerómetro. Cada paso produce un pico en el módulo de la
- * aceleración: se cuenta un paso cuando el módulo supera la gravedad en [threshold] m/s², y
- * no se cuenta otro hasta que vuelve a bajar y han pasado al menos [minIntervalMs].
- * El umbral es bajo para que también cuente con el móvil en la mano (picos más suaves que en
- * el bolsillo).
+ * Podómetro por software basado en el análisis de aceleración tridimensional.
+ *
+ * Detecta picos en el módulo de la aceleración ($|a| = \sqrt{x^2 + y^2 + z^2}$) ajustados dinámicamente
+ * a la gravedad. Cuenta un paso cuando la aceleración supera el umbral [threshold] $m/s^2$ por encima
+ * de la línea base y respeta un intervalo mínimo de tiempo [minIntervalMs] para evitar falsos positivos.
+ *
+ * @property threshold Umbral de aceleración pico por encima de la gravedad (por defecto 1.2 m/s²).
+ * @property minIntervalMs Tiempo mínimo en milisegundos entre dos pasos consecutivos (por defecto 300 ms).
  */
 class StepDetector(
     private val threshold: Float = 1.2f,
@@ -17,14 +20,25 @@ class StepDetector(
     private var aboveThreshold = false
     private var lastStepMs = Long.MIN_VALUE / 2
 
-    /** Devuelve true si esta muestra completa un paso. */
+    /**
+     * Procesa una lectura de aceleración en los ejes X, Y, Z.
+     *
+     * @param x Aceleración en el eje X en m/s².
+     * @param y Aceleración en el eje Y en m/s².
+     * @param z Aceleración en el eje Z en m/s².
+     * @param timestampMs Marca de tiempo en milisegundos de la lectura.
+     * @return `true` si la lectura actual completa la detección de un paso válido.
+     */
     fun onAcceleration(x: Float, y: Float, z: Float, timestampMs: Long): Boolean {
+        // 1. Calcular el módulo de la aceleración tridimensional
         val magnitude = sqrt(x * x + y * y + z * z)
-        // La línea base sigue muy despacio a la gravedad, para que los picos de cada paso destaquen
+        
+        // 2. Actualizar la línea base (filtro de media móvil suave para seguir a la gravedad)
         val base = baseline?.let { it + 0.02f * (magnitude - it) } ?: magnitude
         baseline = base
         val delta = magnitude - base
 
+        // 3. Evaluar el pico superando el umbral y verificar la ventana temporal
         if (!aboveThreshold && delta > threshold) {
             aboveThreshold = true
             if (timestampMs - lastStepMs >= minIntervalMs) {
@@ -39,17 +53,14 @@ class StepDetector(
 }
 
 /**
- * Combina el detector de pasos del sistema con el del acelerómetro sin contar dos veces.
+ * Algoritmo de fusión que combina las lecturas del podómetro del sistema con el detector por acelerómetro.
  *
- * El del sistema es más fiable, pero muchos móviles no dan el primer paso hasta confirmar que
- * la persona camina (5–10 pasos), los entregan en bloque con retraso, o directamente no
- * mandan nada aunque anuncien el sensor. Por eso:
- * - El acelerómetro cuenta mientras el sistema lleve más de [systemSilenceMs] sin dar pasos,
- *   así los primeros pasos se cuentan al instante y, si el sistema no responde, sigue contando.
- * - Un paso del sistema solo cuenta si es posterior al último paso ya contado; los que llegan
- *   tarde, de un periodo que ya contó el acelerómetro, se descartan.
+ * El detector del sistema es más preciso pero suele presentar retardos iniciales (5-10 pasos).
+ * La fusión permite contar pasos inmediatamente usando el acelerómetro hasta que el sensor del sistema
+ * responde, descartando duplicados mediante ventanas temporales.
  *
- * Los instantes son los del sensor (`event.timestamp` en ms); ambos sensores usan el mismo reloj.
+ * @property systemSilenceMs Tiempo de silencio del sensor del sistema antes de permitir al acelerómetro contar (2000 ms).
+ * @property minGapMs Intervalo mínimo permitido entre dos pasos contados independientemente de la fuente (250 ms).
  */
 class StepFusion(
     private val systemSilenceMs: Long = 2_000,
@@ -58,7 +69,12 @@ class StepFusion(
     private var lastSystemStepMs: Long? = null
     private var lastCountedMs = Long.MIN_VALUE / 2
 
-    /** Paso del detector del sistema. Devuelve true si hay que contarlo. */
+    /**
+     * Procesa un paso notificado por el sensor del sistema ([android.hardware.Sensor.TYPE_STEP_DETECTOR]).
+     *
+     * @param timestampMs Marca de tiempo del evento en milisegundos.
+     * @return `true` si el paso debe contabilizarse.
+     */
     fun onSystemStep(timestampMs: Long): Boolean {
         lastSystemStepMs = maxOf(lastSystemStepMs ?: timestampMs, timestampMs)
         if (timestampMs < lastCountedMs + minGapMs) return false
@@ -66,9 +82,15 @@ class StepFusion(
         return true
     }
 
-    /** Paso detectado con el acelerómetro. Devuelve true si hay que contarlo. */
+    /**
+     * Procesa un paso detectado mediante software por [StepDetector].
+     *
+     * @param timestampMs Marca de tiempo del evento en milisegundos.
+     * @return `true` si el paso debe contabilizarse.
+     */
     fun onAccelerometerStep(timestampMs: Long): Boolean {
         val lastSystem = lastSystemStepMs
+        // Si el sensor del sistema estuvo activo recientemente, ignorar la lectura del acelerómetro para no duplicar
         if (lastSystem != null && timestampMs - lastSystem <= systemSilenceMs) return false
         if (timestampMs < lastCountedMs + minGapMs) return false
         lastCountedMs = timestampMs

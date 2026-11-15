@@ -1,6 +1,5 @@
 package com.example.aplicacionmovilnpi.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,13 +47,22 @@ import com.example.aplicacionmovilnpi.ui.theme.MutedText
 import com.example.aplicacionmovilnpi.ui.theme.SoftBg
 import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 
+/**
+ * Pantalla de consulta interactiva del horario semanal de clases de la estudiante.
+ *
+ * Permite seleccionar el día de la semana (Lunes a Viernes) y explorar las asignaturas programadas,
+ * incluyendo su franja horaria, aula física y botón directo de guiado navegacional hacia el plano indoor.
+ *
+ * @param onNavigateToMap Callback invocado para iniciar la navegación hasta el POI del aula de la clase seleccionada.
+ */
 @Composable
 fun ScheduleScreen(
     onNavigateToMap: (String?) -> Unit
 ) {
     val isEnglish = LocalIsEnglish.current
     val weekSchedule = remember { SampleData.weekSchedule() }
-    // Por defecto, el día de hoy (o el lunes si es fin de semana)
+    
+    // 1. Seleccionar por defecto el día actual (o el Lunes si se consulta en fin de semana)
     var selectedDayIndex by remember { mutableIntStateOf(Moment.now().day.let { if (it > 5) 0 else it - 1 }) }
     val daySchedule = weekSchedule[selectedDayIndex]
 
@@ -74,7 +82,7 @@ fun ScheduleScreen(
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        // Days Selector Row
+        // 2. Fila selectora de días de la semana (L a V) con números de día del mes
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -114,7 +122,7 @@ fun ScheduleScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Selected Day Banner
+        // Banner informativo con el día seleccionado y fecha
         Text(
             text = if (isEnglish) "${localizedDayName(daySchedule.day, true)}, ${daySchedule.date} ${when (daySchedule.month.lowercase()) { "enero" -> "January"; "febrero" -> "February"; "marzo" -> "March"; "abril" -> "April"; "mayo" -> "May"; "junio" -> "June"; "julio" -> "July"; "agosto" -> "August"; "septiembre" -> "September"; "octubre" -> "October"; "noviembre" -> "November"; "diciembre" -> "December"; else -> daySchedule.month }}" else "${daySchedule.day}, ${daySchedule.date} de ${daySchedule.month}",
             fontSize = 15.sp,
@@ -132,7 +140,7 @@ fun ScheduleScreen(
             )
         }
 
-        // Lessons List
+        // 3. Lista perezosa de clases para el día seleccionado
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
@@ -143,6 +151,13 @@ fun ScheduleScreen(
     }
 }
 
+/**
+ * Tarjeta individual que representa una clase del horario lectivo.
+ *
+ * @param lesson Objeto [ClassLesson] con los datos de la asignatura, horas y aula.
+ * @param onNavigateToMap Callback para iniciar el guiado al POI del aula.
+ * @param isEnglish Bandera de idioma actual para internacionalización de etiquetas.
+ */
 @Composable
 fun LessonCard(
     lesson: ClassLesson,
@@ -161,6 +176,7 @@ fun LessonCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // Insignia de horario (Inicio - Fin)
                 Surface(
                     color = SoftBg,
                     shape = RoundedCornerShape(8.dp)
@@ -185,6 +201,7 @@ fun LessonCard(
                     }
                 }
 
+                // Ubicación del aula
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Rounded.Place,
@@ -204,6 +221,7 @@ fun LessonCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
+            // Nombre de la asignatura
             Text(
                 text = lesson.name,
                 fontSize = 16.sp,
@@ -213,6 +231,7 @@ fun LessonCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
+            // Botón "Cómo llegar al aula"
             OutlinedButton(
                 onClick = { onNavigateToMap(lesson.poiId) },
                 enabled = lesson.poiId != null,

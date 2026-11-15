@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -40,11 +39,21 @@ import com.example.aplicacionmovilnpi.ui.theme.ToneRoseBg
 import com.example.aplicacionmovilnpi.ui.theme.ToneRoseText
 import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 
+/**
+ * Pantalla de consulta de expediente académico y calificaciones obtenidas por curso.
+ *
+ * Muestra la nota media acumulada, el recuento de créditos ECTS aprobados, un selector de curso académico (1º a 4º)
+ * y el listado detallado de asignaturas con sus notas numéricas o estado de matriculación.
+ *
+ * @param onBack Callback ejecutado para retornar a la pantalla anterior de servicios.
+ */
 @Composable
 fun GradesScreen(onBack: () -> Unit) {
     val isEnglish = LocalIsEnglish.current
     var selectedCourse by remember { mutableStateOf("4º") }
     val gradesList = SampleData.gradesMap[selectedCourse] ?: emptyList()
+
+    // 1. Calcular la nota media acumulada de las asignaturas aprobadas
     val average = remember {
         val passed = SampleData.gradesMap.values.flatten().mapNotNull { it.grade.replace(",", ".").toDoubleOrNull() }
         "%.1f".format(passed.average()).replace(".", ",")
@@ -58,7 +67,7 @@ fun GradesScreen(onBack: () -> Unit) {
     ) {
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Back Button Row
+        // Botón de navegación de regreso
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = if (isEnglish) "⬅ Back to More" else "⬅ Volver a Más",
@@ -80,7 +89,7 @@ fun GradesScreen(onBack: () -> Unit) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Average Grade Banner
+        // 2. Banner informativo con la nota media acumulada y total de ECTS superados
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = ToneRoseBg,
@@ -113,7 +122,7 @@ fun GradesScreen(onBack: () -> Unit) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Course Selector Row
+        // 3. Fila de botones para filtrar por curso académico (1º a 4º)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -143,7 +152,7 @@ fun GradesScreen(onBack: () -> Unit) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Grades List
+        // 4. Lista de calificaciones del curso seleccionado
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = Color.White,
@@ -180,6 +189,7 @@ fun GradesScreen(onBack: () -> Unit) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
+        // Botón de acción para simular la descarga del resguardo en PDF
         Button(
             onClick = { },
             modifier = Modifier

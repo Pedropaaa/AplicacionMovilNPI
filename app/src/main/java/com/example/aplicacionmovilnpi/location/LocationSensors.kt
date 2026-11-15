@@ -31,23 +31,37 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 
-/*
- * Acceso a los sensores desde Compose. Cada función registra su listener solo mientras
- * `active` es true, y se da de baja al salir de la pantalla, para no gastar batería.
+/**
+ * Utilidades para la gestión de permisos del sistema Android requeridos por el sistema de localización.
+ *
+ * Handles tanto los permisos de ubicación GPS fina/coarse como los de reconocimiento de actividad física (podómetro).
+ *
+ * @property location Array con los permisos de ubicación GPS fina y aproximada.
+ * @property all Array completo de permisos necesarios según la versión de Android.
  */
-
 object LocationPermissions {
 
     val location = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
 
-    /** Permisos que pedimos juntos al activar la localización. */
+    /** Permisos solicitados conjuntamente al activar la localización según la versión del SDK. */
     val all: Array<String> =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) location + Manifest.permission.ACTIVITY_RECOGNITION
         else location
 
+    /**
+     * Comprueba si la aplicación dispone de permisos de localización concedidos.
+     *
+     * @param context Contexto de la aplicación.
+     * @return `true` si al menos uno de los permisos de localización está concedido.
+     */
     fun hasLocation(context: Context): Boolean = location.any { granted(context, it) }
 
-    /** El sensor de pasos del sistema necesita el permiso de actividad física desde Android 10. */
+    /**
+     * Comprueba si la aplicación dispone de permiso para utilizar el sensor de reconocimiento de actividad del sistema.
+     *
+     * @param context Contexto de la aplicación.
+     * @return `true` si el permiso está concedido o si la versión de Android es inferior a Android 10 (Q).
+     */
     fun hasActivityRecognition(context: Context): Boolean =
         Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || granted(context, Manifest.permission.ACTIVITY_RECOGNITION)
 
@@ -55,17 +69,35 @@ object LocationPermissions {
         ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
 }
 
+/**
+ * Comprueba la disponibilidad física de un tipo de sensor en el hardware del dispositivo.
+ *
+ * @param context Contexto de la aplicación.
+ * @param type Constante entera que identifica el tipo de sensor en [SensorManager].
+ * @return `true` si el dispositivo cuenta con el sensor solicitado.
+ */
 fun hasSensor(context: Context, type: Int): Boolean =
     (context.getSystemService(Context.SENSOR_SERVICE) as SensorManager).getDefaultSensor(type) != null
 
-/** true mientras la app está en primer plano. */
+/**
+ * Composable que observa el ciclo de vida de la aplicación para determinar si está en primer plano.
+ *
+ * @return `true` si la actividad se encuentra al menos en estado [Lifecycle.State.STARTED].
+ */
 @Composable
 fun rememberAppInForeground(): Boolean {
     val state by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
     return state.isAtLeast(Lifecycle.State.STARTED)
 }
 
-/** Última ubicación del GPS (o de la red, si el GPS aún no tiene señal). */
+/**
+ * Composable que registra y observa la última posición física reportada por el GPS o red celular.
+ *
+ * Gestione la suscripción dinámica al servicio de localización [LocationManager] mientras [active] sea `true`.
+ *
+ * @param active Si es `true`, activa las lecturas de localización GPS/Red.
+ * @return Instancia actual de [Location] con las coordenadas de la persona o `null` si no hay señal.
+ */
 @SuppressLint("MissingPermission")
 @Composable
 fun rememberGpsLocation(active: Boolean): Location? {
@@ -73,20 +105,24 @@ fun rememberGpsLocation(active: Boolean): Location? {
     var location by remember { mutableStateOf<Location?>(null) }
 
     DisposableEffect(active) {
+        // 1. Verificar si la función está activa y se concedieron los permisos de localización
         if (!active || !LocationPermissions.hasLocation(context)) return@DisposableEffect onDispose { }
         val manager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        
+        // 2. Obtener los proveedores habilitados (GPS y Red)
         val providers = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
             .filter { runCatching { manager.isProviderEnabled(it) }.getOrDefault(false) }
 
+        // 3. Recuperar la última posición conocida más reciente entre los proveedores
         location = providers
             .mapNotNull { runCatching { manager.getLastKnownLocation(it) }.getOrNull() }
             .maxByOrNull { it.time }
 
-        // Implementación completa (no lambda): en Android < 11 los otros métodos son abstractos
+        // 4. Registrar escuchador de actualizaciones continuas (LocationListener)
         val listener = object : LocationListener {
             override fun onLocationChanged(newLocation: Location) {
                 val current = location
-                // Preferimos el GPS: no sustituimos un fijo preciso reciente por uno de red peor
+                // Preferir fijado GPS más preciso y reciente frente a lecturas de red con mayor margen de error
                 if (current == null || newLocation.accuracy <= current.accuracy ||
                     newLocation.time - current.time > 10_000
                 ) {
@@ -108,7 +144,14 @@ fun rememberGpsLocation(active: Boolean): Location? {
     return location
 }
 
-/** Registra un listener de un tipo de sensor mientras [active] sea true. */
+/**
+ * Función de utilidad interna para suscribirse a eventos de sensores en Compose respetando el ciclo de vida.
+ *
+ * @param active Controla si la escucha está activa.
+ * @param sensorTypes Lista de constantes de tipos de sensores en [SensorManager].
+ * @param delay Frecuencia del refresco del sensor (por defecto [SensorManager.SENSOR_DELAY_UI]).
+ * @param onEvent Callback invocado cuando se produce un nuevo evento [SensorEvent].
+ */
 @Composable
 private fun SensorEffect(
     active: Boolean,
@@ -134,8 +177,14 @@ private fun SensorEffect(
 }
 
 /**
- * Brújula: azimut en grados (0 = norte, 90 = este) con el móvil en vertical.
- * Usa el vector de rotación si existe; si no, acelerómetro + magnetómetro.
+ * Composable que calcula y retorna el azimut de la brújula en grados decimales (0° = Norte, 90° = Este).
+ *
+ * Utiliza el sensor de vector de rotación ([Sensor.TYPE_ROTATION_VECTOR]) si está disponible en el dispositivo;
+ * de lo contrario, realiza la fusión de acelerómetro y magnetómetro. Aplica filtrado mediante media circular
+ * para evitar discontinuidades al cruzar el límite de 359° a 0°.
+ *
+ * @param active Determina si se deben leer los sensores físicos.
+ * @return Grados del rumbo respecto al Norte magnético [0..360), o `null` si los sensores no están disponibles.
  */
 @Composable
 fun rememberCompassAzimuth(active: Boolean): Float? {
@@ -149,7 +198,7 @@ fun rememberCompassAzimuth(active: Boolean): Float? {
     val geomagnetic = remember { FloatArray(3) }
     val hasReadings = remember { BooleanArray(2) } // [acelerómetro, magnetómetro]
 
-    // Media circular (seno y coseno) para que el valor no salte al pasar de 359° a 0°
+    // Media circular (seno y coseno) para evitar saltos bruscos en el cruce de 359° a 0°
     fun update(newDeg: Float) {
         val previous = azimuth ?: run { azimuth = newDeg; return }
         val a = Math.toRadians(previous.toDouble())
@@ -158,17 +207,20 @@ fun rememberCompassAzimuth(active: Boolean): Float? {
         val s = (1 - k) * sin(a) + k * sin(b)
         val c = (1 - k) * cos(a) + k * cos(b)
         val smoothed = DeadReckoning.normalize(Math.toDegrees(atan2(s, c)).toFloat())
-        // Solo actualizamos el estado (y recomponemos) cuando el cambio se nota
+        
+        // Actualizar el estado únicamente cuando el cambio supera 1° para minimizar recomposiciones
         if (abs(DeadReckoning.signedDifference(previous, smoothed)) >= 1f) azimuth = smoothed
     }
 
     if (useRotationVector) {
+        // 1. Usar vector de rotación si existe en el hardware del teléfono
         SensorEffect(active, listOf(Sensor.TYPE_ROTATION_VECTOR)) { event ->
             SensorManager.getRotationMatrixFromVector(rotation, event.values)
             SensorManager.getOrientation(rotation, orientation)
             update(Math.toDegrees(orientation[0].toDouble()).toFloat())
         }
     } else {
+        // 2. Fusión alternativa de acelerómetro + campo magnético
         SensorEffect(active, listOf(Sensor.TYPE_ACCELEROMETER, Sensor.TYPE_MAGNETIC_FIELD)) { event ->
             when (event.sensor.type) {
                 Sensor.TYPE_ACCELEROMETER -> { event.values.copyInto(gravity, endIndex = 3); hasReadings[0] = true }
@@ -186,10 +238,14 @@ fun rememberCompassAzimuth(active: Boolean): Float? {
 }
 
 /**
- * Llama a [onStep] por cada paso. Escucha a la vez el sensor de pasos del sistema (si existe y
- * hay permiso de actividad física) y el acelerómetro ([StepDetector]); [StepFusion] decide cuál
- * cuenta en cada momento para que los pasos empiecen a contarse enseguida y no se cuenten dos
- * veces.
+ * Escucha los eventos de pasos y ejecuta el callback [onStep] por cada paso detectado.
+ *
+ * Utiliza una estrategia híbrida con [StepFusion]: combina el sensor del sistema ([Sensor.TYPE_STEP_DETECTOR])
+ * con la detección directa por acelerómetro ([StepDetector]), garantizando que los pasos se cuenten
+ * inmediatamente y evitando duplicidades.
+ *
+ * @param active Controla la suscripción activa a los sensores.
+ * @param onStep Lambda ejecutada cada vez que se detecta un paso válido del usuario.
  */
 @Composable
 fun StepEffect(active: Boolean, onStep: () -> Unit) {
@@ -199,9 +255,12 @@ fun StepEffect(active: Boolean, onStep: () -> Unit) {
     val detector = remember { StepDetector() }
     val fusion = remember { StepFusion() }
 
+    // 1. Sensor de pasos del sistema (si está disponible y permitido)
     SensorEffect(active && canUseSystemDetector, listOf(Sensor.TYPE_STEP_DETECTOR)) { event ->
         if (fusion.onSystemStep(event.timestamp / 1_000_000)) onStep()
     }
+    
+    // 2. Sensor de acelerómetro como respaldo e inicio rápido
     SensorEffect(
         active,
         listOf(Sensor.TYPE_ACCELEROMETER),

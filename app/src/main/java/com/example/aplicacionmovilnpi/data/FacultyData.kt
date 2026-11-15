@@ -3,8 +3,11 @@ package com.example.aplicacionmovilnpi.data
 import com.example.aplicacionmovilnpi.navigation.EtsiitData
 
 /**
- * Profesorado real de 4º CSI (curso 2026/2027) y horario de la alumna.
- * Fuente: docs/datos/profesores/profesores_CSI_4.md (guías docentes y horarios oficiales de la ETSIIT).
+ * Proveedor central de datos académicos del profesorado y estructura del plan de estudios de la ETSIIT.
+ *
+ * Contiene el directorio oficial de profesores de 4º del Grado en Ingeniería Informática (mención CSI,
+ * curso 2026/2027), sus horarios de clases y tutorías, así como las funciones de vinculación de aulas
+ * con puntos de interés ([EtsiitData.pois]) del plano.
  */
 object FacultyData {
 
@@ -16,7 +19,12 @@ object FacultyData {
 
     private const val DESPACHOS_P3 = "poi_despachos_p3"
 
-    /** POI del aula con código "X.Y" si está digitalizada en el plano (ej: "2.10" -> "poi_aula210"). */
+    /**
+     * Resuelve el identificador de POI en el plano para un código de aula dado (ej: "2.10" -> "poi_aula210").
+     *
+     * @param code Código del aula en formato "X.Y" (ej: "0.5", "2.7").
+     * @return Identificador único del POI registrado en [EtsiitData.pois], o `null` si el aula no está digitalizada.
+     */
     fun roomPoiId(code: String): String? {
         val id = "poi_aula" + code.replace(".", "")
         return id.takeIf { EtsiitData.pois.any { poi -> poi.id == id } }
@@ -25,13 +33,14 @@ object FacultyData {
     private fun clase(semester: Int, day: Int, start: String, end: String, title: String, room: String) =
         WeeklySlot(semester, day, start, end, ActivityKind.CLASE, title, "Aula $room", roomPoiId(room))
 
-    // Laboratorios: su numeración no coincide con la de las aulas del plano, así que no se enlazan.
+    // Laboratorios: su numeración no coincide directamente con el plano de aulas, por lo que no se enlazan a POIs
     private fun lab(semester: Int, day: Int, start: String, end: String, title: String, room: String) =
         WeeklySlot(semester, day, start, end, ActivityKind.CLASE, title, "Lab. $room")
 
     private fun tutoria(semester: Int, day: Int, start: String, end: String, place: String, poiId: String? = null) =
         WeeklySlot(semester, day, start, end, ActivityKind.TUTORIA, "Tutoría", place, poiId)
 
+    /** Lista completa del cuerpo docente registrado con sus horarios, asignaturas y despachos. */
     val professors = listOf(
         Professor(
             id = 1,
@@ -316,16 +325,22 @@ object FacultyData {
         )
     )
 
-    // --- Alumna de la cuenta de prueba: 4º CSI, grupo A, prácticas A1, optativas TIC y SS ---
-
+    /**
+     * Datos del perfil de estudiante matriculado para la simulación de horarios.
+     *
+     * @property name Nombre completo de la alumna.
+     * @property firstName Nombre de pila.
+     * @property initials Iniciales para avatares.
+     * @property email Correo electrónico institucional UGR.
+     * @property degree Titulación matriculada.
+     * @property academicYear Curso académico actual.
+     */
     object Student {
         const val name = "Lucía Martín García"
         const val firstName = "Lucía"
         const val initials = "LM"
         const val email = "lucia@correo.ugr.es"
         const val degree = "Grado en Ingeniería Informática"
-        //const val course = "4º · Computación y Sistemas Inteligentes"
-        //const val group = "Grupo A · prácticas A1"
         const val academicYear = "2026/2027"
     }
 
@@ -346,8 +361,15 @@ object FacultyData {
         "SS" to "green"
     )
 
+    /**
+     * Retorna la clave de tono de color asignada a la asignatura de una franja de clase.
+     *
+     * @param slot Franja horaria semanal.
+     * @return Clave de tono de color para el renderizado en la interfaz ("red", "blue", "purple", "orange", "green").
+     */
     fun toneFor(slot: WeeklySlot): String = subjectTones[slot.title.substringBefore(" ")] ?: "blue"
 
+    /** Horario semanal de clases matriculadas por la alumna durante el 1er semestre. */
     val studentSchedule = listOf(
         clase(1, LUN, "11:30", "13:30", "SS · Prácticas", "2.7"),
         clase(1, MAR, "9:30", "11:30", "TIC · Prácticas", "2.3"),

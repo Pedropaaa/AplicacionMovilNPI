@@ -2,6 +2,12 @@ package com.example.aplicacionmovilnpi.data
 
 import java.util.Calendar
 
+/**
+ * Proveedor de datos de prueba y elementos estáticos para las vistas de la aplicación.
+ *
+ * Suministra información sobre horarios semanales de la estudiante de prueba, asignaturas,
+ * eventos del calendario (entregas y exámenes), notas de expediente y preguntas frecuentes (FAQs).
+ */
 object SampleData {
 
     private val subjectNames = mapOf(
@@ -17,13 +23,24 @@ object SampleData {
         "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
     )
 
-    /** "NPI · Teoría" -> "Nuevos Paradigmas de Interacción · Teoría". */
+    /**
+     * Resuelve el nombre completo de una asignatura a partir del título corto o código de la franja.
+     *
+     * @param slot Franja horaria semanal.
+     * @return Título expandido con el nombre completo de la asignatura.
+     */
     fun lessonName(slot: WeeklySlot): String {
         val code = slot.title.substringBefore(" · ")
         val full = subjectNames[code] ?: return slot.title
         return slot.title.replaceFirst(code, full)
     }
 
+    /**
+     * Convierte una franja semanal [WeeklySlot] a un modelo de vista de clase [ClassLesson].
+     *
+     * @param slot Franja horaria a convertir.
+     * @return Objeto [ClassLesson] listo para ser renderizado en la interfaz de usuario.
+     */
     fun toLesson(slot: WeeklySlot) = ClassLesson(
         time = slot.start.padStart(5, '0'),
         end = slot.end.padStart(5, '0'),
@@ -33,14 +50,23 @@ object SampleData {
         poiId = slot.poiId
     )
 
-    /** Horario de la alumna (lunes a viernes) con las fechas de la semana de [today]. */
+    /**
+     * Genera la lista de horarios diarios de lunes a viernes para la semana correspondiente a la fecha dada.
+     *
+     * @param today Instancia de [Calendar] indicando el día de referencia (por defecto el día actual).
+     * @return Lista de 5 objetos [DaySchedule] con las clases ordenadas por hora de inicio.
+     */
     fun weekSchedule(today: Calendar = Calendar.getInstance()): List<DaySchedule> {
+        // 1. Obtener el semestre lectivo actual a partir de la fecha
         val semester = Moment.now(today).semester
+        
+        // 2. Calcular la fecha correspondiente al lunes de la semana en curso
         val monday = (today.clone() as Calendar).apply {
-            // Sábado y domingo muestran ya la semana siguiente.
             val dayIndex = (get(Calendar.DAY_OF_WEEK) + 5) % 7 // lunes = 0 … domingo = 6
             add(Calendar.DAY_OF_MONTH, if (dayIndex >= 5) 7 - dayIndex else -dayIndex)
         }
+        
+        // 3. Mapear de lunes a viernes agregando la fecha del mes y filtrando las clases asignadas
         return (1..5).map { day ->
             val date = (monday.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, day - 1) }
             val dayName = ProfessorLocator.dayName(day)
@@ -57,7 +83,12 @@ object SampleData {
         }
     }
 
-    /** Próxima clase de la alumna (o la que está en curso), buscando hacia delante en la semana. */
+    /**
+     * Busca la próxima clase matriculada de la alumna (o la clase que se está impartiendo en el momento).
+     *
+     * @param moment Instante semanal de consulta (por defecto el momento actual).
+     * @return La [WeeklySlot] correspondiente a la clase activa o siguiente, o `null` si no hay más clases.
+     */
     fun nextLesson(moment: Moment = Moment.now()): WeeklySlot? {
         val ongoing = FacultyData.studentSchedule.firstOrNull {
             it.semester == moment.semester && it.day == moment.day &&
@@ -66,9 +97,10 @@ object SampleData {
         return ongoing ?: ProfessorLocator.nextSlot(FacultyData.studentSchedule, moment)
     }
 
+    /** Lista completa de profesores cargados desde [FacultyData]. */
     val professors: List<Professor> get() = FacultyData.professors
 
-    // Fechas de ejemplo: no son las fechas oficiales de entregas ni de exámenes.
+    /** Lista inicial de entregas y eventos académicos para el calendario. */
     val initialEvents = listOf(
         CalendarEventItem(
             id = 1L,
@@ -108,8 +140,10 @@ object SampleData {
         )
     )
 
+    /** Lista inicial de mensajes de correo. */
     val initialMails = emptyList<MailMessage>()
 
+    /** Preguntas frecuentes (FAQs) organizadas por categorías de uso. */
     val faqs = listOf(
         FaqItem("navigation", "¿Cómo llego a mi próxima clase?", "En Inicio, pulsa «Guiarme al aula» en la tarjeta de tu próxima clase. También puedes pulsar «Cómo llegar» en cualquier clase de tu horario."),
         FaqItem("navigation", "¿Puedo evitar las escaleras?", "Sí. En la pantalla de ruta activa «Ruta accesible» y te guiaremos usando ascensores y rampas."),
@@ -121,7 +155,7 @@ object SampleData {
         FaqItem("account", "¿Cómo cierro sesión?", "Pulsa tu avatar en la esquina superior derecha y elige «Cerrar sesión», o hazlo desde Mi perfil.")
     )
 
-    // Notas de ejemplo de la alumna; las asignaturas son las del plan de estudios del GII (mención CSI).
+    /** Histórico de calificaciones de la estudiante organizado por cursos académicos. */
     val gradesMap = mapOf(
         "1º" to listOf(
             GradeItem("1º", "Fundamentos de Programación", "8,4"),

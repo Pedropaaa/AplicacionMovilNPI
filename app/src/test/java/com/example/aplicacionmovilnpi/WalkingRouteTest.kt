@@ -6,9 +6,16 @@ import com.example.aplicacionmovilnpi.location.WalkingRouteService
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
+/**
+ * Suite de pruebas unitarias para el parseo, cálculo y formateo del servicio de rutas peatonales exteriores ([WalkingRouteService]).
+ *
+ * Revisa el procesamiento de respuestas JSON producidas por el servidor OSRM (Open Source Routing Machine),
+ * la conversión a objetos del dominio [WalkingRoute], la traducción de maniobras peatonales a instrucciones en español
+ * y la presentación legible de distancias y tiempos estimados de caminata.
+ */
 class WalkingRouteTest {
 
-    // Respuesta recortada de routing.openstreetmap.de (perfil a pie)
+    /** Respuesta JSON de muestra recortada emitida por el servidor OSRM (perfil peatonal). */
     private val sample = """
         {"code":"Ok","routes":[{
           "distance":3568.4,"duration":2854.1,
@@ -22,6 +29,9 @@ class WalkingRouteTest {
         }]}
     """.trimIndent()
 
+    /**
+     * Valida el parseo correcto de una respuesta JSON de OSRM extrayendo puntos de la polilínea, distancia y resumen.
+     */
     @Test
     fun leeLaRutaDeOsrm() {
         val route = WalkingRouteService.parse(sample)
@@ -40,11 +50,17 @@ class WalkingRouteTest {
         assertEquals("3,6 km · 48 min a pie", route.summary)
     }
 
+    /**
+     * Valida que una respuesta sin ruta calculada ("code": "NoRoute") devuelva una excepción [IllegalStateException].
+     */
     @Test(expected = IllegalStateException::class)
     fun sinRutaDaError() {
         WalkingRouteService.parse("""{"code":"NoRoute","routes":[]}""")
     }
 
+    /**
+     * Valida el formateo textual de maniobras peatonales especiales (rotondas, bifurcaciones y cambios de nombre).
+     */
     @Test
     fun indicacionesEspeciales() {
         assertEquals("En la rotonda, toma la 2ª salida por Calle Real",
@@ -55,6 +71,9 @@ class WalkingRouteTest {
             WalkingRouteService.instructionText("new name", "straight", "Gran Vía"))
     }
 
+    /**
+     * Valida la conversión de segundos a formato legible en minutos u horas (ej: "1 min", "1 h 15 min").
+     */
     @Test
     fun duracionLegible() {
         assertEquals("1 min", WalkingRoute.formatDuration(20.0))

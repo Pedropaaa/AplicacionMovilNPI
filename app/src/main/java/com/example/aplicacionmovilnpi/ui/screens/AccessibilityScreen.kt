@@ -30,6 +30,20 @@ import com.example.aplicacionmovilnpi.ui.theme.Ink
 import com.example.aplicacionmovilnpi.ui.theme.MutedText
 import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 
+/**
+ * Pantalla de configuración global de opciones de accesibilidad de la aplicación.
+ *
+ * Permite ajustar preferencias visuales (tamaño de texto incrementado y modo alto contraste) y preferencias
+ * de navegación física (priorización por defecto de rutas accesibles sin escaleras para personas con movilidad reducida).
+ *
+ * @param onBack Callback para regresar a la pantalla del menú "Más".
+ * @param isLargeText Estado booleano del ajuste de tamaño de letra incrementado (fontScale 1.25x).
+ * @param onLargeTextChange Callback ejecutado al alternar el interruptor de texto grande.
+ * @param isHighContrast Estado booleano del modo de alto contraste para aumentar la legibilidad.
+ * @param onHighContrastChange Callback ejecutado al alternar el interruptor de alto contraste.
+ * @param defaultAccessibleRoute Estado booleano de la preferencia de rutas accesibles PMR por defecto.
+ * @param onDefaultAccessibleRouteChange Callback ejecutado al alternar el interruptor de rutas PMR por defecto.
+ */
 @Composable
 fun AccessibilityScreen(
     onBack: () -> Unit,
@@ -50,6 +64,7 @@ fun AccessibilityScreen(
     ) {
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Botón de navegación hacia atrás
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = if (isEnglish) "⬅ Back to More" else "⬅ Volver a Más",
@@ -80,6 +95,7 @@ fun AccessibilityScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
+        // Tarjeta contenedora de las secciones de accesibilidad
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = Color.White,
@@ -91,6 +107,7 @@ fun AccessibilityScreen(
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
 
+                // 1. Sección de ajustes de accesibilidad visual
                 Text(
                     text = if (isEnglish) "VISUALIZATION" else "VISUALIZACIÓN",
                     fontSize = 11.sp,
@@ -128,6 +145,7 @@ fun AccessibilityScreen(
                     modifier = Modifier.padding(vertical = 12.dp)
                 )
 
+                // 2. Sección de ajustes de navegación física accesibles
                 Text(
                     text = if (isEnglish) "NAVIGATION" else "NAVEGACIÓN",
                     fontSize = 11.sp,
@@ -156,6 +174,14 @@ fun AccessibilityScreen(
     }
 }
 
+/**
+ * Fila reutilizable con un interruptor ([Switch]) para activar/desactivar un ajuste de accesibilidad.
+ *
+ * @param title Título principal del ajuste.
+ * @param subtitle Descripción aclaratoria del efecto de la opción.
+ * @param checked Estado actual del interruptor (activado/desactivado).
+ * @param onCheckedChange Callback ejecutado al cambiar el estado del interruptor.
+ */
 @Composable
 fun AccessibilityToggleRow(
     title: String,

@@ -63,6 +63,14 @@ import com.example.aplicacionmovilnpi.ui.theme.ToneRoseText
 import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 import kotlinx.coroutines.delay
 
+/**
+ * Pantalla principal de búsqueda y localización del profesorado de la ETSIIT.
+ *
+ * Muestra el directorio de docentes, su estado de disponibilidad en tiempo real ("En clase", "En tutoría"),
+ * sus asignaturas impartidas y permite la navegación directa al despacho en el plano indoor.
+ *
+ * @param onNavigateToMap Callback invocado para iniciar la navegación guiada en el plano hasta el POI del despacho/aula.
+ */
 @Composable
 fun ProfessorsScreen(
     onNavigateToMap: (String) -> Unit
@@ -70,7 +78,7 @@ fun ProfessorsScreen(
     val isEnglish = LocalIsEnglish.current
     var searchQuery by remember { mutableStateOf("") }
 
-    // Se recalcula cada 30 s para que el estado ("en clase", "en tutoría"...) siga la hora real.
+    // Recalcular el instante actual cada 30 segundos para actualizar el estado del profesorado automáticamente
     var moment by remember { mutableStateOf(Moment.now()) }
     LaunchedEffect(Unit) {
         while (true) {
@@ -79,6 +87,7 @@ fun ProfessorsScreen(
         }
     }
 
+    // Filtrar profesores por nombre, asignaturas, despacho o departamento
     val filteredProfessors = SampleData.professors.filter {
         it.name.contains(searchQuery, ignoreCase = true) ||
                 it.subjects.any { subject -> subject.contains(searchQuery, ignoreCase = true) } ||
@@ -108,7 +117,7 @@ fun ProfessorsScreen(
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        // Search Field
+        // Campo de búsqueda con icono
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
@@ -142,6 +151,7 @@ fun ProfessorsScreen(
             )
         }
 
+        // Lista perezosa de tarjetas de profesor
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
@@ -158,6 +168,14 @@ fun ProfessorsScreen(
     }
 }
 
+/**
+ * Tarjeta individual que muestra los datos de un profesor, su disponibilidad en tiempo real y botones de contacto/navegación.
+ *
+ * @param professor Modelo [Professor] con los datos personales y académicos.
+ * @param whereabouts Estado de ubicación actual [Whereabouts] retornado por [ProfessorLocator].
+ * @param semester Semestre en curso (1 o 2).
+ * @param onNavigateToMap Callback para enviar al usuario al mapa navegando hacia el POI correspondiente.
+ */
 @Composable
 fun ProfessorCard(
     professor: Professor,
@@ -180,7 +198,7 @@ fun ProfessorCard(
         null -> Triple(if (isEnglish) "No information" else "Sin información", SoftBg, MutedText)
     }
 
-    // A dónde guía el botón: primero donde está ahora; si no se sabe, a su despacho (si está en el plano).
+    // Determinar el destino del botón "Cómo llegar": clase actual o despacho
     val routeTarget: Pair<String, String>? = when {
         currentSlot?.poiId != null -> "${if (isEnglish) "Guide me to" else "Guiarme a"} ${currentSlot.place}" to currentSlot.poiId
         currentSlot == null && professor.officePoiId != null -> (if (isEnglish) "Go to their office" else "Ir a su despacho") to professor.officePoiId
@@ -195,7 +213,7 @@ fun ProfessorCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Initials Circle Avatar
+                // Avatar circular con iniciales
                 Surface(
                     color = avatarBg,
                     shape = CircleShape,
@@ -229,7 +247,7 @@ fun ProfessorCard(
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                // Status Badge
+                // Badge de estado de disponibilidad
                 Surface(
                     color = statusBg,
                     shape = RoundedCornerShape(8.dp)
@@ -246,7 +264,7 @@ fun ProfessorCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // ¿Dónde está ahora?
+            // Banner explicativo de ubicación en tiempo real
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 color = statusBg,
@@ -303,7 +321,7 @@ fun ProfessorCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Details
+            // Detalles docentes adicionales (Asignaturas, Despacho, Tutorías)
             Text(
                 text = "📚 ${if (isEnglish) "Subjects" else "Asignaturas"}: ${professor.subjects.joinToString(", ")}",
                 fontSize = 11.sp,
@@ -326,7 +344,7 @@ fun ProfessorCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Actions
+            // Botones de acción: Enviar correo e Ir al despacho
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -337,7 +355,7 @@ fun ProfessorCard(
                         try {
                             context.startActivity(intent)
                         } catch (_: ActivityNotFoundException) {
-                            // Sin app de correo instalada: no hacemos nada.
+                            // Sin cliente de correo instalado
                         }
                     },
                     modifier = Modifier
