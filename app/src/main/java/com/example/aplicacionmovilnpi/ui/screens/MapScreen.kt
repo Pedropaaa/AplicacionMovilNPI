@@ -119,6 +119,12 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 
+/**
+ * Convierte un número de planta a su etiqueta textual formateada para la interfaz de usuario.
+ *
+ * @param floor Número entero de planta (-1 para S1, 0 para PB, 1..4 para P1..P4).
+ * @return Cadena corta de la planta (ej: "PB", "S1", "P1").
+ */
 fun getFloorName(floor: Int): String = when (floor) {
     4 -> "P4"
     3 -> "P3"
@@ -132,9 +138,15 @@ fun getFloorName(floor: Int): String = when (floor) {
 private const val ETSIIT_LAT = 37.19722
 private const val ETSIIT_LON = -3.62389
 
-// Radio de detección: 250 metros
+// Radio de detección para activar el plano interior automáticamente: 250 metros
 private const val ETSIIT_RADIUS = 250f
 
+/**
+ * Comprueba si la ubicación GPS nativa se encuentra dentro del radio de proximidad de la ETSIIT.
+ *
+ * @param location Objeto [Location] actual.
+ * @return `true` si está a menos de 250m de la facultad.
+ */
 private fun isNearEtsiit(location: Location): Boolean {
     val distance = FloatArray(1)
 
@@ -149,6 +161,17 @@ private fun isNearEtsiit(location: Location): Boolean {
     return distance[0] <= ETSIIT_RADIUS
 }
 
+/**
+ * Representa una sección continua de ruta que se desarrolla dentro de una misma planta del edificio.
+ *
+ * @property floorNumber Número de planta de este tramo.
+ * @property floorName Etiqueta legible de la planta (ej: "PB", "P1").
+ * @property segmentNodes Lista ordenada de nodos del grafo que forman el trayecto en esta planta.
+ * @property transitionNode Nodo final de cambio de nivel (escalera o ascensor), o `null` si es la planta destino final.
+ * @property nextFloorNumber Número de la siguiente planta a la que se debe transitar.
+ * @property nextFloorName Etiqueta legible de la siguiente planta.
+ * @property isElevator `true` si el cambio de planta requiere ascensor, `false` si usa escaleras.
+ */
 data class RouteFloorSegment(
     val floorNumber: Int,
     val floorName: String,
@@ -159,6 +182,12 @@ data class RouteFloorSegment(
     val isElevator: Boolean
 )
 
+/**
+ * Agrupa una ruta completa de nodos en segmentos independientes organizados por plantas.
+ *
+ * @param route Lista completa ordenada de nodos del grafo desde el origen hasta el destino.
+ * @return Lista de [RouteFloorSegment] dividida por plantas y con transiciones identificadas.
+ */
 fun parseRouteSegments(route: List<Node>): List<RouteFloorSegment> {
     if (route.isEmpty()) return emptyList()
 
@@ -217,6 +246,14 @@ fun parseRouteSegments(route: List<Node>): List<RouteFloorSegment> {
     return segments
 }
 
+/**
+ * Genera el texto instructivo de navegación para transiciones entre plantas o llegada al destino final.
+ *
+ * @param segment Tramo de ruta actual en la planta.
+ * @param destName Nombre del lugar de destino.
+ * @param isEnglish `true` para inglés, `false` para español.
+ * @return Cadena formateada de indicación.
+ */
 private fun arrivalText(segment: RouteFloorSegment, destName: String, isEnglish: Boolean): String {
     return if (segment.transitionNode != null) {
         val action = if (segment.isElevator) {
@@ -237,11 +274,20 @@ private const val DEST_COMEDOR_CERCANO = "__dest_comedor_cercano__"
 private const val DEST_BIBLIOTECA_CERCANA = "__dest_biblioteca_cercana__"
 private const val DEST_ABRIR_ESCANER_QR = "__abrir_escaner_qr__"
 
+/**
+ * Resultado de la resolución de un destino especial por proximidad acumulada de ruta.
+ *
+ * @property poi Punto de interés seleccionado como más cercano.
+ * @property route Lista de nodos calculada hacia dicho POI.
+ */
 private data class DestinationResolution(
     val poi: PointOfInterest?,
     val route: List<Node>? = null
 )
 
+/**
+ * Normaliza una cadena eliminando tildes y pasando a minúsculas para búsquedas.
+ */
 private fun normalizePoiText(value: String): String =
     value.lowercase(java.util.Locale.ROOT)
         .replace("á", "a")
@@ -251,6 +297,9 @@ private fun normalizePoiText(value: String): String =
         .replace("ú", "u")
         .replace("ü", "u")
 
+/**
+ * Comprueba si el punto de interés corresponde a un aseo o servicio sanitario.
+ */
 private fun PointOfInterest.isAseo(): Boolean {
     val text = normalizePoiText("$nameEs $category")
 
@@ -260,7 +309,13 @@ private fun PointOfInterest.isAseo(): Boolean {
 }
 
 /**
- * Busca el POI alcanzable cuya ruta acumulada tiene el menor coste.
+ * Evalúa múltiples POIs candidatos y selecciona el alcanzable con menor coste de ruta acumulada con Dijkstra.
+ *
+ * @param startPoiId POI de origen.
+ * @param candidates Lista de POIs candidatos a evaluar.
+ * @param routeManager Gestor del motor de rutas.
+ * @param isAccessibleRoute Indica si se requiere ruta adaptada a movilidad reducida (PMR).
+ * @return Objeto [DestinationResolution] con el POI óptimo y su ruta.
  */
 private fun resolveNearestPoi(
     startPoiId: String,
@@ -305,6 +360,17 @@ private fun resolveNearestPoi(
     } ?: DestinationResolution(poi = null)
 }
 
+/**
+ * Pantalla principal de navegación y mapa de la ETSIIT.
+ *
+ * Integra el mapa urbano de la ciudad (Osmdroid) y el plano 3D indoor por plantas del edificio.
+ * Permite seleccionar origenes/destinos, calcular rutas Dijkstra (estándar y PMR), escanear códigos QR,
+ * y realizar el seguimiento en tiempo real con fusión de sensores (acelerómetro, brújula y podómetro).
+ *
+ * @param initialDestPoiId ID del destino inicial a precargar (opcional).
+ * @param mapEntryKey Clave de incremento para forzar reevaluación GPS al entrar a la sección.
+ * @param defaultAccessibleRoute Indica si las rutas se calculan en modo accesible PMR por defecto.
+ */
 @Composable
 fun MapScreen(
     initialDestPoiId: String? = null,

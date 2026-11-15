@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import com.example.aplicacionmovilnpi.ui.LocalHighContrast
 
+/** Esquema de color institucional estándar UGR (Material 3 Light Color Scheme). */
 private val UgrColorScheme = lightColorScheme(
     primary = UgrRed,
     onPrimary = Color.White,
@@ -22,6 +23,7 @@ private val UgrColorScheme = lightColorScheme(
     outline = CardBorder
 )
 
+/** Esquema de color de Alto Contraste para mejorar la accesibilidad visual. */
 private val HighContrastColorScheme = lightColorScheme(
     primary = Color(0xFF900000),
     onPrimary = Color.White,
@@ -38,6 +40,14 @@ private val HighContrastColorScheme = lightColorScheme(
     outline = Color.Black
 )
 
+/**
+ * Tema principal de Jetpack Compose para la aplicación móvil NPI.
+ *
+ * Configura dinámicamente el esquema de colores de Material 3 basándose en la preferencia de alto contraste.
+ *
+ * @param highContrast Indica si se activa la paleta de colores de alto contraste (por defecto lee de [LocalHighContrast]).
+ * @param content Contenido composable de la interfaz a renderizar.
+ */
 @Composable
 fun AplicacionMovilNPITheme(
     highContrast: Boolean = LocalHighContrast.current,

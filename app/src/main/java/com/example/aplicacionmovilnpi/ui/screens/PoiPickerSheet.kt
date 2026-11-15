@@ -75,8 +75,20 @@ import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 import com.example.aplicacionmovilnpi.ui.theme.UgrRedSoft
 import java.text.Normalizer
 
-/** Grupos de categorías que se muestran como filtros en el selector. */
-private enum class PoiFilter(val spanishLabel: String, val englishLabel: String, val icon: ImageVector, val categories: Set<String>?) {
+/**
+ * Grupos de categorías que se muestran como píldoras de filtro en la cabecera del selector modal.
+ *
+ * @property spanishLabel Etiqueta visible en español.
+ * @property englishLabel Etiqueta visible en inglés.
+ * @property icon Icono vectorial representativo.
+ * @property categories Conjunto de cadenas de categorías coincidentes, o `null` para mostrar todas.
+ */
+private enum class PoiFilter(
+    val spanishLabel: String,
+    val englishLabel: String,
+    val icon: ImageVector,
+    val categories: Set<String>?
+) {
     ALL("Todo", "All", Icons.Rounded.Star, null),
     AULAS("Aulas", "Classrooms", Icons.Rounded.School, setOf("AULA")),
     DESPACHOS("Despachos", "Offices", Icons.Rounded.Person, setOf("DESPACHO")),
@@ -85,6 +97,12 @@ private enum class PoiFilter(val spanishLabel: String, val englishLabel: String,
     ACCESIBILIDAD("Accesibilidad", "Accessibility", Icons.AutoMirrored.Rounded.Accessible, setOf("ACCESIBILIDAD"))
 }
 
+/**
+ * Retorna el icono gráfico asociado a una categoría de punto de interés.
+ *
+ * @param category Cadena de categoría del POI ("AULA", "DESPACHO", "SERVICIO", etc.).
+ * @return Objeto [ImageVector] correspondiente.
+ */
 fun poiCategoryIcon(category: String): ImageVector = when (category) {
     "AULA" -> Icons.Rounded.School
     "DESPACHO" -> Icons.Rounded.Person
@@ -96,6 +114,13 @@ fun poiCategoryIcon(category: String): ImageVector = when (category) {
     else -> Icons.Rounded.Place
 }
 
+/**
+ * Retorna el nombre traducido de la categoría del POI.
+ *
+ * @param category Cadena de categoría.
+ * @param isEnglish `true` para inglés, `false` para español.
+ * @return Texto formateado de la categoría.
+ */
 fun poiCategoryLabel(category: String, isEnglish: Boolean = false): String = when (category) {
     "AULA" -> if (isEnglish) "Classroom" else "Aula"
     "DESPACHO" -> if (isEnglish) "Office" else "Despacho"
@@ -107,6 +132,12 @@ fun poiCategoryLabel(category: String, isEnglish: Boolean = false): String = whe
     else -> category.lowercase().replaceFirstChar { it.uppercase() }
 }
 
+/**
+ * Obtiene el número de planta al que pertenece el nodo del POI.
+ *
+ * @param poi Objeto [PointOfInterest] a consultar.
+ * @return Número de planta (-1 a 4), o `null` si el nodo no existe.
+ */
 fun poiFloor(poi: PointOfInterest): Int? = EtsiitData.nodes[poi.nodeId]?.floor
 
 @Composable
@@ -120,15 +151,30 @@ private fun floorTitle(floor: Int?): String {
     }
 }
 
-/** Quita tildes y pasa a minúsculas para que "cafeteria" encuentre "Cafetería". */
+/**
+ * Elimina signos diacríticos (tildes) y pasa la cadena a minúsculas para permitir búsquedas insensibles.
+ *
+ * @return Cadena normalizada.
+ */
 private fun String.normalized(): String =
     Normalizer.normalize(this, Normalizer.Form.NFD)
         .replace("\\p{Mn}+".toRegex(), "")
         .lowercase()
 
 /**
- * Hoja inferior para elegir una ubicación: buscador, filtros por tipo y planta,
- * y la lista agrupada por planta.
+ * Hoja inferior modal ([ModalBottomSheet]) para la selección visual de origen o destino en el plano indoor.
+ *
+ * Incluye campo de búsqueda por texto, filtros por categoría de POI, filtros por planta y lista agrupada
+ * con cabeceras pegajosas (*sticky headers*).
+ *
+ * @param title Título visible en la parte superior de la hoja.
+ * @param allPois Lista completa de POIs de la ETSIIT.
+ * @param pois Lista filtrada inicial de POIs a presentar.
+ * @param accent Color de acento para selecciones y botones.
+ * @param selectedPoiId ID del POI actualmente seleccionado.
+ * @param excludedPoiId ID opcional de POI a excluir (para no seleccionar el mismo origen y destino).
+ * @param onSelect Callback invocado al hacer clic en un elemento de la lista.
+ * @param onDismiss Callback invocado al cerrar o deslizar la hoja modal.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -142,6 +188,7 @@ fun PoiPickerSheet(
     onSelect: (PointOfInterest) -> Unit,
     onDismiss: () -> Unit
 ) {
+    // 1. Filtrar lista excluyendo el POI prohibido si aplica
     val effectivePois = remember(allPois, pois, excludedPoiId) {
         val baseList = if (pois.isNotEmpty()) pois else allPois
         if (excludedPoiId != null) baseList.filter { it.id != excludedPoiId } else baseList
@@ -153,10 +200,12 @@ fun PoiPickerSheet(
     var filter by remember { mutableStateOf(PoiFilter.ALL) }
     var floorFilter by remember { mutableStateOf<Int?>(null) }
 
+    // 2. Extraer lista de plantas disponibles en el conjunto de POIs
     val availableFloors = remember(effectivePois) {
         effectivePois.mapNotNull { poiFloor(it) }.distinct().sorted()
     }
 
+    // 3. Aplicar filtros combinados de búsqueda textual, categoría y planta
     val filtered = remember(query, filter, floorFilter, effectivePois) {
         val qNorm = query.trim().normalized()
         val categories = filter.categories
@@ -173,6 +222,7 @@ fun PoiPickerSheet(
         }
     }
 
+    // 4. Agrupar la lista resultante por plantas
     val grouped = remember(filtered) {
         filtered.groupBy { poiFloor(it) }
             .entries
@@ -180,9 +230,7 @@ fun PoiPickerSheet(
             .associate { it.key to it.value }
     }
 
-    // La lista se desplaza libremente en los dos sentidos. Solo se consume el desplazamiento
-    // que la lista ya no puede usar (al llegar arriba o abajo del todo), para que no pase a la
-    // hoja: si no, la hoja intenta moverse y la pantalla tintinea al llegar al final.
+    // Conexión de desplazamiento anidado para evitar saltos o que la hoja se cierre al hacer scroll en la lista
     val keepScrollInsideList = remember {
         object : NestedScrollConnection {
             override fun onPostScroll(
@@ -216,7 +264,7 @@ fun PoiPickerSheet(
                 .fillMaxWidth()
                 .fillMaxHeight(0.85f)
         ) {
-            // Título
+            // Título de la cabecera
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -228,7 +276,7 @@ fun PoiPickerSheet(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Buscador
+            // Campo de búsqueda interactivo
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
@@ -271,7 +319,7 @@ fun PoiPickerSheet(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Filtros por tipo
+            // Filtros por categoría de punto de interés
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -288,7 +336,7 @@ fun PoiPickerSheet(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Filtros por planta
+            // Filtros por planta del edificio
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -322,6 +370,7 @@ fun PoiPickerSheet(
                 modifier = Modifier.padding(horizontal = 20.dp)
             )
 
+            // Estado cuando no hay resultados coincidentes
             if (filtered.isEmpty()) {
                 Column(
                     modifier = Modifier
@@ -339,6 +388,7 @@ fun PoiPickerSheet(
                     Text(if (LocalIsEnglish.current) "No matching locations" else "No hay ubicaciones que coincidan", fontSize = 13.sp, color = MutedText)
                 }
             } else {
+                // Lista desplegable perezosa con cabeceras adhesivas por planta
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -372,6 +422,9 @@ fun PoiPickerSheet(
     }
 }
 
+/**
+ * Píldora de filtro redonda seleccionable para las categorías o plantas.
+ */
 @Composable
 private fun FilterPill(
     text: String,
@@ -412,6 +465,9 @@ private fun FilterPill(
     }
 }
 
+/**
+ * Fila individual que representa un punto de interés seleccionable en el menú modal.
+ */
 @Composable
 private fun PoiPickerRow(
     poi: PointOfInterest,

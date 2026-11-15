@@ -120,6 +120,29 @@ private val OsmTiles = XYTileSource(
     "© OpenStreetMap contributors"
 )
 
+/**
+ * Sección interactiva de mapa exterior de la ciudad de Granada con calculador de rutas peatonales entre campus.
+ *
+ * Integra OpenStreetMap mediante **Osmdroid** y calcula la ruta a pie en tiempo real utilizando el servicio **OSRM**.
+ *
+ * @param gpsLocation Ubicación GPS actual del dispositivo o `null` si aún no hay señal.
+ * @param hasLocationPermission Indica si el usuario concedió permisos de geolocalización.
+ * @param onRequestPermission Callback para solicitar permisos de GPS.
+ * @param onContinueIndoors Callback para cambiar la vista al plano indoor al llegar a la ETSIIT.
+ * @param initialDestinationId Identificador opcional de destino inicial preseleccionado.
+ * @param initialDestinationReady Bandera que indica si el destino inicial ya se puede procesar.
+ * @param destinationRequestKey Clave de petición única para evitar reprocesados.
+ * @param showOutdoorFacilitiesUnavailableNotice Bandera para mostrar aviso de servicios no disponibles fuera del campus.
+ * @param requestOriginPicker Petición desde la barra común para abrir el selector de origen.
+ * @param onOriginPickerRequestConsumed Callback ejecutado al consumir la petición de origen.
+ * @param isMapOriginSelectionActive Estado de selección activa de punto en el mapa.
+ * @param onMapOriginSelected Callback invocado tras tocar un punto del mapa.
+ * @param requestDestinationPicker Petición desde la barra común para abrir el selector de destino.
+ * @param onDestinationPickerRequestConsumed Callback ejecutado al consumir la petición de destino.
+ * @param requestSwap Petición desde la barra común para intercambiar origen y destino.
+ * @param onSwapRequestConsumed Callback ejecutado al consumir el intercambio.
+ * @param onCitySelectorLabelsChange Callback que comunica a la barra superior los nombres e información formateada.
+ */
 @Composable
 fun CityRouteSection(
     gpsLocation: Location?,
@@ -152,6 +175,7 @@ fun CityRouteSection(
 ) {
     val isEnglish = LocalIsEnglish.current
 
+    // 1. Claves y estados de control de peticiones automáticas
     var handledComedorRequestKey by rememberSaveable { mutableIntStateOf(-1) }
     var handledBibliotecaRequestKey by rememberSaveable { mutableIntStateOf(-1) }
 
@@ -179,6 +203,7 @@ fun CityRouteSection(
 
     val destination = CityPlaces.byId(destId) ?: CityPlaces.etsiit
 
+    // 2. Obtener puntos de coordenadas según las selecciones activas
     val gpsPoint = gpsLocation?.toGeoPoint()
     val comedorCandidates = remember {
         listOf(
@@ -229,6 +254,7 @@ fun CityRouteSection(
         else -> destination?.campus
     }
 
+    // 3. Atender solicitudes lanzadas desde la barra común de búsqueda
     LaunchedEffect(requestOriginPicker) {
         if (requestOriginPicker) {
             pickingOrigin = true
@@ -267,6 +293,7 @@ fun CityRouteSection(
         )
     }
 
+    // 4. Petición asíncrona de la ruta a pie al servidor OSRM mediante WalkingRouteService
     LaunchedEffect(
         originId,
         destId,
@@ -311,6 +338,7 @@ fun CityRouteSection(
         }
     }
 
+    // 5. Búsqueda automática del comedor universitario más cercano por distancia GPS (Haversine)
     LaunchedEffect(
         initialDestinationId,
         initialDestinationReady,
@@ -362,6 +390,7 @@ fun CityRouteSection(
         error = null
     }
 
+    // 6. Búsqueda automática de la biblioteca universitaria más cercana por distancia GPS
     LaunchedEffect(
         initialDestinationId,
         initialDestinationReady,
@@ -413,6 +442,7 @@ fun CityRouteSection(
         error = null
     }
 
+    // 7. Renderizado del mapa de Osmdroid y diálogos de selección
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (!hasLocationPermission) CityLocationPermissionButton(onRequestPermission)
 
@@ -501,7 +531,7 @@ fun CityRouteSection(
             }
         }
 
-        // SELECTOR DE ORIGEN
+        // Modal de selección de origen
         if (pickingOrigin) {
             CityPlacePickerSheet(
                 title = if (isEnglish) "Choose origin" else "Elige el origen",
@@ -531,7 +561,7 @@ fun CityRouteSection(
             )
         }
 
-        // SELECTOR DE DESTINO
+        // Modal de selección de destino
         if (pickingDestination) {
             CityPlacePickerSheet(
                 title = if (isEnglish) "Choose destination" else "Elige el destino",
@@ -623,6 +653,19 @@ private fun normalizeCitySearch(value: String): String {
         .replace(Regex("\\p{Mn}+"), "")
 }
 
+/**
+ * Hoja modal de selección de ubicaciones universitarias con filtro por campus y buscador.
+ *
+ * @param title Título visible en la cabecera.
+ * @param accent Color de acento de la interfaz.
+ * @param places Lista completa de lugares universitarios.
+ * @param selectedPlaceId ID de la ubicación preseleccionada.
+ * @param excludedPlaceId ID opcional a excluir de las opciones (para no elegir el mismo origen y destino).
+ * @param onSelect Callback invocado al elegir una ubicación.
+ * @param onDismiss Callback al cerrar la hoja modal.
+ * @param isMyLocationSelected Indica si "Mi ubicación" está activa.
+ * @param onSelectMyLocation Callback opcional para seleccionar la posición GPS actual.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CityPlacePickerSheet(
@@ -960,6 +1003,15 @@ private fun CityPlaceFilterPill(
     }
 }
 
+/**
+ * Tarjeta de instrucciones paso a paso para la ruta a pie calculada por OSRM.
+ *
+ * @param route Datos de la ruta activa [WalkingRoute].
+ * @param destinationName Nombre del lugar de destino.
+ * @param showAll Bandera que controla si se muestran todos los pasos o un resumen de los primeros 4.
+ * @param onToggleShowAll Callback para alternar entre ver todos los pasos o el resumen.
+ * @param onContinueIndoors Callback opcional para cambiar al mapa de la facultad si el destino es la ETSIIT.
+ */
 @Composable
 private fun RouteInstructionsCard(
     route: WalkingRoute,
@@ -1044,6 +1096,22 @@ private fun RouteInstructionsCard(
     }
 }
 
+/**
+ * Componente ViewInterop ([AndroidView]) que encapsula la vista de mapa de OpenStreetMap mediante **Osmdroid**.
+ *
+ * Renderiza la polilínea de la ruta a pie, los marcadores de campus ajustados dinámicamente al nivel de zoom,
+ * el indicador GPS de posición actual y controles interactivos de centrado y brújula.
+ *
+ * @param gpsPoint Coordenada del GPS actual del teléfono.
+ * @param origin Coordenada del origen de la ruta si es distinto de la ubicación GPS.
+ * @param destination Coordenada del destino seleccionado.
+ * @param destinationId ID del destino.
+ * @param originPlaceId ID del lugar de origen.
+ * @param route Ruta a pie calculada por OSRM.
+ * @param onPlaceTap Callback al pulsar sobre un marcador de campus.
+ * @param onMapTap Callback al tocar un punto del mapa.
+ * @param onLocateUnavailable Callback si se intenta centrar en GPS sin señal.
+ */
 @SuppressLint("ClickableViewAccessibility")
 @Composable
 private fun OsmMap(
@@ -1065,6 +1133,7 @@ private fun OsmMap(
     val orientation = remember { mutableFloatStateOf(0f) }
     var currentZoom by remember { mutableDoubleStateOf(13.5) }
 
+    // 1. Configurar la caché local de teselas y límites geográficos de la ciudad de Granada
     val mapView = remember {
         Configuration.getInstance().apply {
             userAgentValue = context.packageName
@@ -1179,6 +1248,7 @@ private fun OsmMap(
                 map.overlays.add(rotationOverlay)
                 map.overlays.add(tapOverlay)
 
+                // 2. Dibujar la polilínea del trazado de la ruta peatonal (Polyline)
                 route?.let { r ->
                     map.overlays.add(Polyline(map).apply {
                         setPoints(r.points.map { it.toOsm() })
@@ -1187,6 +1257,7 @@ private fun OsmMap(
                     })
                 }
 
+                // 3. Dibujar marcadores de campus adaptando el nivel de detalle según el zoom
                 val showAllDetails = currentZoom >= 16.2
                 val showDots = currentZoom >= 14.0
 
@@ -1213,6 +1284,7 @@ private fun OsmMap(
                     }
                 }
 
+                // 4. Dibujar marcadores especiales de origen personalizado en mapa o ubicación GPS
                 if (originPlaceId == ORIGIN_MAP) {
                     origin?.let { map.overlays.add(placeMarker(map, it, if (isEnglish) "Origin" else "Origen", android.graphics.Color.rgb(0x2E, 0x7D, 0x32))) }
                 }
@@ -1223,6 +1295,7 @@ private fun OsmMap(
             }
         )
 
+        // Botón flotante para re-centrar el mapa en la posición GPS
         Surface(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -1250,6 +1323,7 @@ private fun OsmMap(
             }
         }
 
+        // Botón flotante de brújula de orientación del mapa
         if (orientation.floatValue % 360f != 0f) {
             Surface(
                 modifier = Modifier

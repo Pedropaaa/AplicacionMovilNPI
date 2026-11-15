@@ -54,7 +54,7 @@ private val UserBlue = Color(0xFF1E88E5)
 /**
  * Convierte un objeto [Location] nativo de Android a nuestro modelo de dominio [GeoPoint].
  *
- * @return Un objeto [GeoPoint] que contiene la latitud y longitud actuales.
+ * @return Un objeto [GeoPoint] que contiene la latitud y longitud actuales en grados decimales.
  */
 fun Location.toGeoPoint() = GeoPoint(latitude, longitude)
 
@@ -64,12 +64,12 @@ fun Location.toGeoPoint() = GeoPoint(latitude, longitude)
  * Desde este panel se gestionan los permisos, la calibración y el inicio del seguimiento.
  *
  * @param hasLocationPermission Indica si el usuario ha concedido permisos de ubicación.
- * @param onRequestPermission Función callback o lambda a ejecutar para solicitar permisos de ubicación.
- * @param gpsLocation Objeto [Location] actual obtenido del hardware, puede ser nulo si no hay señal.
+ * @param onRequestPermission Función callback para solicitar permisos de ubicación al sistema.
+ * @param gpsLocation Objeto [Location] actual obtenido del hardware (puede ser `null` si no hay señal).
  * @param tracker Instancia de [IndoorTracker] encargada de gestionar el seguimiento de pasos en interiores.
- * @param azimuthDeg Grados actuales de orientación proporcionados por la brújula (puede ser nulo).
- * @param isRouteOpen Booleano que indica si hay una ruta activa calculada actualmente.
- * @param isTracking Booleano que indica si el seguimiento de pasos está activo.
+ * @param azimuthDeg Grados actuales de orientación proporcionados por la brújula (`null` si no está disponible).
+ * @param isRouteOpen Indica si hay una ruta activa calculada actualmente.
+ * @param isTracking Indica si el seguimiento de pasos está activo en este momento.
  * @param onUseEntranceAsStart Callback opcional para forzar el inicio de la ruta desde la entrada principal.
  */
 @Composable
@@ -85,7 +85,7 @@ fun LocationStatusCard(
 ) {
     val isEnglish = LocalIsEnglish.current
 
-    // 1. Contenedor principal de la tarjeta
+    // 1. Contenedor principal de la tarjeta con borde suave
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = Color.White,
@@ -93,7 +93,7 @@ fun LocationStatusCard(
         border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
     ) {
         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            // 2. Cabecera de la tarjeta
+            // 2. Cabecera con icono corporativo de sensores
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Rounded.Sensors,
@@ -110,7 +110,7 @@ fun LocationStatusCard(
                 )
             }
 
-            // 3. Procesamiento y visualización del estado GPS
+            // 3. Procesamiento y visualización del estado del sensor GPS
             when {
                 !hasLocationPermission -> {
                     SensorLine(
@@ -131,7 +131,7 @@ fun LocationStatusCard(
                     text = if (isEnglish) "Waiting for GPS… (turn on device location)" else "Buscando señal GPS… (activa la ubicación del móvil)"
                 )
                 else -> {
-                    // 3.1. Cálculo de distancia a la ETSIIT
+                    // 3.1. Cálculo de la posición geográfica actual y su margen de precisión
                     val here = gpsLocation.toGeoPoint()
                     val accuracy = "±${gpsLocation.accuracy.roundToInt()} m"
                     if (GeoUtils.isAtEtsiit(here)) {
@@ -143,7 +143,7 @@ fun LocationStatusCard(
                             SmallAction(if (isEnglish) "Start the route at the main entrance" else "Empezar la ruta en la entrada principal", onUseEntranceAsStart)
                         }
                     } else {
-                        // 3.2. Formateo de distancia para usuarios fuera del radio
+                        // 3.2. Formateo de la distancia geodésica para usuarios fuera del recinto
                         val distance = GeoUtils.formatDistance(GeoUtils.distanceMeters(here, GeoUtils.ETSIIT))
                         SensorLine(
                             icon = Icons.Rounded.Place,
@@ -153,13 +153,13 @@ fun LocationStatusCard(
                 }
             }
 
-            // 4. Visualización del sensor de la brújula
+            // 4. Visualización del rumbo actual reportado por la brújula
             SensorLine(
                 icon = Icons.Rounded.Explore,
                 text = azimuthDeg?.let { "${if (isEnglish) "Heading" else "Rumbo"}: ${DeadReckoning.compassLabel(it)}" } ?: if (isEnglish) "Compass unavailable" else "Brújula no disponible"
             )
 
-            // 5. Visualización del podómetro (solo si el tracker está activo)
+            // 5. Visualización del podómetro (pasos acumulados) cuando el seguimiento está activo
             if (isTracking) {
                 SensorLine(
                     icon = Icons.AutoMirrored.Rounded.DirectionsWalk,
@@ -171,7 +171,7 @@ fun LocationStatusCard(
                 )
             }
 
-            // 6. Aviso si no hay ruta seleccionada
+            // 6. Mensaje orientativo cuando no hay ruta calculada
             if (!isRouteOpen) {
                 SensorLine(
                     icon = Icons.AutoMirrored.Rounded.DirectionsWalk,
@@ -186,12 +186,12 @@ fun LocationStatusCard(
 }
 
 /**
- * Muestra una franja indicadora con las instrucciones de giro y distancia restante
- * calculadas a partir del progreso en el mapa interior.
+ * Muestra una franja flotante con las indicaciones de giro e información de distancia restante
+ * calculadas dinámicamente a partir del progreso en la ruta del mapa interior.
  *
- * @param tracker Instancia activa del sistema de tracking [IndoorTracker].
- * @param azimuthDeg Grados actuales de la brújula del dispositivo.
- * @param arrivalText Texto a mostrar cuando el usuario haya alcanzado el destino.
+ * @param tracker Instancia activa del sistema de seguimiento indoor [IndoorTracker].
+ * @param azimuthDeg Grados actuales del azimut de la brújula (`null` si no está disponible).
+ * @param arrivalText Texto personalizado a mostrar cuando se alcanza el destino o punto de transición.
  */
 @Composable
 fun NavigationHintStrip(tracker: IndoorTracker, azimuthDeg: Float?, arrivalText: String) {
@@ -199,14 +199,14 @@ fun NavigationHintStrip(tracker: IndoorTracker, azimuthDeg: Float?, arrivalText:
     val progress = tracker.progress ?: return
     val target = tracker.targetAzimuth()
 
-    // 1. Determinar el icono y texto según el estado de la navegación
+    // 1. Determinar el icono y texto según el estado actual de la navegación indoor
     val (icon, text) = when {
         progress.hasArrived -> Icons.Rounded.CheckCircle to arrivalText
         azimuthDeg == null || target == null -> Icons.AutoMirrored.Rounded.DirectionsWalk to if (isEnglish) "${progress.metersToEnd.roundToInt()} m remaining" else "Faltan ${progress.metersToEnd.roundToInt()} m"
         else -> Icons.Rounded.Explore to "${DeadReckoning.turnInstruction(azimuthDeg, target)} · ${if (isEnglish) "${progress.metersToEnd.roundToInt()} m remaining" else "faltan ${progress.metersToEnd.roundToInt()} m"}"
     }
 
-    // 2. Renderizado del banner
+    // 2. Renderizado del banner flotante
     Surface(
         modifier = Modifier.height(36.dp),
         color = Color.White,
@@ -240,6 +240,12 @@ fun NavigationHintStrip(tracker: IndoorTracker, azimuthDeg: Float?, arrivalText:
     }
 }
 
+/**
+ * Fila auxiliar reutilizable para mostrar información de un sensor con un icono y texto.
+ *
+ * @param icon Icono vectorial indicativo del sensor.
+ * @param text Descripción o lectura actual del sensor.
+ */
 @Composable
 private fun SensorLine(icon: ImageVector, text: String) {
     Row(verticalAlignment = Alignment.Top) {
@@ -254,6 +260,12 @@ private fun SensorLine(icon: ImageVector, text: String) {
     }
 }
 
+/**
+ * Botón de contorno reducido para acciones secundarias dentro del panel de estado.
+ *
+ * @param text Etiqueta visible del botón.
+ * @param onClick Callback a ejecutar cuando el usuario pulsa la acción.
+ */
 @Composable
 private fun SmallAction(text: String, onClick: () -> Unit) {
     OutlinedButton(
@@ -266,18 +278,19 @@ private fun SmallAction(text: String, onClick: () -> Unit) {
 }
 
 /**
- * Función de extensión sobre [DrawScope] para dibujar el indicador visual del usuario en el plano.
- * Representa un punto azul con un cono de visión apuntando en la dirección en la que mira el dispositivo.
+ * Función de extensión sobre [DrawScope] para dibujar el indicador de posición y rumbo del usuario sobre el Canvas del plano.
+ * Renderiza un punto azul central rodeado de un cono de visión semitransparente orientado en la dirección de la brújula.
  *
- * @param position Coordenadas [MapPoint] donde se encuentra el usuario actualmente.
- * @param headingMapDeg Orientación en grados respecto al norte del plano (0 = arriba). Si es nulo, no dibuja el cono.
- * @param scaleX Escala aplicada en el eje X para mantener las proporciones tras el zoom.
- * @param scaleY Escala aplicada en el eje Y para mantener las proporciones tras el zoom.
+ * @param position Coordenadas [MapPoint] de la posición actual del usuario en las unidades del plano.
+ * @param headingMapDeg Orientación en grados respecto al eje del mapa (0 = arriba). Si es `null`, omite el cono de visión.
+ * @param scaleX Factor de escala aplicado al eje X según el nivel de zoom y tamaño del Canvas.
+ * @param scaleY Factor de escala aplicado al eje Y según el nivel de zoom y tamaño del Canvas.
  */
 fun DrawScope.drawUserMarker(position: MapPoint, headingMapDeg: Float?, scaleX: Float, scaleY: Float) {
-    // 1. Calcular centro en píxeles
+    // 1. Calcular las coordenadas en píxeles del centro del marcador
     val center = Offset(position.x * scaleX, position.y * scaleY)
-    // 2. Dibujar cono direccional (si hay datos de brújula)
+    
+    // 2. Dibujar el cono direccional rotado si existe lectura válida de brújula
     if (headingMapDeg != null) {
         rotate(degrees = headingMapDeg, pivot = center) {
             val cone = Path().apply {
@@ -289,7 +302,8 @@ fun DrawScope.drawUserMarker(position: MapPoint, headingMapDeg: Float?, scaleX: 
             drawPath(cone, color = UserBlue.copy(alpha = 0.45f))
         }
     }
-    // 3. Dibujar punto central base
+    
+    // 3. Dibujar las capas concéntricas del punto de posición del usuario
     drawCircle(color = UserBlue.copy(alpha = 0.2f), radius = 16.dp.toPx(), center = center)
     drawCircle(color = Color.White, radius = 8.dp.toPx(), center = center)
     drawCircle(color = UserBlue, radius = 6.dp.toPx(), center = center)
