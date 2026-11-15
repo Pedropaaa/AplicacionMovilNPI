@@ -41,6 +41,7 @@ import kotlin.math.sin
  */
 object LocationPermissions {
 
+    /** Array con los permisos de ubicación GPS fina y aproximada. */
     val location = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
 
     /** Permisos solicitados conjuntamente al activar la localización según la versión del SDK. */
@@ -65,6 +66,13 @@ object LocationPermissions {
     fun hasActivityRecognition(context: Context): Boolean =
         Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || granted(context, Manifest.permission.ACTIVITY_RECOGNITION)
 
+    /**
+     * Comprueba si un permiso específico del sistema está concedido.
+     *
+     * @param context Contexto de la aplicación.
+     * @param permission Nombre del permiso a comprobar (constante de [Manifest.permission]).
+     * @return `true` si el permiso ha sido concedido.
+     */
     private fun granted(context: Context, permission: String) =
         ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
 }

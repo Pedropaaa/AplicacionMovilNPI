@@ -198,14 +198,31 @@ object DeadReckoning {
         return "${names[index]} ${normalize(azimuthDeg).toInt()}°"
     }
 
-    private fun projectOnSegment(p: MapPoint, a: MapPoint, b: MapPoint): MapPoint {
-        val dx = b.x - a.x
-        val dy = b.y - a.y
+    /**
+     * Proyecta un punto sobre un segmento definido por dos puntos extremos (inicio y fin).
+     *
+     * Si la longitud del segmento es cero, devuelve el punto inicial.
+     *
+     * @param point Punto a proyectar.
+     * @param start Punto de inicio del segmento.
+     * @param end Punto final del segmento.
+     * @return El punto [MapPoint] proyectado sobre el segmento más cercano a [point].
+     */
+    private fun projectOnSegment(point: MapPoint, start: MapPoint, end: MapPoint): MapPoint {
+        val dx = end.x - start.x
+        val dy = end.y - start.y
         val lengthSq = dx * dx + dy * dy
-        if (lengthSq == 0f) return a
-        val t = (((p.x - a.x) * dx + (p.y - a.y) * dy) / lengthSq).coerceIn(0f, 1f)
-        return MapPoint(a.x + t * dx, a.y + t * dy)
+        if (lengthSq == 0f) return start
+        val t = (((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSq).coerceIn(0f, 1f)
+        return MapPoint(start.x + t * dx, start.y + t * dy)
     }
 
+    /**
+     * Calcula la distancia euclídea entre dos puntos en el plano.
+     *
+     * @param a Primer punto.
+     * @param b Segundo punto.
+     * @return Distancia en unidades del plano.
+     */
     private fun distance(a: MapPoint, b: MapPoint): Float = hypot(a.x - b.x, a.y - b.y)
 }

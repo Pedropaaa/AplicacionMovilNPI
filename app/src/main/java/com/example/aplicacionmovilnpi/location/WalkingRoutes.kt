@@ -84,10 +84,23 @@ object CityPlaces {
         // ==========================================
         CityPlace("biblioteca_etsiit", "Biblioteca de la ETSIIT", "Aynadamar", GeoPoint(37.197076, -3.624243)),
         CityPlace("biblioteca_ciencias", "Biblioteca de Ciencias", "Fuentenueva", GeoPoint(37.182470, -3.608300)),
-        CityPlace("biblioteca_cartuja", "Biblioteca del Campus de Cartuja", "Cartuja", GeoPoint(37.190240, -3.598218)),
         CityPlace("biblioteca_derecho", "Biblioteca de Derecho", "Centro", GeoPoint(37.178877, -3.601552)),
-        CityPlace("biblioteca_pts", "Biblioteca del PTS", "PTS", GeoPoint(37.147775, -3.606778)),
-        CityPlace("biblioteca_hospital_real", "Biblioteca Universitaria (Hospital Real)", "Centro", GeoPoint(37.184323, -3.599723))
+        CityPlace("biblioteca_pts", "Biblioteca del PTS (Medicina y Ciencias de la Salud)", "PTS", GeoPoint(37.147775, -3.606778)),
+        CityPlace("biblioteca_hospital_real", "Biblioteca Universitaria (Hospital Real)", "Centro", GeoPoint(37.184323, -3.599723)),
+        CityPlace("biblioteca_arquitectura", "Biblioteca de Arquitectura", "Centro", GeoPoint(37.173260, -3.593670)),
+        CityPlace("biblioteca_politicas", "Biblioteca de Ciencias Políticas y Sociología", "Centro", GeoPoint(37.181829, -3.603378)),
+        CityPlace("biblioteca_relaciones_laborales", "Biblioteca de Relaciones Laborales y Recursos Humanos", "Centro", GeoPoint(37.180424, -3.602652)),
+        CityPlace("biblioteca_trabajo_social", "Biblioteca de Trabajo Social", "Centro", GeoPoint(37.182103, -3.603120)),
+        CityPlace("biblioteca_traduccion", "Biblioteca de Traducción e Interpretación", "Centro", GeoPoint(37.174151, -3.602521)),
+        CityPlace("biblioteca_deporte", "Biblioteca de Ciencias del Deporte", "Cartuja", GeoPoint(37.194721, -3.596041)),
+        CityPlace("biblioteca_economicas", "Biblioteca de Ciencias Económicas y Empresariales", "Cartuja", GeoPoint(37.192534, -3.597148)),
+        CityPlace("biblioteca_educacion", "Biblioteca de Ciencias de la Educación", "Cartuja", GeoPoint(37.193910, -3.597652)),
+        CityPlace("biblioteca_farmacia", "Biblioteca de Farmacia", "Cartuja", GeoPoint(37.191543, -3.596541)),
+        CityPlace("biblioteca_filosofia", "Biblioteca de Filosofía y Letras", "Cartuja", GeoPoint(37.190240, -3.598218)),
+        CityPlace("biblioteca_psicologia", "Biblioteca de Psicología", "Cartuja", GeoPoint(37.192100, -3.597200)),
+        CityPlace("biblioteca_colegio_maximo", "Biblioteca del Colegio Máximo (Odontología y Comunicación)", "Cartuja", GeoPoint(37.191763, -3.599727)),
+        CityPlace("biblioteca_politecnica", "Biblioteca Politécnica (Caminos y Edificación)", "Fuentenueva", GeoPoint(37.181977, -3.609462)),
+        CityPlace("biblioteca_bellas_artes", "Biblioteca de Bellas Artes", "Aynadamar", GeoPoint(37.197940, -3.623412))
     )
 
     /** Referencia directa al destino por defecto. */

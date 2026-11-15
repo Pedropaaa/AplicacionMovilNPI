@@ -18,6 +18,7 @@ import com.example.aplicacionmovilnpi.model.Node
  */
 class IndoorTracker(initialMapNorthDeg: Float = DeadReckoning.DEFAULT_MAP_NORTH_DEG) {
 
+    /** Lista de puntos [MapPoint] que conforman la polilínea de la ruta activa en el plano. */
     private var path: List<MapPoint> = emptyList()
 
     /** Planta estimada o seleccionada manualmente por el usuario. */
