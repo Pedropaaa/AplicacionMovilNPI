@@ -5,7 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,8 +28,7 @@ import com.example.aplicacionmovilnpi.ui.theme.AplicacionMovilNPITheme
  * Ingenierías Informática y de Telecomunicación (ETSIIT) de la Universidad de Granada.
  *
  * Gestiona el ciclo de vida principal de la aplicación, el estado global de autenticación,
- * las preferencias de accesibilidad e idioma, así como la integración con sensores físicos
- * (sensor de proximidad).
+ * las preferencias de accesibilidad e idioma.
  */
 class MainActivity : ComponentActivity() {
 

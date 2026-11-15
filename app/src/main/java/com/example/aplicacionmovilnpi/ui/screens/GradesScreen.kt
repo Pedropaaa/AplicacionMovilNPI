@@ -29,12 +29,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.aplicacionmovilnpi.data.FacultyData
 import com.example.aplicacionmovilnpi.data.SampleData
 import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
 import com.example.aplicacionmovilnpi.ui.theme.CardBorder
 import com.example.aplicacionmovilnpi.ui.theme.Ink
-import com.example.aplicacionmovilnpi.ui.theme.MutedText
 import com.example.aplicacionmovilnpi.ui.theme.ToneRoseBg
 import com.example.aplicacionmovilnpi.ui.theme.ToneRoseText
 import com.example.aplicacionmovilnpi.ui.theme.UgrRed

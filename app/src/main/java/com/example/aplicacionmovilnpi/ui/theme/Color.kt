@@ -13,7 +13,6 @@ val SoftBg = Color(0xFFF5F6F8)
 val PageBg = Color(0xFFFAFAFA)
 val CardBorder = Color(0xFFE5E7EB)
 val GreenStatus = Color(0xFF23815D)
-
 val ToneRoseBg = Color(0xFFFAE9ED)
 val ToneRoseText = Color(0xFFA83C55)
 val TonePurpleBg = Color(0xFFEEEAFA)

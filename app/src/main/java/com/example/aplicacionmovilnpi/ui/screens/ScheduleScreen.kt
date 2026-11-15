@@ -2,7 +2,6 @@ package com.example.aplicacionmovilnpi.ui.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -38,7 +37,6 @@ import com.example.aplicacionmovilnpi.data.ClassLesson
 import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
 import com.example.aplicacionmovilnpi.ui.localizedCourseText
 import com.example.aplicacionmovilnpi.ui.localizedDayName
-import com.example.aplicacionmovilnpi.data.FacultyData
 import com.example.aplicacionmovilnpi.data.Moment
 import com.example.aplicacionmovilnpi.data.SampleData
 import com.example.aplicacionmovilnpi.ui.theme.CardBorder

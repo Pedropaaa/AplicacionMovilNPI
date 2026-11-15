@@ -137,11 +137,11 @@ fun CityRouteSection(
     isMapOriginSelectionActive: Boolean = false,
     onMapOriginSelected: () -> Unit = {},
 
-    requestSwap: Boolean = false,
-    onSwapRequestConsumed: () -> Unit = {},
-
     requestDestinationPicker: Boolean = false,
     onDestinationPickerRequestConsumed: () -> Unit = {},
+
+    requestSwap: Boolean = false,
+    onSwapRequestConsumed: () -> Unit = {},
 
     onCitySelectorLabelsChange: (
         String,
@@ -566,6 +566,7 @@ fun CityRouteSection(
                 mapOriginLat = point.lat
                 mapOriginLon = point.lon
                 originId = ORIGIN_MAP
+                onMapOriginSelected()
             },
             onLocateUnavailable = {
                 if (hasLocationPermission) error = if (isEnglish) "No GPS signal yet. Turn on location services." else "Todavía no hay señal GPS. Activa la ubicación del móvil."
