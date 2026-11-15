@@ -23,7 +23,13 @@ import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
 import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 
 /**
- * Botón independiente para escanear QR sin modificar LocationStatusCard.
+ * Componente de botón de acción directa para abrir el escáner de códigos QR de ubicación.
+ *
+ * Proporciona un acceso directo limpio e independiente en las pantallas de mapa/panel para iniciar
+ * la captura por cámara sin acoplar la lógica de estado del contenedor superior.
+ *
+ * @param onScanClick Lambda invocada cuando el usuario pulsa el botón para iniciar el escaneo.
+ * @param modifier Modificador opcional de diseño para personalizar el tamaño o padding en el contenedor padre.
  */
 @Composable
 fun QrScanButton(
@@ -31,6 +37,8 @@ fun QrScanButton(
     modifier: Modifier = Modifier
 ) {
     val isEnglish = LocalIsEnglish.current
+
+    // Renderizar el botón principal estilizado con los colores corporativos UGR
     Button(
         onClick = onScanClick,
         modifier = modifier

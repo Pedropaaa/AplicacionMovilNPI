@@ -1,7 +1,6 @@
 package com.example.aplicacionmovilnpi
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -18,7 +17,6 @@ import androidx.compose.ui.unit.Density
 import com.example.aplicacionmovilnpi.data.AccessibilityStore
 import com.example.aplicacionmovilnpi.data.LanguageStore
 import com.example.aplicacionmovilnpi.data.SessionStore
-import com.example.aplicacionmovilnpi.location.ProximitySensor
 import com.example.aplicacionmovilnpi.ui.LocalHighContrast
 import com.example.aplicacionmovilnpi.ui.LocalIsEnglish
 import com.example.aplicacionmovilnpi.ui.LocalLargeText
@@ -46,24 +44,6 @@ class MainActivity : ComponentActivity() {
             }
             var isDefaultAccessibleRoute by rememberSaveable {
                 mutableStateOf(AccessibilityStore.isDefaultAccessibleRoute(context))
-            }
-
-            // Estado para almacenar el valor de proximidad
-            var isNear by remember { mutableStateOf(false) }
-
-            // Control de ciclo de vida para el sensor de proximidad
-            DisposableEffect(context) {
-                val sensor = ProximitySensor(context).apply {
-                    onProximityChanged = { near ->
-                        isNear = near
-                        Log.d("MainActivity", "Estado de proximidad en UI: ${if (near) "CERCA" else "LEJOS"}")
-                    }
-                    start()
-                }
-
-                onDispose {
-                    sensor.stop()
-                }
             }
 
             val currentDensity = LocalDensity.current

@@ -41,6 +41,17 @@ import com.example.aplicacionmovilnpi.ui.theme.MutedText
 import com.example.aplicacionmovilnpi.ui.theme.ToneBlueBg
 import com.example.aplicacionmovilnpi.ui.theme.UgrRed
 
+/**
+ * Diálogo modal ([Dialog]) que genera y muestra un código QR de una ruta seleccionada.
+ *
+ * Permite compartir la ruta (origen, destino y preferencia de accesibilidad PMR) entre dispositivos.
+ * Al escanear este código QR en otro dispositivo, la aplicación carga automáticamente la misma ruta.
+ *
+ * @param startPoi Punto de interés (POI) de origen de la ruta.
+ * @param destPoi Punto de interés (POI) de destino de la ruta.
+ * @param isAccessible Indica si la ruta es accesible para personas con movilidad reducida (PMR).
+ * @param onDismiss Callback invocado al cerrar el diálogo modal.
+ */
 @Composable
 fun RouteQrDialog(
     startPoi: PointOfInterest?,
@@ -54,14 +65,17 @@ fun RouteQrDialog(
     val startName = startPoi?.let { if (isEnglish && it.nameEn.isNotBlank()) it.nameEn else it.nameEs } ?: if (isEnglish) "Origin" else "Origen"
     val destName = destPoi?.let { if (isEnglish && it.nameEn.isNotBlank()) it.nameEn else it.nameEs } ?: if (isEnglish) "Destination" else "Destino"
 
+    // 1. Construir la cadena de texto con el protocolo de contenido QR de ruta
     val qrContent = remember(startPoiId, destPoiId, isAccessible) {
         QrGenerator.createRouteQrContent(startPoiId, destPoiId, isAccessible)
     }
 
+    // 2. Generar de forma memorizada la representación gráfica en bitmap del código QR usando ZXing
     val qrBitmap = remember(qrContent) {
         QrGenerator.generateQrBitmap(qrContent, width = 512, height = 512)
     }
 
+    // 3. Renderizar la tarjeta modal con los detalles de origen, destino, accesibilidad e imagen QR
     Dialog(onDismissRequest = onDismiss) {
         Card(
             shape = RoundedCornerShape(20.dp),
@@ -75,6 +89,7 @@ fun RouteQrDialog(
                 modifier = Modifier.padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // Encabezado con icono y título del diálogo
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Rounded.QrCode,
@@ -93,6 +108,7 @@ fun RouteQrDialog(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
+                // Resumen del trayecto (Origen -> Destino)
                 Text(
                     text = "$startName ➔ $destName",
                     fontSize = 14.sp,
@@ -103,6 +119,7 @@ fun RouteQrDialog(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
+                // Etiqueta indicadora del modo de accesibilidad (PMR / Estándar)
                 Surface(
                     color = ToneBlueBg,
                     shape = RoundedCornerShape(8.dp)
@@ -129,6 +146,7 @@ fun RouteQrDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // Contenedor visual del código QR renderizado
                 Box(
                     modifier = Modifier
                         .size(220.dp)
@@ -153,6 +171,7 @@ fun RouteQrDialog(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
+                // Explicación de uso para compartir la ruta entre dispositivos
                 Text(
                     text = if (isEnglish) "Scan this code with the app on another device to load this route automatically." else "Escanea este código con el escáner de la app en otro dispositivo para cargar automáticamente esta ruta.",
                     fontSize = 11.sp,
@@ -162,6 +181,7 @@ fun RouteQrDialog(
 
                 Spacer(modifier = Modifier.height(18.dp))
 
+                // Botón para cerrar el modal
                 Button(
                     onClick = onDismiss,
                     colors = ButtonDefaults.buttonColors(containerColor = UgrRed),

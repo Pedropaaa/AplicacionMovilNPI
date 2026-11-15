@@ -5,9 +5,6 @@
     <!-- PERMISO DE CÁMARA PARA EL ESCÁNER QR -->
     <uses-permission android:name="android.permission.CAMERA" />
 
-    <!-- Permiso necesario para el sensor de proximidad virtual (ProToS) -->
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-
     <!-- Mapa de OpenStreetMap (teselas) y cálculo de rutas a pie -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -22,7 +19,6 @@
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
     <uses-feature android:name="android.hardware.sensor.compass" android:required="false" />
     <uses-feature android:name="android.hardware.sensor.stepdetector" android:required="false" />
-    <uses-feature android:name="android.hardware.sensor.proximity" android:required="false" />
 
     <application
         android:allowBackup="true"
